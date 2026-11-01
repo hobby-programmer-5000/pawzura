@@ -7,6 +7,7 @@ import unittest
 from pawzura.app import Companion
 from pawzura.config import defaults
 from pawzura.windows import Window, close_window
+from PySide6.QtCore import QPointF
 
 
 class RoutingTests(unittest.TestCase):
@@ -14,7 +15,7 @@ class RoutingTests(unittest.TestCase):
         config = defaults()
         config.update(guard_enabled=True,preview_only=False,allowed_apps=["codex.exe"])
         fake = SimpleNamespace(settings=SimpleNamespace(snapshot=lambda: config),
-                               pet=SimpleNamespace(action=None,bite=Mock()),
+                               pet=SimpleNamespace(action=None,bite=Mock(),tab_target_point=Mock(return_value=QPointF(480,650))),
                                bridge=SimpleNamespace(events=Queue(),pairing_events=Queue(),complete=Mock()),
                                pairing_dialog_open=False,observed={},cooldown={})
         return fake,config
@@ -34,18 +35,31 @@ class RoutingTests(unittest.TestCase):
             self.assertFalse(close_window(self.window("chrome.exe")))
             inspect.assert_not_called()
 
-    def test_tab_animation_is_below_titlebar_and_never_closes_native_window(self):
+    def test_browser_actions_use_only_synthetic_tab_target_in_preview_and_live(self):
+        for active in (False, True):
+            for preview in (False, True):
+                with self.subTest(active=active, preview=preview):
+                    fake,config = self.harness()
+                    config["preview_only"] = preview
+                    config["browsers"]["chrome"]["enabled"] = True
+                    fake.bridge.events.put({"browser":"chrome","ticket":"test","active":active})
+                    with patch("pawzura.app.windows.foreground_window") as foreground, \
+                         patch("pawzura.app.windows.physical_to_logical") as coordinates, \
+                         patch("pawzura.app.windows.close_window") as close:
+                        Companion.tick(fake)
+                        self.assertEqual(fake.pet.bite.call_args.args[0], QPointF(480,650))
+                        self.assertTrue(fake.pet.bite.call_args.kwargs["tab"])
+                        self.assertEqual(fake.pet.bite.call_args.kwargs["label"], "Tab preview" if preview else "Blocked tab")
+                        fake.pet.bite.call_args.args[1]()
+                        fake.bridge.complete.assert_called_once_with("test")
+                        foreground.assert_not_called()
+                        coordinates.assert_not_called()
+                        close.assert_not_called()
+
+    def test_korean_preview_has_explicit_tab_label(self):
         fake,config = self.harness()
+        config.update(language="ko", preview_only=True)
         config["browsers"]["chrome"]["enabled"] = True
-        fake.bridge.events.put({"browser":"chrome","ticket":"test","active":True})
-        with patch("pawzura.app.windows.foreground_window",return_value=self.window("chrome.exe")), \
-             patch("pawzura.app.windows.physical_to_logical",side_effect=lambda x,y,s:(x,y)), \
-             patch("pawzura.app.QApplication.screens",return_value=[]), \
-             patch("pawzura.app.windows.close_window") as close:
-            Companion.tick(fake)
-            point = fake.pet.bite.call_args.args[0]
-            self.assertGreater(point.y(),150)
-            self.assertEqual(fake.pet.bite.call_args.kwargs["label"],"TAB")
-            fake.pet.bite.call_args.args[1]()
-            fake.bridge.complete.assert_called_once_with("test")
-            close.assert_not_called()
+        fake.bridge.events.put({"browser":"chrome","ticket":"test","active":False})
+        Companion.tick(fake)
+        self.assertEqual(fake.pet.bite.call_args.kwargs["label"], "탭 미리보기")

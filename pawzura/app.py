@@ -171,16 +171,11 @@ class Companion:
         try:
             event = self.bridge.events.get_nowait()
             if config["guard_enabled"] and config["browsers"][event["browser"]]["enabled"]:
-                target = windows.foreground_window()
-                # Place a TAB marker below the title bar; never bite the browser's window X.
-                if target and event["active"] and normalize_browser(target.executable) == event["browser"]:
-                    left, top, right, bottom = target.rect
-                    point = (min(left + 190, right - 45), min(top + 115, bottom - 25))
-                    x, y = windows.physical_to_logical(*point, QApplication.screens())
-                else:
-                    area = QApplication.primaryScreen().availableGeometry()
-                    x, y = area.right() - 90, area.top() + 75
-                self.pet.bite(QPointF(x, y), lambda: self.bridge.complete(event["ticket"]), label="TAB")
+                # A browser's tab ID cannot identify a native window's X coordinates.
+                # Use a separate taskbar-side tab marker, never another window's controls.
+                point = self.pet.tab_target_point()
+                label = ("탭 미리보기" if config["preview_only"] else "차단 탭") if config["language"] == "ko" else ("Tab preview" if config["preview_only"] else "Blocked tab")
+                self.pet.bite(point, lambda: self.bridge.complete(event["ticket"]), label=label, tab=True)
             return
         except Empty:
             pass
@@ -213,11 +208,6 @@ class Companion:
         self.pet.close()
         self.tray.hide()
         self.bridge.stop()
-
-
-def normalize_browser(executable):
-    from .policy import normalize_app
-    return {"msedge.exe": "edge"}.get(normalize_app(executable), normalize_app(executable).removesuffix(".exe"))
 
 
 def main(argv=None):

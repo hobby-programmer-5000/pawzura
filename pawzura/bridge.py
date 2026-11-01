@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import hashlib
 import hmac
 import json
 from queue import Queue
@@ -19,6 +20,7 @@ class Bridge:
         self.events = Queue(maxsize=32)
         self.lock = threading.Lock()
         self.tickets = {}
+        self.preview_seen = {}
         self.peers = {}
         self.pairing_events = Queue(maxsize=4)
         self.pairings = {}
@@ -79,6 +81,7 @@ class Bridge:
     def invalidate_tickets(self):
         with self.lock:
             self.tickets.clear()
+            self.preview_seen.clear()
             while not self.events.empty():
                 self.events.get_nowait()
 
@@ -97,6 +100,8 @@ class Bridge:
             enabled = config["guard_enabled"] and config["browsers"][browser]["enabled"]
             preview = config["preview_only"]
             decisions = []
+            seen = self.preview_seen.get(browser, set())
+            blocked = set()
             for tab in tabs:
                 if not isinstance(tab, dict) or not isinstance(tab.get("id"), int) or not isinstance(tab.get("url"), str):
                     continue
@@ -106,15 +111,25 @@ class Bridge:
                 if not allowed:
                     policy = json.dumps([config.get("active_profile"), config["preview_only"], config["browsers"][browser]], sort_keys=True)
                     key = f"{policy}:{browser}:{tab['id']}:{url}"
+                    fingerprint = hashlib.sha256(key.encode()).digest()
+                    blocked.add(fingerprint)
                     ticket = next((k for k, v in self.tickets.items() if v["key"] == key), None)
-                    if not ticket and not self.events.full() and len(self.tickets) < 256:
+                    if preview:
+                        # A preview is a single demonstration, not a repeating close attempt.
+                        if ticket and fingerprint not in seen:
+                            del self.tickets[ticket]
+                        ticket = None
+                    if (not preview or fingerprint not in seen) and not ticket and not self.events.full() and len(self.tickets) < 256:
                         ticket = secrets.token_hex(12)
                         self.tickets[ticket] = {"key": key, "created": now, "ready": False}
                         self.events.put_nowait({"ticket": ticket, "browser": browser,
                                                "active": bool(tab.get("active")), "preview": preview})
                     if ticket:
                         entry["close"] = not preview and self.tickets[ticket]["ready"]
+                        if preview:
+                            seen.add(fingerprint)
                 decisions.append(entry)
+            self.preview_seen[browser] = seen & blocked if preview else set()
             return {"enabled": enabled, "preview": preview, "decisions": decisions}
 
     def start(self):

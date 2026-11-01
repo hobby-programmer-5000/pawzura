@@ -36,6 +36,8 @@ Qt를 변경하면 `scripts/fetch_licenses.py`의 버전도 맞추고 원문 고
 
 ## 검사
 
+이전 출력 폴더를 보존하며 다른 버전을 빌드하려면 `python scripts/build.py --dist-dir dist/0.1.4`를 사용하세요. EXE 폴더와 ZIP을 지정한 경로 안에 만들며 기본 출력 경로는 `dist`입니다.
+
 ```powershell
 .\.venv-standard\Scripts\python.exe -m unittest discover -s tests -v
 .\.venv-standard\Scripts\python.exe -m pawzura --smoke-check --capture artifacts/settings.png

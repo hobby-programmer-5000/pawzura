@@ -192,6 +192,29 @@ class Crack(QWidget):
             p.drawLine(points[1], points[1] + QPointF(math.sin(angle) * 15, -math.cos(angle) * 15))
 
 
+class TabTarget(QWidget):
+    """A synthetic tab X, kept separate from every browser/window caption."""
+    def __init__(self, point, label):
+        super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool | Qt.WindowType.WindowTransparentForInput | Qt.WindowType.WindowDoesNotAcceptFocus)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        self.resize(180, 44)
+        self.move(round(point.x()) - 158, round(point.y()) - 22)
+        self.label = label
+        self.show()
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setBrush(QColor("#29233e"))
+        p.setPen(QPen(QColor("#c5b0f4"), 2))
+        p.drawRoundedRect(QRectF(1, 1, 178, 42), 10, 10)
+        p.setPen(QColor("#f1eaff"))
+        p.drawText(QRectF(8, 2, 130, 40), Qt.AlignmentFlag.AlignCenter, self.label)
+        p.drawLine(QPointF(153, 17), QPointF(163, 27))
+        p.drawLine(QPointF(163, 17), QPointF(153, 27))
+
+
 class Pet(QWidget):
     settings_requested = Signal()
 
@@ -238,20 +261,35 @@ class Pet(QWidget):
         self.py = float(max(area.top(), area.bottom() - self.height() + 1))
         self.move(round(self.px), round(self.py))
 
-    def bite(self, point: QPointF, callback, label=""):
+    def tab_target_point(self):
+        screen = QApplication.screenAt(self.geometry().center()) or QApplication.primaryScreen()
+        area = screen.availableGeometry()
+        return QPointF(area.center().x(), max(area.top() + 100, area.bottom() - 200))
+
+    def bite(self, point: QPointF, callback, label="", tab=False):
         if self.action:
             return False
         self.action = {"start": time.monotonic(), "from": QPointF(self.px, self.py),
-                       "to": point - QPointF(77, 82), "point": point, "callback": callback, "hit": False, "label": label}
+                       "to": point - QPointF(77, 82), "point": point, "callback": callback, "hit": False, "label": label,
+                       "marker": TabTarget(point, label) if tab and self.isVisible() else None}
         # Even when the pet is hidden, preserve the timing for browser close acknowledgements.
         return True
 
     def cancel_bite(self):
+        self.clear_marker()
         self.action = None
         self.home()
 
+    def clear_marker(self):
+        marker = self.action.get("marker") if self.action else None
+        if marker:
+            marker.close()
+            marker.deleteLater()
+            self.action["marker"] = None
+
     def dispose(self):
         self.timer.stop()
+        self.clear_marker()
         self.action = None
         app = QApplication.instance()
         app.screenAdded.disconnect(self.screen_changed)
@@ -295,6 +333,7 @@ class Pet(QWidget):
                 pos.setY(pos.y() - math.sin(t * math.pi) * 80)
             else:
                 pos = action["from"]
+                self.clear_marker()
                 self.action = None
             self.px, self.py = pos.x(), pos.y()
         elif self.isVisible():

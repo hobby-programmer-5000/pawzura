@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+import time
 from urllib.error import HTTPError
 from urllib.request import build_opener, ProxyHandler, Request
 from pawzura.bridge import Bridge
@@ -69,6 +71,29 @@ class BridgeTests(unittest.TestCase):
         event = self.bridge.events.get_nowait()
         self.bridge.complete(event["ticket"])
         self.assertFalse(self.send()["decisions"][0]["close"])
+
+    def test_preview_does_not_repeat_when_ticket_expires(self):
+        self.enable(preview=True)
+        self.send()
+        event = self.bridge.events.get_nowait()
+        self.bridge.complete(event["ticket"])
+        with patch("pawzura.bridge.time.monotonic", return_value=time.monotonic()+60):
+            self.assertFalse(self.send()["decisions"][0]["close"])
+        self.assertTrue(self.bridge.events.empty())
+        self.assertNotIn(event["ticket"], self.bridge.tickets)
+
+    def test_preview_rearms_after_allowed_navigation_or_settings_apply(self):
+        self.enable(preview=True)
+        self.settings.data["browsers"]["chrome"]["allowed_sites"] = ["example.com/*"]
+        self.send()
+        self.bridge.events.get_nowait()
+        self.send(url="https://example.com/allowed")
+        self.assertTrue(self.bridge.events.empty())
+        self.send()
+        self.assertFalse(self.bridge.events.empty())
+        self.bridge.invalidate_tickets()
+        self.send()
+        self.assertFalse(self.bridge.events.empty())
 
     def test_pause_cancels_ready_close(self):
         self.enable()

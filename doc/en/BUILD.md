@@ -36,6 +36,8 @@ When updating Qt, update `scripts/fetch_licenses.py` and collect the matching up
 
 ## Checks
 
+To preserve an existing output folder while building another version, use `python scripts/build.py --dist-dir dist/0.1.4`. The EXE folder and ZIP are written inside that directory; the default remains `dist`.
+
 ```powershell
 .\.venv-standard\Scripts\python.exe -m unittest discover -s tests -v
 .\.venv-standard\Scripts\python.exe -m pawzura --smoke-check --capture artifacts/settings.png

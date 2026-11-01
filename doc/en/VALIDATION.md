@@ -4,6 +4,12 @@
 
 Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
 
+## 0.1.4 browser tab indication
+
+**61 Python tests and 18 extension tests passed locally.** Active/background browser events use only a synthetic taskbar-side tab marker in preview and live modes; routing tests assert no foreground-window lookup, native close coordinates or native close call. Preview tests advance time beyond ticket expiry and verify no repeat/close, then verify rearming after allowed navigation/settings apply. A rendering test checks marker bounds and removal on cancellation. Existing allowed-tab, stale-navigation, preview and last-tab window-preservation checks remain passing.
+
+English/Korean marker renders were reviewed. A native Windows probe finished one preview on the lower-screen marker without invoking foreground-window lookup/native closing. The isolated real Chromium probe passed blocked-tab removal, allowed/options-tab protection and last-tab window preservation. The 0.1.4 EXE smoke check passed, its nine embedded app modules matched final source, and checksums confirmed that 419 prior 0.1.3 output files were unchanged. The build used a separate `dist/0.1.4` output folder and disposable settings.
+
 ## Rebuilt 0.1.3 profiles, wildcard rules and recovery
 
 **57 Python tests and 18 extension tests passed locally.** New checks cover trailing `/*`, exact host and path boundaries, legacy-list migration, independent profile drafts and persistence, rename/delete, invalid-edit switch rejection, reset without list loss, malformed appearances, whole-character placement, display-change cancellation, actual recovery-window recreation without firing the abandoned close callback, and packaging rejection of profile exports.
@@ -51,7 +57,7 @@ The Windows automation helper's screenshot capture timed out in baseline testing
 
 - Windows 11 physical devices, Windows 10 1809 minimum version, ARM64 and Remote Desktop need separate validation.
 - Chrome/Edge/Firefox user-profile and packaged-GUI flows, store distribution and permanent signed Firefox packages need separate checks beyond the isolated Chromium probe above.
-- Browser APIs do not provide exact tab X positions. Animation uses a TAB marker below the title bar or a desktop fallback; it never targets the browser window X.
+- Browser APIs do not provide exact tab X positions. Tab animation uses a separate marker near the taskbar, not the browser's real tab X.
 - Custom title bars, elevated apps that reject close requests, full-screen/virtual-desktop behavior and all monitor arrangements need further testing.
 - Navigation occurs before tab closing. The app fails open if stopped/disconnected and is a focus aid, not a tamper-resistant security tool.
 

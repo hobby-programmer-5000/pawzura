@@ -51,6 +51,20 @@ class MotionTests(unittest.TestCase):
         self.pet.home()
         self.assertTrue(area.contains(self.pet.geometry()))
 
+    def test_tab_marker_stays_near_taskbar_and_disappears_on_cancel(self):
+        self.pet.show()
+        point = self.pet.tab_target_point()
+        screen = self.app.screenAt(point.toPoint())
+        area = screen.availableGeometry()
+        self.assertGreater(point.y(), area.center().y())
+        self.assertAlmostEqual(point.x(), area.center().x())
+        self.pet.bite(point, lambda: self.fail("Cancelled tab bite executed"), label="Tab preview", tab=True)
+        marker = self.pet.action["marker"]
+        self.assertTrue(area.contains(marker.geometry()))
+        self.assertTrue(marker.isVisible())
+        self.pet.cancel_bite()
+        self.assertFalse(marker.isVisible())
+
     def test_display_change_cancels_pending_close_and_recovers_position(self):
         hits = []
         self.pet.bite(QPointF(-9000, -9000), lambda: hits.append("closed"))

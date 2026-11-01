@@ -1,5 +1,6 @@
 """Build a replaceable-DLL portable folder, its notices and a distributable ZIP."""
 import hashlib
+import argparse
 import importlib.metadata as metadata
 import json
 import os
@@ -11,7 +12,8 @@ import sys
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def main():
+def main(dist_dir: Path | None = None):
+    dist_dir = (dist_dir or ROOT / "dist").resolve()
     if sys.platform != "win32":
         raise SystemExit("Build Windows executables on Windows")
     if not (ROOT / "licenses/SOURCES.json").exists():
@@ -32,14 +34,14 @@ def main():
         raise RuntimeError("Cannot save application icon")
     command = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onedir", "--windowed",
                "--name", "Pawzura", "--icon", str(icon), "--manifest", str(ROOT / "scripts/windows.manifest"),
-               "--specpath", str(ROOT / "build"), "--distpath", str(ROOT / "dist"),
+               "--specpath", str(ROOT / "build"), "--distpath", str(dist_dir),
                "--workpath", str(ROOT / "build/pyinstaller"), str(ROOT / "run.py")]
     import PySide6
     environment = os.environ.copy()
     environment["PATH"] = os.pathsep.join([sys.base_prefix, str(Path(PySide6.__file__).parent),
                                           str(Path(os.environ["WINDIR"]) / "System32"), os.environ["WINDIR"]])
     subprocess.run(command, cwd=ROOT, env=environment, check=True)
-    output = ROOT / "dist/Pawzura"
+    output = dist_dir / "Pawzura"
     # Python, Shiboken and Qt wheels can carry different MSVC versions. Windows loads
     # a DLL basename once, so an older copy can break a newer Qt despite correct paths.
     # Unify unmodified redistributable files to the newest shipped version everywhere.
@@ -92,11 +94,13 @@ def main():
     from pawzura import __version__
     from check_distribution import check_distribution
     check_distribution(output)
-    archive = shutil.make_archive(str(ROOT / f"dist/Pawzura-{__version__}-windows-x64"), "zip", output.parent, output.name)
+    archive = shutil.make_archive(str(dist_dir / f"Pawzura-{__version__}-windows-x64"), "zip", output.parent, output.name)
     print(f"Built: {output / 'Pawzura.exe'}\nArchive: {archive}")
 
 
 if __name__ == "__main__":
     # Running a script by path adds scripts/, not the repository root.
     sys.path.insert(0, str(ROOT))
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dist-dir", type=Path, help="Separate output directory for preserving earlier builds")
+    main(parser.parse_args().dist_dir)
