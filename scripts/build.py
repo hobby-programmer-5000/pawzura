@@ -58,9 +58,9 @@ def main():
         content = newest.read_bytes()
         for destination in {output / "_internal" / name, *(p for _, p in candidates)}:
             destination.write_bytes(content)
-    for name in ("README.md", "LICENSE", "THIRD-PARTY-NOTICES.md", "CONTRIBUTORS.md"):
+    for name in ("README.md", "README.ko.md", "LICENSE", "LICENSE.ko.md", "THIRD-PARTY-NOTICES.md", "THIRD-PARTY-NOTICES.ko.md", "CONTRIBUTORS.md", "CONTRIBUTORS.ko.md"):
         shutil.copy2(ROOT / name, output / name)
-    for name in ("docs", "extensions", "licenses"):
+    for name in ("doc", "extensions", "licenses"):
         shutil.copytree(ROOT / name, output / name, dirs_exist_ok=True)
     bundled = output / "licenses/installed"
     bundled.mkdir(parents=True, exist_ok=True)
@@ -85,7 +85,8 @@ def main():
     binaries = {str(p.relative_to(output)).replace("\\", "/"): hashlib.sha256(p.read_bytes()).hexdigest()
                 for p in output.rglob("*") if p.suffix.lower() in (".exe", ".dll", ".pyd")}
     (output / "BINARY-MANIFEST.json").write_text(json.dumps(binaries, indent=2) + "\n", encoding="utf-8")
-    archive = shutil.make_archive(str(ROOT / "dist/Pawzura-0.1.0-windows-x64"), "zip", output.parent, output.name)
+    from pawzura import __version__
+    archive = shutil.make_archive(str(ROOT / f"dist/Pawzura-{__version__}-windows-x64"), "zip", output.parent, output.name)
     print(f"Built: {output / 'Pawzura.exe'}\nArchive: {archive}")
 
 

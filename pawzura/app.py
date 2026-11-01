@@ -72,7 +72,7 @@ class Companion:
 
     def request_quit(self):
         if self.dialog and self.dialog.worker and self.dialog.worker.isRunning():
-            self.dialog.message.setText("캐릭터 생성이 끝난 뒤 종료하세요. / Wait for character generation to finish.")
+            self.dialog.message.setText(self.dialog.t["quit_wait"])
             self.dialog.show()
             return
         self.app.quit()
@@ -107,13 +107,14 @@ class Companion:
         if not self.dialog:
             self.dialog = SettingsDialog(self.settings)
             self.dialog.applied.connect(self.apply)
+            self.dialog.language_changed.connect(lambda: QTimer.singleShot(0, self.show_settings))
             self.dialog.demo_requested.connect(self.demo)
         # Synchronize quick tray toggles without overwriting unsaved allowlist edits.
         config = self.settings.snapshot()
         self.dialog.guard.setChecked(config["guard_enabled"])
         self.dialog.visible.setChecked(config["pet_visible"])
         if self.bridge_error:
-            self.dialog.message.setText("Browser bridge unavailable: " + self.bridge_error)
+            self.dialog.message.setText(self.dialog.t["bridge_error"] + self.bridge_error)
         self.dialog.show()
         self.dialog.raise_()
         self.dialog.activateWindow()

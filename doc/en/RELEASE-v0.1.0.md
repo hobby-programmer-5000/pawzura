@@ -1,3 +1,5 @@
+[English](../en/RELEASE-v0.1.0.md) | [한국어](../ko/RELEASE-v0.1.0.md) · [Documentation](../README.md)
+
 # Pawzura 0.1.0 preview
 
 Windows SD desktop companion with original vector characters, taskbar-area walking, multi-display traversal, jump/bite/fading-crack animation and an opt-in focus guardian.
@@ -8,7 +10,7 @@ The guardian starts **OFF**, with preview mode **ON**. Review allowed executable
 
 Optional Hugging Face character designer: Qwen2.5-0.5B-Instruct-GGUF Q4_K_M via a separately installed Ollama. Original procedural rendering and animation also work without the model.
 
-Validation: 20 Python checks, 6 extension checks, controlled native-window close probe, actual local Qwen generation, source and frozen EXE rendering/normal-exit smoke checks on Windows 10 / CPython 3.14.7. See docs/VALIDATION.md for precise scope.
+Validation: 20 Python checks, 6 extension checks, controlled native-window close probe, actual local Qwen generation, source and frozen EXE rendering/normal-exit smoke checks on Windows 10 / CPython 3.14.7. See [validation](VALIDATION.md) for precise scope.
 
 Preview limitations: Windows 11 and actual browser-extension E2E still need separate device/browser validation. The extension closes tabs after navigation, rather than blocking network requests. Exact tab X coordinates are not exposed by browser APIs, so the visual bite uses the browser window's close area or a desktop fallback. Firefox permanent installation needs Mozilla signing. This is a focus aid with fail-open behavior, not a security boundary.
 

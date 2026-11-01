@@ -1,6 +1,14 @@
+[English](../en/VALIDATION.md) | [한국어](../ko/VALIDATION.md) · [문서 목록](../README.ko.md)
+
 # 검증 기록
 
 검증일: 2026-11-02 (Asia/Seoul). 지원 목표와 실제 확인한 환경을 구분합니다.
+
+## 0.1.1 변경 검증 범위
+
+로컬에서 **Python 23개**, **확장·연결 폼 14개**, **자체 Markdown 31개·주제별 언어쌍 11개와 상대 링크** 검사가 통과했습니다. 영어 기본값·한국어 저장·즉시 갱신 신호·코드만 복사·입력 검증·예시 거절·이전 JSON 가져오기·연결 상태·파일 미리보기를 확인했습니다. 명령은 [빌드 안내](BUILD.md)에 있습니다. 아래 결과는 0.1.0 기준선입니다.
+
+별도 headless Chrome 프로필에서 실제 파일 미리보기 화면을 캡처해 배치를 검토했습니다. 0.1.1 포터블 EXE 빌드와 offscreen smoke-check의 정상 종료 코드 0을 확인했습니다. 사용자 프로필에 실제 확장을 설치하거나 사이트를 닫는 전체 동작 검증을 뜻하지는 않습니다.
 
 ## 실제 확인한 환경
 
@@ -17,12 +25,12 @@
 | Node 확장 테스트 | 6개 통과: 명시적 닫기 결정, 탐색 후 오래된 결정 무효화, 미리보기, 감시 정지, 허용 탭 보호, 앱 종료 시 fail-open |
 | Qt 화면 렌더링 | 5개 설정 탭, 캐릭터 렌더링. 한국어/영문 글꼴과 캐릭터 화면 PNG를 생성·검토 |
 | 실제 Win32 테스트 창 | 별도 프로세스로 만든 임시 창만 대상. EnumWindows, PID 확인, DPI 좌표 변환, WM_CLOSE 정상 종료, 종료된 핸들 거절 통과 |
-| 실제 sLLM 생성 | 모델 다운로드 후 스키마 기반 JSON 생성 통과. `artifacts/qwen-character.json`은 실제 생성 결과 |
+| 실제 sLLM 생성 | 모델 다운로드 후 스키마 기반 JSON 생성 통과. [실제 생성 결과](../../artifacts/qwen-character.json)은 실제 생성 결과 |
 | Windows 포터블 빌드 | PyInstaller onedir EXE 및 ZIP 생성, 라이선스 원문·의존성 버전·바이너리 해시 동봉 |
 | 최종 EXE smoke-check | 포터블 `Pawzura.exe --smoke-check --capture ...`에서 5개 탭 렌더링 후 정상 종료 코드 **0** 확인 |
 | GitHub Actions 호환성 | Python **3.12·3.14·3.15**에서 unittest, Qt smoke-check, Node 확장 검사, Firefox 공유 파일 동기화 검사 모두 통과. [검사 실행](https://github.com/hobby-programmer-5000/pawzura/actions/runs/41338706235) |
 
-실행 명령은 README의 검증 항목을 참고하세요. 실제 데스크톱 닫기 검사는 `python tests/native_probe.py`로 별도 실행합니다. 이 검사는 테스트 자체가 만든 창만 닫습니다. 일반 unittest/화면 smoke-check는 사용자의 프로그램을 닫거나 자동 실행 레지스트리를 변경하지 않습니다.
+실행 명령은 [빌드 안내](BUILD.md)의 검증 항목을 참고하세요. 실제 데스크톱 닫기 검사는 `python tests/native_probe.py`로 별도 실행합니다. 이 검사는 테스트 자체가 만든 창만 닫습니다. 일반 unittest/화면 smoke-check는 사용자의 프로그램을 닫거나 자동 실행 레지스트리를 변경하지 않습니다.
 
 ## 발견하여 보정한 환경 문제
 

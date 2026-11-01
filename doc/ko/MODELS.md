@@ -1,3 +1,5 @@
+[English](../en/MODELS.md) | [한국어](../ko/MODELS.md) · [문서 목록](../README.ko.md)
+
 # 모델과 캐릭터 생성
 
 ## 사용하는 모델
@@ -17,6 +19,16 @@
 GGUF 사용 안내: https://huggingface.co/docs/hub/en/ollama
 
 Ollama API: https://docs.ollama.com/api/generate
+
+## 선택 기능 사용하기
+
+Ollama를 설치·실행한 뒤 한 번 내려받으세요.
+
+```powershell
+ollama pull hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M
+```
+
+**캐릭터 → Qwen으로 생성 → 설정 저장**을 누르세요. 약 491 MB이며, 모델 없이 사용하려면 **임의 캐릭터**를 선택하세요.
 
 ## 처리 흐름
 

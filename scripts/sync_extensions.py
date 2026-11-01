@@ -6,7 +6,7 @@ root = Path(__file__).resolve().parent.parent / "extensions"
 source = root / "chromium"
 target = root / "firefox"
 target.mkdir(exist_ok=True)
-for name in ("background.js", "options.html", "options.js", "options.css"):
+for name in ("background.js", "options.html", "options.js", "options-i18n.js", "options.css"):
     shutil.copy2(source / name, target / name)
 manifest = json.loads((source / "manifest.json").read_text(encoding="utf-8"))
 manifest["background"] = {"scripts": ["background.js"]}

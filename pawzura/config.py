@@ -28,7 +28,7 @@ def data_dir() -> Path:
 
 def defaults() -> dict:
     return {
-        "version": 1, "language": "ko", "start_at_login": False,
+        "version": 1, "language": "en", "start_at_login": False,
         "guard_enabled": False, "preview_only": True, "pet_visible": True,
         "allowed_apps": DEFAULT_APPS.copy(), "startup_apps": [],
         "browsers": {name: {"enabled": False, "allowed_sites": []} for name in BROWSERS},

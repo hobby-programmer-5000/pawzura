@@ -27,6 +27,7 @@ class SettingsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             data = Settings(Path(directory) / "settings.json").snapshot()
             self.assertFalse(data["guard_enabled"])
+            self.assertEqual(data["language"], "en")
             self.assertTrue(data["preview_only"])
             self.assertTrue(all(not b["enabled"] and not b["allowed_sites"] for b in data["browsers"].values()))
 

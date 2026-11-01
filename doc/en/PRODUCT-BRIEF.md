@@ -1,3 +1,5 @@
+[English](../en/PRODUCT-BRIEF.md) | [한국어](../ko/PRODUCT-BRIEF.md) · [Documentation](../README.md)
+
 # Product brief — hobby-programmer-5000
 
 Original product direction supplied by hobby-programmer-5000 on 2026-11-02 (Asia/Seoul).
@@ -13,4 +15,4 @@ Original product direction supplied by hobby-programmer-5000 on 2026-11-02 (Asia
 - Attribute product ownership to hobby-programmer-5000 and AI implementation assistance to ChatGPT via Codex, including Git history where GitHub supports it.
 - License original app code under MIT; preserve individual language, library and model licenses in THIRD-PARTY-NOTICES.md.
 
-Implementation decisions and limitations are documented in README, docs/MODELS.md and docs/BROWSERS.md. These requirements originate with the user; implementation and explanatory documents are AI-assisted.
+Implementation decisions and limitations are documented in README, [models](MODELS.md) and [browser guide](BROWSERS.md). These requirements originate with the user; implementation and explanatory documents are AI-assisted.

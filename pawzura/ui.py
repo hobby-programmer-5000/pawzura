@@ -29,14 +29,18 @@ TEXT = {
         "apps_help": "허용할 실행 파일 이름을 한 줄에 하나씩 입력하세요. 경로를 붙여넣으면 파일명만 사용합니다.\nWindows 시스템 창과 이 앱은 항상 보호합니다. 같은 이름의 실행 파일은 모두 허용됩니다.",
         "browse": "실행 파일 추가…", "running": "열려 있는 프로그램 추가…", "startup_scan": "시작프로그램 다시 탐색",
         "browser_help": "브라우저마다 확장을 설치하고 연결해야 합니다. 기본 허용은 새 탭/기본 홈 화면뿐입니다.\n사용자 지정 시작 URL은 아래에 직접 추가하세요. 주소는 전체 사이트 단위로 허용합니다.",
-        "browser_on": "이 브라우저의 사이트 허용 목록 적용", "pair": "확장 연결 정보 복사", "extension": "확장 폴더 열기",
+        "browser_on": "이 브라우저의 사이트 허용 목록 적용", "pair": "연결 코드 복사", "extension": "확장 폴더 열기",
+        "connection_code": "연결 코드", "port": "포트", "startup_list": "시작프로그램",
         "rules": "허용 사이트 · 한 줄에 하나 (https://example.com 또는 *.example.com)",
         "random": "임의 캐릭터", "generate": "Qwen으로 생성", "restore": "이전 캐릭터로 변경",
         "model_help": "Qwen이 외형 설계값을 만들고 앱이 직접 그립니다. 애니메이션 모델은 필요 없습니다.\n최초 1회 Ollama에서 아래 명령으로 Hugging Face 모델을 내려받으세요.",
         "generating": "로컬 모델로 생성 중…", "generated": "새 캐릭터를 만들었습니다. 설정 저장을 눌러 적용하세요.",
         "credit": "기획·요구사항·관리: hobby-programmer-5000\n구현·문서·검증 지원: ChatGPT (Codex, OpenAI)\n\n앱 코드: MIT · Qt/Python/모델: 각각의 라이선스 적용",
         "status": "감시가 꺼져 있습니다. 캐릭터와 설정만 동작합니다.",
-        "demo": "깨물기 애니메이션 미리보기", "pair_help": "확장 옵션 화면에 붙여넣을 연결 정보를 복사했습니다. 토큰은 공유하지 마세요.",
+        "demo": "깨물기 애니메이션 미리보기", "pair_help": "코드를 복사했습니다. 확장 설정에서 같은 브라우저와 포트를 선택하고 ‘연결 코드’에 붙여넣은 뒤 ‘연결하고 확인’을 누르세요.",
+        "connection_help": "확장 설정에 아래 코드를 붙여넣고 같은 브라우저와 포트를 선택하세요. JSON을 편집할 필요가 없습니다.",
+        "quit_wait": "캐릭터 생성이 끝난 뒤 종료하세요.", "bridge_error": "브라우저 연결을 시작할 수 없습니다: ",
+        "bad_exe": "실행 파일 이름은 .exe로 끝나야 합니다.", "exe_filter": "Windows 실행 파일 (*.exe)",
     },
     "en": {
         "subtitle": "A little companion for a more focused desktop",
@@ -48,14 +52,18 @@ TEXT = {
         "apps_help": "Enter one executable filename per line. Pasted paths are reduced to filenames.\nWindows system windows and this app are always protected. All files with the same name are allowed.",
         "browse": "Add executable…", "running": "Add open application…", "startup_scan": "Rescan startup apps",
         "browser_help": "Install and pair the extension in each browser. Only built-in new-tab/home pages are allowed initially.\nAdd custom startup URLs below. Each rule allows an entire website origin.",
-        "browser_on": "Apply website allowlist to this browser", "pair": "Copy extension pairing", "extension": "Open extension folder",
+        "browser_on": "Apply website allowlist to this browser", "pair": "Copy connection code", "extension": "Open extension folder",
+        "connection_code": "Connection code", "port": "Port", "startup_list": "Startup applications",
         "rules": "Allowed sites · one per line (https://example.com or *.example.com)",
         "random": "Random character", "generate": "Generate with Qwen", "restore": "Use previous character",
         "model_help": "Qwen designs appearance parameters; the app draws and animates them. No motion model is required.\nFirst download the Hugging Face model once using this Ollama command.",
         "generating": "Generating with local model…", "generated": "Character created. Save settings to apply it.",
         "credit": "Product direction, requirements, maintenance: hobby-programmer-5000\nImplementation, documentation, validation assistance: ChatGPT (Codex, OpenAI)\n\nApp code: MIT · Qt, Python and model retain their own licenses",
         "status": "Guardian is off. Only the companion and settings are active.",
-        "demo": "Preview bite animation", "pair_help": "Pairing information copied. Paste into extension options. Keep the token private.",
+        "demo": "Preview bite animation", "pair_help": "Code copied. In extension settings, choose this browser and port, paste into Connection code, then click Connect and test.",
+        "connection_help": "Paste this code into the installed extension's settings. Choose the same browser and port. No JSON editing is needed.",
+        "quit_wait": "Wait for character generation to finish before quitting.", "bridge_error": "Browser connection unavailable: ",
+        "bad_exe": "Executable names must end with .exe.", "exe_filter": "Windows application (*.exe)",
     },
 }
 
@@ -97,13 +105,14 @@ class GenerationWorker(QThread):
 
 class SettingsDialog(QDialog):
     applied = Signal()
+    language_changed = Signal()
     demo_requested = Signal()
 
     def __init__(self, settings, parent=None):
         super().__init__(parent)
         self.settings = settings
         self.config = settings.snapshot()
-        self.t = TEXT.get(self.config["language"], TEXT["ko"])
+        self.t = TEXT.get(self.config["language"], TEXT["en"])
         self.worker = None
         self.setWindowTitle("Pawzura")
         self.resize(920, 720)
@@ -112,7 +121,7 @@ class SettingsDialog(QDialog):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(28, 22, 28, 22)
         outer.setSpacing(13)
-        brand = QLabel("Pawzura  /  파우주라")
+        brand = QLabel("Pawzura / 파우주라" if self.config["language"] == "ko" else "Pawzura")
         brand.setObjectName("brand")
         outer.addWidget(brand)
         subtitle = QLabel(self.t["subtitle"])
@@ -166,9 +175,9 @@ class SettingsDialog(QDialog):
             layout.addWidget(widget)
         form = QFormLayout()
         self.language = QComboBox()
-        self.language.addItem("한국어", "ko")
         self.language.addItem("English", "en")
-        self.language.setCurrentIndex(0 if self.config["language"] == "ko" else 1)
+        self.language.addItem("한국어", "ko")
+        self.language.setCurrentIndex(self.language.findData(self.config["language"]))
         form.addRow(self.t["language"], self.language)
         layout.addLayout(form)
         demo = QPushButton(self.t["demo"])
@@ -191,12 +200,12 @@ class SettingsDialog(QDialog):
         for button in (browse, running, scan):
             buttons.addWidget(button)
         layout.addLayout(buttons)
-        self.startup_label = self.label("Startup: " + ", ".join(self.config["startup_apps"]))
+        self.startup_label = self.label(self.t["startup_list"] + ": " + ", ".join(self.config["startup_apps"]))
         self.startup_label.setMaximumHeight(65)
         layout.addWidget(self.startup_label)
 
     def browse_app(self):
-        filename, _ = QFileDialog.getOpenFileName(self, self.t["browse"], "", "Windows application (*.exe)")
+        filename, _ = QFileDialog.getOpenFileName(self, self.t["browse"], "", self.t["exe_filter"])
         if filename:
             self.apps.appendPlainText(normalize_app(filename))
 
@@ -208,7 +217,7 @@ class SettingsDialog(QDialog):
 
     def rescan_startup(self):
         self.config["startup_apps"] = windows.startup_apps()
-        self.startup_label.setText("Startup: " + ", ".join(self.config["startup_apps"]))
+        self.startup_label.setText(self.t["startup_list"] + ": " + ", ".join(self.config["startup_apps"]))
 
     def build_browsers(self):
         layout = self.page("web")
@@ -233,6 +242,14 @@ class SettingsDialog(QDialog):
         buttons.addWidget(pair)
         buttons.addWidget(extension)
         layout.addLayout(buttons)
+        layout.addWidget(self.label(self.t["connection_help"]))
+        connection = QFormLayout()
+        self.connection_code = QLineEdit(self.config["bridge_token"])
+        self.connection_code.setReadOnly(True)
+        self.connection_code.setEchoMode(QLineEdit.EchoMode.Password)
+        connection.addRow(self.t["connection_code"], self.connection_code)
+        connection.addRow(self.t["port"], QLabel(str(self.config["bridge_port"])))
+        layout.addLayout(connection)
 
     def store_browser(self):
         rules = [site_rule(line) for line in self.sites.toPlainText().splitlines() if line.strip()]
@@ -257,8 +274,7 @@ class SettingsDialog(QDialog):
 
     def copy_pairing(self):
         config = self.settings.snapshot()
-        data = {"token": config["bridge_token"], "port": config["bridge_port"], "browser": self.current_browser}
-        QApplication.clipboard().setText(json.dumps(data))
+        QApplication.clipboard().setText(config["bridge_token"])
         self.message.setText(self.t["pair_help"])
 
     def open_extension(self):
@@ -312,17 +328,20 @@ class SettingsDialog(QDialog):
         if self.worker and self.worker.isRunning():
             return
         self.generate_button.setEnabled(False)
+        self.language.setEnabled(False)
         self.message.setText(self.t["generating"])
         self.worker = GenerationWorker(self)
         self.worker.succeeded.connect(self.apply_character)
         self.worker.failed.connect(lambda error: self.message.setText("Ollama: " + error))
         self.worker.finished.connect(lambda: self.generate_button.setEnabled(True))
+        self.worker.finished.connect(lambda: self.language.setEnabled(True))
         self.worker.start()
 
     def build_about(self):
         layout = self.page("about")
         layout.addWidget(self.label(self.t["credit"]))
-        layout.addWidget(self.label("Qwen2.5-0.5B-Instruct-GGUF · Apache-2.0\nhttps://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF\n\nREADME.md · docs/MODELS.md · THIRD-PARTY-NOTICES.md · CONTRIBUTORS.md"))
+        language = "ko" if self.config["language"] == "ko" else "en"
+        layout.addWidget(self.label(f"Qwen2.5-0.5B-Instruct-GGUF · Apache-2.0\nhttps://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF\n\nREADME.md · doc/{language}/MODELS.md\nTHIRD-PARTY-NOTICES.md · CONTRIBUTORS.md"))
         layout.addWidget(self.label("https://github.com/hobby-programmer-5000/pawzura"))
         layout.addStretch()
 
@@ -331,7 +350,7 @@ class SettingsDialog(QDialog):
             self.store_browser()
             apps = sorted({normalize_app(line) for line in self.apps.toPlainText().splitlines() if line.strip()})
             if any(not app.endswith(".exe") for app in apps):
-                raise ValueError("Executable names must end with .exe")
+                raise ValueError(self.t["bad_exe"])
             updates = {"guard_enabled": self.guard.isChecked(), "preview_only": self.preview.isChecked(),
                        "pet_visible": self.visible.isChecked(), "start_at_login": self.startup.isChecked(),
                        "language": self.language.currentData(), "allowed_apps": apps,
@@ -347,6 +366,8 @@ class SettingsDialog(QDialog):
                 raise
             self.applied.emit()
             self.message.setText(self.t["saved"])
+            if updates["language"] != self.config["language"]:
+                self.language_changed.emit()
         except (OSError, ValueError) as error:
             QMessageBox.warning(self, "Pawzura", str(error))
 

@@ -16,4 +16,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Pawzura-windows-x64
-          path: dist/Pawzura-0.1.0-windows-x64.zip
+          path: dist/Pawzura-*-windows-x64.zip
