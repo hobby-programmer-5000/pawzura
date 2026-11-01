@@ -20,6 +20,7 @@
 | 실제 sLLM 생성 | 모델 다운로드 후 스키마 기반 JSON 생성 통과. `artifacts/qwen-character.json`은 실제 생성 결과 |
 | Windows 포터블 빌드 | PyInstaller onedir EXE 및 ZIP 생성, 라이선스 원문·의존성 버전·바이너리 해시 동봉 |
 | 최종 EXE smoke-check | 포터블 `Pawzura.exe --smoke-check --capture ...`에서 5개 탭 렌더링 후 정상 종료 코드 **0** 확인 |
+| GitHub Actions 호환성 | Python **3.12·3.14·3.15**에서 unittest, Qt smoke-check, Node 확장 검사, Firefox 공유 파일 동기화 검사 모두 통과. [검사 실행](https://github.com/hobby-programmer-5000/pawzura/actions/runs/41338706235) |
 
 실행 명령은 README의 검증 항목을 참고하세요. 실제 데스크톱 닫기 검사는 `python tests/native_probe.py`로 별도 실행합니다. 이 검사는 테스트 자체가 만든 창만 닫습니다. 일반 unittest/화면 smoke-check는 사용자의 프로그램을 닫거나 자동 실행 레지스트리를 변경하지 않습니다.
 
@@ -35,7 +36,7 @@
 ## 별도 검증이 필요한 범위
 
 - Windows 11 실기기, Windows 10 1809 최소 버전, ARM64, 원격 데스크톱 세션.
-- Python 3.12/3.15는 CI matrix를 제공하지만 로컬에서는 3.14.7로 검사했습니다. CI 결과를 확인하기 전 다른 버전에서 테스트 통과했다고 간주하지 않습니다.
+- 로컬에서는 Python 3.14.7, GitHub의 Windows runner에서는 Python 3.12/3.14/3.15를 검사했습니다. 이는 Windows 11 실기기·모든 CPython 패치 버전의 확인을 대신하지 않습니다.
 - 실제 Chrome/Edge/Firefox 각 버전에 확장을 설치한 탐색·탭 닫기 E2E. 현재 자동 검사는 실제 HTTP 브리지와 확장 API mock을 각각 검증합니다. 사용자의 브라우저 설정이나 설치된 확장은 변경하지 않았습니다.
 - Firefox 영구 설치를 위한 Mozilla 서명과 각 스토어 배포.
 - 커스텀 창 프레임의 정확한 X 위치, 브라우저 실제 탭 X 위치, 관리자 권한 창의 닫기 거절, 전체 화면 앱과 가상 데스크톱.
