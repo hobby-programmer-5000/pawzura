@@ -109,6 +109,10 @@ def foreground_window() -> Window | None:
 
 
 def close_window(target: Window) -> bool:
+    from .policy import is_browser
+    # Final boundary guard, including callers that bypass the normal candidate filter.
+    if is_browser(target.executable):
+        return False
     current = inspect_window(target.hwnd)
     if not current or (current.pid, current.executable, current.title) != (target.pid, target.executable, target.title):
         return False

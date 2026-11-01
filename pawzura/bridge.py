@@ -5,6 +5,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import hmac
 import json
 from queue import Queue
+import re
 import secrets
 import threading
 import time
@@ -19,7 +20,56 @@ class Bridge:
         self.lock = threading.Lock()
         self.tickets = {}
         self.peers = {}
+        self.pairing_events = Queue(maxsize=4)
+        self.pairings = {}
         self.server = None
+
+    def _expire_pairings(self):
+        now = time.monotonic()
+        self.pairings = {key: value for key, value in self.pairings.items() if now - value["created"] < 60}
+
+    def pairing_request(self, data, origin):
+        if not re.fullmatch(r"(?:chrome-extension|moz-extension)://[a-zA-Z0-9-]+", origin):
+            raise PermissionError("Extension origin required")
+        browser = data.get("browser")
+        if browser not in self.settings.snapshot()["browsers"]:
+            raise ValueError("Unknown browser")
+        with self.lock:
+            self._expire_pairings()
+            for key, request in self.pairings.items():
+                if request["browser"] == browser and request["origin"] == origin:
+                    return {"request": key, "state": "pending"}
+            if len(self.pairings) >= 4 or self.pairing_events.full():
+                raise ValueError("Too many pairing requests")
+            key = secrets.token_urlsafe(32)
+            self.pairings[key] = {"origin": origin, "browser": browser, "created": time.monotonic(), "state": "pending"}
+            self.pairing_events.put_nowait({"request": key, "browser": browser, "origin": origin})
+            return {"request": key, "state": "pending"}
+
+    def approve_pairing(self, key, allowed):
+        with self.lock:
+            self._expire_pairings()
+            if key in self.pairings:
+                self.pairings[key]["state"] = "approved" if allowed else "denied"
+
+    def pairing_result(self, data, origin):
+        with self.lock:
+            self._expire_pairings()
+            key = data.get("request")
+            if not isinstance(key, str) or key not in self.pairings:
+                return {"state": "expired"}
+            pending = self.pairings[key]
+            if pending["origin"] != origin:
+                raise PermissionError("Origin mismatch")
+            state = pending["state"]
+            result = {"state": state}
+            if state == "approved":
+                config = self.settings.snapshot()
+                result["pairing"] = {"token": config["bridge_token"], "port": self.server.server_port,
+                                     "browser": pending["browser"]}
+            if state != "pending":
+                del self.pairings[key]  # one-time delivery, never an open token-discovery API
+            return result
 
     def complete(self, ticket: str):
         with self.lock:
@@ -95,6 +145,19 @@ class Bridge:
                     if host != f"127.0.0.1:{bridge.server.server_port}":
                         self.send_json(403, {"error": "Invalid host"})
                         return
+                    length = int(self.headers.get("Content-Length", "0"))
+                    if not 0 < length <= 256_000:
+                        self.send_json(413, {"error": "Payload too large"})
+                        return
+                    if self.path in ("/pair/request", "/pair/result"):
+                        origin = self.headers.get("Origin", "")
+                        data = json.loads(self.rfile.read(length))
+                        if not isinstance(data, dict):
+                            raise ValueError("Invalid object")
+                        result = (bridge.pairing_request(data, origin) if self.path == "/pair/request"
+                                  else bridge.pairing_result(data, origin))
+                        self.send_json(200, result)
+                        return
                     token = self.headers.get("X-Pawzura-Token", "")
                     if not hmac.compare_digest(token.encode(), config["bridge_token"].encode()):
                         self.send_json(401, {"error": "Pairing required"})
@@ -102,14 +165,12 @@ class Bridge:
                     if self.path != "/evaluate":
                         self.send_json(404, {"error": "Unknown endpoint"})
                         return
-                    length = int(self.headers.get("Content-Length", "0"))
-                    if not 0 < length <= 256_000:
-                        self.send_json(413, {"error": "Payload too large"})
-                        return
                     data = json.loads(self.rfile.read(length))
                     if not isinstance(data, dict):
                         raise ValueError("Invalid object")
                     self.send_json(200, bridge.evaluate(data))
+                except PermissionError:
+                    self.send_json(403, {"error": "Pairing origin rejected"})
                 except (ValueError, TypeError, KeyError):
                     self.send_json(400, {"error": "Invalid request"})
                 except (ConnectionError, OSError):

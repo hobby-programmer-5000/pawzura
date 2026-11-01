@@ -15,8 +15,8 @@ from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 from .bridge import Bridge
 from .config import Settings, data_dir
 from .pet import Pet, draw_character
-from .policy import allowed_app
-from .ui import SettingsDialog
+from .policy import allowed_app, is_browser
+from .ui import SettingsDialog, TEXT
 from . import windows
 
 
@@ -26,6 +26,7 @@ class Companion:
         self.pet = Pet(settings.snapshot()["character"])
         self.pet.settings_requested.connect(self.show_settings)
         self.dialog = None
+        self.pairing_dialog_open = False
         self.bridge = Bridge(settings)
         self.bridge_error = None
         try:
@@ -129,6 +130,23 @@ class Companion:
         self.pet.bite(point, lambda: None)
 
     def tick(self):
+        if self.pairing_dialog_open:
+            return
+        try:
+            request = self.bridge.pairing_events.get_nowait()
+            language = self.settings.snapshot()["language"]
+            text = TEXT.get(language, TEXT["en"])
+            self.pairing_dialog_open = True
+            try:
+                answer = QMessageBox.question(self.dialog, "Pawzura", text["pair_question"].format(browser=request["browser"], origin=request["origin"]),
+                                              QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                              QMessageBox.StandardButton.No)
+            finally:
+                self.pairing_dialog_open = False
+            self.bridge.approve_pairing(request["request"], answer == QMessageBox.StandardButton.Yes)
+            return
+        except Empty:
+            pass
         if self.pet.action:
             return
         config = self.settings.snapshot()
@@ -137,13 +155,15 @@ class Companion:
             event = self.bridge.events.get_nowait()
             if config["guard_enabled"] and config["browsers"][event["browser"]]["enabled"]:
                 target = windows.foreground_window()
-                # Background tabs cannot be located reliably in browser chrome; use a visible desktop point.
+                # Place a TAB marker below the title bar; never bite the browser's window X.
                 if target and event["active"] and normalize_browser(target.executable) == event["browser"]:
-                    x, y = windows.physical_to_logical(*target.close_point, QApplication.screens())
+                    left, top, right, bottom = target.rect
+                    point = (min(left + 190, right - 45), min(top + 115, bottom - 25))
+                    x, y = windows.physical_to_logical(*point, QApplication.screens())
                 else:
                     area = QApplication.primaryScreen().availableGeometry()
                     x, y = area.right() - 90, area.top() + 75
-                self.pet.bite(QPointF(x, y), lambda: self.bridge.complete(event["ticket"]))
+                self.pet.bite(QPointF(x, y), lambda: self.bridge.complete(event["ticket"]), label="TAB")
             return
         except Empty:
             pass
@@ -155,7 +175,7 @@ class Companion:
         self.observed = {key: value for key, value in self.observed.items() if key in live}
         self.cooldown = {key: value for key, value in self.cooldown.items() if now - value < 30}
         for window in candidates:
-            if allowed_app(window.executable, config):
+            if is_browser(window.executable) or allowed_app(window.executable, config):
                 continue
             key = (window.hwnd, window.pid, window.executable, window.title)
             first = self.observed.setdefault(key, now)
@@ -165,7 +185,7 @@ class Companion:
             x, y = windows.physical_to_logical(*window.close_point, QApplication.screens())
             def complete(target=window):
                 current = self.settings.snapshot()
-                if current["guard_enabled"] and not current["preview_only"] and not allowed_app(target.executable, current):
+                if current["guard_enabled"] and not current["preview_only"] and not is_browser(target.executable) and not allowed_app(target.executable, current):
                     windows.close_window(target)
             self.pet.bite(QPointF(x, y), complete)
             break

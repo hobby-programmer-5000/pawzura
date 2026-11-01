@@ -20,13 +20,13 @@ On **General**, click **Preview bite animation**. This demonstration does not cl
 
 ## 4. Configure allowed applications
 
-Open **Applications**. Add the programs you want to keep open using **Add executable…** or **Add open application…**, then save. Names such as `code.exe` are used, rather than window titles. Standard allowed apps and detected startup apps are already included. System windows and Pawzura itself are protected.
+Open **Applications**. Codex can run as `ChatGPT.exe`; listing `codex.exe` protects both names, including older saved settings. Known browser windows are always protected from native closing. Add the other programs you want to keep open using **Add executable…** or **Add open application…**, then save. Names such as `code.exe` are used, rather than window titles. Standard allowed apps and detected startup apps are already included. System windows and Pawzura itself are protected.
 
 Return to **General**, leave **Preview mode** checked, enable **Enable focus guardian**, and save. Unlisted windows now receive an animation, but stay open. Once the list looks right, uncheck **Preview mode** and save to allow normal close requests. Save prompts are not bypassed.
 
 ## 5. Connect a browser (optional)
 
-The desktop app alone cannot inspect browser addresses. Install the included extension in each browser, then connect it using the three-field form. Follow the [Chrome/Edge walkthrough with examples](BROWSERS.md). Opening `options.html` as a local file only previews the page; it does not install the extension.
+The desktop app alone cannot inspect browser addresses. Install the included extension in each browser, then click Connect automatically and approve the request in the desktop app. Follow the [Chrome/Edge walkthrough with examples](BROWSERS.md). Opening `options.html` as a local file only previews the page; it does not install the extension.
 
 ## Everyday controls
 
@@ -45,7 +45,7 @@ The settings window's close button returns to the tray. **Hide companion** keeps
 
 - **Missing DLLs:** extract the complete ZIP and keep `_internal` beside `Pawzura.exe`.
 - **Nothing closes:** verify that the guardian is enabled and preview is off. For websites, the browser setting and extension connection must also be enabled.
-- **Browser connection fails:** keep the app running, copy its current code and check the port. The extension now explains rejected codes and unreachable apps directly.
+- **Browser connection fails:** keep the app running, click Connect automatically and approve in the app. Check the port if it cannot connect. The extension now explains rejected codes and unreachable apps directly.
 - **A previous version is running:** choose Quit from its tray icon before starting the updated EXE.
 - **Qt fails in Conda:** use the [standard CPython setup](BUILD.md).
 

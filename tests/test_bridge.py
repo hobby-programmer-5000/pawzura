@@ -90,6 +90,44 @@ class BridgeTests(unittest.TestCase):
         self.assertFalse(denied["allowed"])
         self.assertFalse(denied["close"])
 
+    def pair_post(self, path, data, origin="chrome-extension://testextension"):
+        request = Request(self.url.removesuffix("/evaluate") + path, json.dumps(data).encode(),
+                          {"Content-Type":"application/json", "Origin":origin})
+        with build_opener(ProxyHandler({})).open(request, timeout=2) as response:
+            return json.load(response)
+
+    def test_automatic_pairing_requires_desktop_approval_and_is_one_time(self):
+        start = self.pair_post("/pair/request", {"browser":"chrome"})
+        pending = self.pair_post("/pair/result", {"request":start["request"]})
+        self.assertEqual(pending, {"state":"pending"})
+        self.assertNotIn("pairing", pending)
+        event = self.bridge.pairing_events.get_nowait()
+        self.bridge.approve_pairing(event["request"], True)
+        approved = self.pair_post("/pair/result", {"request":start["request"]})
+        self.assertEqual(approved["pairing"]["token"],self.settings.data["bridge_token"])
+        self.assertEqual(self.pair_post("/pair/result", {"request":start["request"]}), {"state":"expired"})
+
+    def test_pairing_denies_web_origins_and_cross_extension_redemption(self):
+        for origin in ("https://evil.test", "null", ""):
+            with self.assertRaises(HTTPError) as rejected:
+                self.pair_post("/pair/request", {"browser":"chrome"},origin)
+            self.assertEqual(rejected.exception.code,403)
+            rejected.exception.close()
+        request = self.pair_post("/pair/request", {"browser":"chrome"})
+        self.bridge.approve_pairing(request["request"],True)
+        with self.assertRaises(HTTPError) as rejected:
+            self.pair_post("/pair/result", {"request":request["request"]}, "chrome-extension://otherextension")
+        self.assertEqual(rejected.exception.code,403)
+        rejected.exception.close()
+
+    def test_pairing_denial_and_expiry_do_not_disclose_token(self):
+        request = self.pair_post("/pair/request", {"browser":"chrome"})
+        self.bridge.approve_pairing(request["request"],False)
+        self.assertEqual(self.pair_post("/pair/result", {"request":request["request"]}), {"state":"denied"})
+        request = self.pair_post("/pair/request", {"browser":"chrome"})
+        self.bridge.pairings[request["request"]]["created"] -= 61
+        self.assertEqual(self.pair_post("/pair/result", {"request":request["request"]}), {"state":"expired"})
+
 
 if __name__ == "__main__":
     unittest.main()

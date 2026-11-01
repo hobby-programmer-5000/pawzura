@@ -18,7 +18,7 @@ The app starts in English. Switch with **General → Language → 한국어 → 
 
 - Walks across connected monitors with an original, changeable character.
 - Jumps, bites and shows a fading crack before requesting an unlisted window to close.
-- Uses a paired browser extension for website allowlists.
+- Protects browser windows; its extension closes blocked tabs and connects with desktop approval, without code entry.
 - Offers optional local Hugging Face Qwen character design through Ollama.
 
 ## Guides

@@ -42,7 +42,9 @@ TEXT = {
         "credit": "기획·요구사항·관리: hobby-programmer-5000\n구현·문서·검증 지원: ChatGPT (Codex, OpenAI)\n\n앱 코드: MIT · Qt/Python/모델: 각각의 라이선스 적용",
         "status": "감시가 꺼져 있습니다. 캐릭터와 설정만 동작합니다.",
         "demo": "깨물기 애니메이션 미리보기", "pair_help": "코드를 복사했습니다. 확장 설정에서 같은 브라우저와 포트를 선택하고 ‘연결 코드’에 붙여넣은 뒤 ‘연결하고 확인’을 누르세요.",
-        "connection_help": "확장 설정에 아래 코드를 붙여넣고 같은 브라우저와 포트를 선택하세요. JSON을 편집할 필요가 없습니다.",
+        "connection_help": "브라우저의 Pawzura 확장 아이콘 → ‘자동 연결’ → 이 앱의 확인창에서 ‘예’를 누르세요. 코드를 입력할 필요가 없습니다.",
+        "manual_connection": "수동 연결 — 고급 설정",
+        "pair_question": "{browser} 확장을 연결할까요?\n\n확장에서 ‘자동 연결’을 눌렀다면 예를 선택하세요.\n{origin}\n\n허용 사이트와 감시 설정은 바뀌지 않습니다.",
         "quit_wait": "캐릭터 생성이 끝난 뒤 종료하세요.", "bridge_error": "브라우저 연결을 시작할 수 없습니다: ",
         "bad_exe": "실행 파일 이름은 .exe로 끝나야 합니다.", "exe_filter": "Windows 실행 파일 (*.exe)",
     },
@@ -69,7 +71,9 @@ TEXT = {
         "credit": "Product direction, requirements, maintenance: hobby-programmer-5000\nImplementation, documentation, validation assistance: ChatGPT (Codex, OpenAI)\n\nApp code: MIT · Qt, Python and model retain their own licenses",
         "status": "Guardian is off. Only the companion and settings are active.",
         "demo": "Preview bite animation", "pair_help": "Code copied. In extension settings, choose this browser and port, paste into Connection code, then click Connect and test.",
-        "connection_help": "Paste this code into the installed extension's settings. Choose the same browser and port. No JSON editing is needed.",
+        "connection_help": "Click the Pawzura extension icon → Connect automatically → approve in this app. No connection code entry is needed.",
+        "manual_connection": "Manual connection — advanced",
+        "pair_question": "Connect this {browser} extension?\n\nChoose Yes if you clicked Connect automatically in the extension.\n{origin}\n\nAllowlist and guardian settings will stay as configured.",
         "quit_wait": "Wait for character generation to finish before quitting.", "bridge_error": "Browser connection unavailable: ",
         "bad_exe": "Executable names must end with .exe.", "exe_filter": "Windows application (*.exe)",
     },
@@ -243,21 +247,26 @@ class SettingsDialog(QDialog):
         self.load_browser()
         self.browser_select.currentTextChanged.connect(self.switch_browser)
         buttons = QHBoxLayout()
-        pair = QPushButton(self.t["pair"])
-        pair.clicked.connect(self.copy_pairing)
         extension = QPushButton(self.t["extension"])
         extension.clicked.connect(self.open_extension)
-        buttons.addWidget(pair)
         buttons.addWidget(extension)
         layout.addLayout(buttons)
         layout.addWidget(self.label(self.t["connection_help"]))
-        connection = QFormLayout()
+        manual = QCheckBox(self.t["manual_connection"])
+        layout.addWidget(manual)
+        panel = QWidget()
+        connection = QFormLayout(panel)
         self.connection_code = QLineEdit(self.config["bridge_token"])
         self.connection_code.setReadOnly(True)
         self.connection_code.setEchoMode(QLineEdit.EchoMode.Password)
         connection.addRow(self.t["connection_code"], self.connection_code)
         connection.addRow(self.t["port"], QLabel(str(self.config["bridge_port"])))
-        layout.addLayout(connection)
+        pair = QPushButton(self.t["pair"])
+        pair.clicked.connect(self.copy_pairing)
+        connection.addRow(pair)
+        panel.setVisible(False)
+        manual.toggled.connect(panel.setVisible)
+        layout.addWidget(panel)
 
     def store_browser(self):
         rules = []

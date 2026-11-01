@@ -20,6 +20,22 @@ DEFAULT_APPS = [
     "securityhealthsystray.exe", "textinputhost.exe", "runtimebroker.exe",
 ]
 BROWSERS = ["chrome", "edge", "firefox", "brave", "opera", "vivaldi", "arc", "zen"]
+BROWSER_EXECUTABLES = {
+    "chrome.exe": "chrome", "msedge.exe": "edge", "firefox.exe": "firefox",
+    "brave.exe": "brave", "opera.exe": "opera", "vivaldi.exe": "vivaldi",
+    "arc.exe": "arc", "zen.exe": "zen",
+}
+# Display/product names may differ from the actual executable in packaged apps.
+APP_ALIASES = ({"codex.exe", "chatgpt.exe"},)
+
+
+def expand_app_aliases(apps: list[str]) -> list[str]:
+    from pathlib import PureWindowsPath
+    names = {PureWindowsPath(name.strip().strip('"')).name.casefold() for name in apps}
+    for group in APP_ALIASES:
+        if names & group:
+            names.update(group)
+    return sorted(names)
 
 
 def data_dir() -> Path:
@@ -53,6 +69,7 @@ class Settings:
                     raise ValueError("Invalid allowlist")
                 for name in BROWSERS:
                     self.data["browsers"].setdefault(name, {"enabled": False, "allowed_sites": []})
+                self.data["allowed_apps"] = expand_app_aliases(self.data["allowed_apps"])
             except (ValueError, TypeError, KeyError) as error:
                 # Never silently replace a damaged allowlist and begin closing windows.
                 raise ValueError(f"Cannot load {self.path}: {error}") from error
@@ -66,6 +83,7 @@ class Settings:
             candidate = copy.deepcopy(self.data)
             if updates:
                 candidate.update(updates)
+            candidate["allowed_apps"] = expand_app_aliases(candidate["allowed_apps"])
             self.path.parent.mkdir(parents=True, exist_ok=True)
             temporary = self.path.with_suffix(".tmp")
             temporary.write_text(json.dumps(candidate, ensure_ascii=False, indent=2), encoding="utf-8")

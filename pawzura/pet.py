@@ -150,13 +150,14 @@ class CharacterPreview(QWidget):
 
 
 class Crack(QWidget):
-    def __init__(self, point: QPointF):
+    def __init__(self, point: QPointF, label=""):
         super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool | Qt.WindowType.WindowTransparentForInput | Qt.WindowType.WindowDoesNotAcceptFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.resize(150, 150)
         self.move(round(point.x()) - 75, round(point.y()) - 75)
         self.born = time.monotonic()
+        self.label = label
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
         self.timer.start(30)
@@ -173,6 +174,9 @@ class Crack(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setOpacity(max(0, 1 - age / 1.8))
+        if self.label:
+            p.setPen(QColor("#eadfff"))
+            p.drawText(QRectF(25, 112, 100, 24), Qt.AlignmentFlag.AlignCenter, self.label)
         rng = random.Random(347)
         for i in range(7):
             angle = i * math.tau / 7
@@ -216,11 +220,11 @@ class Pet(QWidget):
         self.py = float(area.y() + area.height() - 139)
         self.move(round(self.px), round(self.py))
 
-    def bite(self, point: QPointF, callback):
+    def bite(self, point: QPointF, callback, label=""):
         if self.action:
             return False
         self.action = {"start": time.monotonic(), "from": QPointF(self.px, self.py),
-                       "to": point - QPointF(77, 82), "point": point, "callback": callback, "hit": False}
+                       "to": point - QPointF(77, 82), "point": point, "callback": callback, "hit": False, "label": label}
         # Even when the pet is hidden, preserve the timing for browser close acknowledgements.
         return True
 
@@ -245,7 +249,7 @@ class Pet(QWidget):
                 if not action["hit"]:
                     action["hit"] = True
                     if self.isVisible():
-                        crack = Crack(action["point"])
+                        crack = Crack(action["point"], action["label"])
                         self.cracks.append(crack)
                         self.cracks = [c for c in self.cracks if c.isVisible()]
                     action["callback"]()

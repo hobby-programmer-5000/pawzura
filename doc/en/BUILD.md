@@ -24,7 +24,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-Output: `dist/Pawzura/Pawzura.exe` and `dist/Pawzura-0.1.2-windows-x64.zip`. The executable is a portable folder with replaceable Qt DLLs; distribute the whole folder. Ollama and model weights are not bundled.
+Output: `dist/Pawzura/Pawzura.exe` and `dist/Pawzura-0.1.3-windows-x64.zip`. The executable is a portable folder with replaceable Qt DLLs; distribute the whole folder. Ollama and model weights are not bundled.
 
 The build copies both documentation languages and original third-party licenses. `BUILD-INFO.json` records Python and dependency versions. `BINARY-MANIFEST.json` records SHA-256 of each executable/DLL/PYD. MSVC redistributable copies are unified to the newest unmodified shipped version to avoid loader-order conflicts.
 
@@ -46,3 +46,5 @@ node --test tests/*.test.cjs
 The opt-in `python tests/native_probe.py` opens and closes only its own test window. Normal checks do not close user applications or edit startup registration.
 
 After changing shared extension files, run `python scripts/sync_extensions.py` to refresh Firefox. GitHub Actions checks Python 3.12, 3.14 and 3.15. The separate Build workflow is manual. See [validation](VALIDATION.md) for actual results.
+
+Optional real-browser probe: install the `test-browser` extra (Playwright), then run `python tests/browser_probe.py --chromium C:\path\to\chrome.exe`. Use a Chromium build that supports unpacked extension loading. The probe uses a new temporary profile and test-only bridge; it acknowledges approval and animation events itself, without altering user settings. Playwright is a test tool and is not bundled with the EXE.

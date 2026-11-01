@@ -24,7 +24,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-결과는 `dist/Pawzura/Pawzura.exe`, `dist/Pawzura-0.1.2-windows-x64.zip`입니다. Qt DLL을 교체할 수 있는 포터블 폴더이므로 **전체 폴더**를 배포하세요. Ollama와 모델 가중치는 포함하지 않습니다.
+결과는 `dist/Pawzura/Pawzura.exe`, `dist/Pawzura-0.1.3-windows-x64.zip`입니다. Qt DLL을 교체할 수 있는 포터블 폴더이므로 **전체 폴더**를 배포하세요. Ollama와 모델 가중치는 포함하지 않습니다.
 
 빌드는 양쪽 언어의 문서와 제3자 라이선스 원문을 복사합니다. `BUILD-INFO.json`에 Python·의존성 버전, `BINARY-MANIFEST.json`에 EXE/DLL/PYD의 SHA-256을 기록합니다. DLL 탐색 순서에 따른 충돌을 피하도록 동봉된 Microsoft 런타임 중 가장 최신인 원본 파일을 일관되게 사용합니다.
 
@@ -46,3 +46,5 @@ node --test tests/*.test.cjs
 별도 실행하는 `python tests/native_probe.py`는 자신이 만든 테스트 창만 열고 닫습니다. 일반 검사는 사용자 앱을 닫거나 자동 실행 레지스트리를 변경하지 않습니다.
 
 공유 확장 파일을 고치면 `python scripts/sync_extensions.py`로 Firefox를 동기화하세요. GitHub Actions는 Python 3.12·3.14·3.15를 검사합니다. 별도 Build 작업은 수동 실행입니다. 실제 결과는 [검증 기록](VALIDATION.md)에 있습니다.
+
+선택적 실제 브라우저 검사: `test-browser` 추가 의존성(Playwright)을 설치한 뒤 `python tests/browser_probe.py --chromium C:\path\to\chrome.exe`를 실행하세요. 압축 해제 확장 로딩을 지원하는 Chromium을 사용하세요. 새 임시 프로필과 테스트용 브리지만 사용하며 승인·애니메이션 이벤트는 테스트가 직접 처리합니다. 사용자 설정을 변경하지 않고 Playwright를 EXE에 포함하지 않습니다.

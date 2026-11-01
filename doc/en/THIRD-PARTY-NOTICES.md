@@ -31,6 +31,8 @@ The executable includes CPython standard-library binary extensions. Their incorp
 
 ## Original notices and attributions
 
+Optional browser testing uses Playwright (Apache-2.0) and a separately installed Chromium with its own notices. These are development/test tools and are not redistributed in Pawzura's EXE ZIP. The `test-browser` extra is optional; keep the tools' installed license files if distributing a test environment.
+
 `licenses/upstream/qtbase`, `licenses/upstream/pyside-setup` and `licenses/upstream/qtsvg` contain unmodified upstream license texts and `qt_attribution.json` files collected at **v6.12.0**. They include the copyright holders and individual terms for Qt's bundled third-party sources (for example FreeType, HarfBuzz, libpng, libjpeg-turbo, PCRE2, double-conversion, zlib, Zstandard, Vulkan headers, md4c, and other selected or optional source components). The collection deliberately also retains notices for upstream components a given binary might not use. File/source mappings are in [licenses/SOURCES.json](../../licenses/SOURCES.json).
 
 Installed wheel/build-tool license files and the exact CPython license are copied unchanged by `scripts/build.py` to the release's `licenses/installed/`. Some Qt wheels list only a commercial-license reference in their dist-info; the selected LGPL/GPL texts are supplied separately from the matching official source repositories in `licenses/upstream/`. The wheel's metadata declares its LGPL/GPL alternatives. No commercial Qt license is asserted for this project.

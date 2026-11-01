@@ -38,6 +38,16 @@ class SettingsTests(unittest.TestCase):
         self.assertIn(result["ears"], ("rabbit", "cat", "bear"))
         self.assertEqual(random_character(123), random_character(123))
 
+    def test_existing_codex_allowlist_gets_its_executable_alias(self):
+        with tempfile.TemporaryDirectory() as directory:
+            import json
+            path = Path(directory) / "settings.json"
+            path.write_text(json.dumps({"version":1,"allowed_apps":["codex.exe"]}),encoding="utf-8")
+            settings = Settings(path)
+            self.assertIn("chatgpt.exe", settings.snapshot()["allowed_apps"])
+            settings.save({"allowed_apps":["codex.exe"]})
+            self.assertIn("chatgpt.exe",Settings(path).snapshot()["allowed_apps"])
+
 
 if __name__ == "__main__":
     unittest.main()

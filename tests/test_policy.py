@@ -15,6 +15,19 @@ class PolicyTests(unittest.TestCase):
         config["startup_apps"] = ["helper.exe"]
         self.assertTrue(allowed_app("HELPER.EXE", config))
 
+    def test_codex_display_name_resolves_its_actual_executable(self):
+        config = defaults()
+        config["allowed_apps"] = ["codex.exe"]
+        self.assertTrue(allowed_app(r"C:\Program Files\WindowsApps\OpenAI.Codex_1\app\ChatGPT.exe", config))
+        self.assertFalse(allowed_app("fake-chatgpt.exe", config))
+
+    def test_browser_window_is_never_a_native_close_candidate(self):
+        config = defaults()
+        config["allowed_apps"] = []
+        config["startup_apps"] = []
+        for name in ("chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "arc.exe"):
+            self.assertTrue(allowed_app(name, config), name)
+
     def test_exact_origin_blocks_lookalikes(self):
         rules = [site_rule("example.com")]
         self.assertTrue(allowed_url("https://example.com/path?q=1", rules))

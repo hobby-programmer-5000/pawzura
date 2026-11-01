@@ -3,8 +3,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-async function setup({ installed = true, response = { enabled: false, preview: true }, status = 200, offline = false, saved = {} } = {}) {
-  const ids = ['language', 'status', 'browser', 'port', 'token', 'show-code', 'example', 'import', 'pairing', 'connection-form', 'save', 'disconnect', 'preview-warning'];
+async function setup({ installed = true, response = { enabled: false, preview: true }, status = 200, offline = false, saved = {}, pairingState = 'approved' } = {}) {
+  const ids = ['auto-connect','language', 'status', 'browser', 'port', 'token', 'show-code', 'example', 'import', 'pairing', 'connection-form', 'save', 'disconnect', 'preview-warning'];
   const elements = Object.fromEntries(ids.map(id => [id, { value: '', textContent: '', dataset: {}, hidden: id === 'preview-warning', disabled: false, type: 'password', handlers: {}, addEventListener(name, fn) { this.handlers[name] = fn; } }]));
   elements.browser.value = 'chrome'; elements.port.value = '47831';
   const storage = { ...saved }, requests = [];
@@ -14,10 +14,12 @@ async function setup({ installed = true, response = { enabled: false, preview: t
     remove: async name => delete storage[name],
   } } };
   const document = { documentElement: {}, title: '', querySelector: s => elements[s.slice(1)], querySelectorAll: () => [] };
-  const context = vm.createContext({ document, AbortSignal, chrome: installed ? api : undefined, localStorage: { getItem: () => null, setItem() {} }, fetch: async (url, options) => {
+  const context = vm.createContext({ document, AbortSignal, setTimeout, Date, chrome: installed ? api : undefined, localStorage: { getItem: () => null, setItem() {} }, fetch: async (url, options) => {
     requests.push({ url, options });
     if (offline) throw new Error('offline');
-    return { ok: status === 200, status, json: async () => response };
+    const body = url.endsWith('/pair/request') ? {request:'test-challenge',state:'pending'} :
+      url.endsWith('/pair/result') ? {state:pairingState,pairing:{browser:'chrome',port:47831,token}} : response;
+    return { ok: status === 200, status, json: async () => body };
   } });
   vm.runInContext(fs.readFileSync('extensions/chromium/options-i18n.js', 'utf8'), context);
   vm.runInContext(fs.readFileSync('extensions/chromium/options.js', 'utf8'), context);
@@ -81,4 +83,19 @@ test('bad JSON and invalid port have actionable errors', async () => {
   assert.match(ui.elements.status.textContent, /JSON/);
   ui.elements.token.value = token; ui.elements.port.value = '99999'; await ui.fire('connection-form', 'submit');
   assert.match(ui.elements.status.textContent, /port/); assert.equal(ui.requests.length, 0);
+});
+test('automatic pairing saves approved credentials without a code field', async () => {
+  const ui=await setup();
+  assert.equal(ui.elements.token.value,'');
+  await ui.fire('auto-connect');
+  assert.equal(ui.storage.pairing.token,token);
+  assert.match(ui.elements.status.textContent,/Connected automatically/);
+  assert.deepEqual(ui.requests.map(r=>new URL(r.url).pathname),['/pair/request','/pair/result']);
+});
+test('denied or expired automatic pairing does not save credentials', async () => {
+  for(const pairingState of ['denied','expired']) {
+    const ui=await setup({pairingState}); await ui.fire('auto-connect');
+    assert.equal(ui.storage.pairing,undefined);
+    assert.equal(ui.elements.status.dataset.kind,'error');
+  }
 });

@@ -9,10 +9,12 @@ async function sweep() {
     const { pairing } = await api.storage.local.get("pairing");
     if (!pairing) return;
     const tabs = await api.tabs.query({});
+    const ownRoot = api.runtime.getURL?.('');
+    const candidates = tabs.filter(t => !ownRoot || !(t.pendingUrl || t.url || '').startsWith(ownRoot));
     const response = await fetch(`http://127.0.0.1:${pairing.port}/evaluate`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Pawzura-Token": pairing.token },
-      body: JSON.stringify({ browser: pairing.browser, tabs: tabs.slice(0, 200).map(t => ({ id: t.id, url: t.pendingUrl || t.url || "about:blank", active: t.active })) }),
+      body: JSON.stringify({ browser: pairing.browser, tabs: candidates.slice(0, 200).map(t => ({ id: t.id, url: t.pendingUrl || t.url || "about:blank", active: t.active })) }),
       signal: AbortSignal.timeout(2500),
     });
     if (!response.ok) throw new Error(`Bridge: ${response.status}`);
@@ -24,7 +26,15 @@ async function sweep() {
       try {
         const current = await api.tabs.get(decision.id);
         // Never close a tab which navigated to another URL after the app's decision.
-        if ((current.pendingUrl || current.url) === decision.url) await api.tabs.remove(decision.id);
+        if ((current.pendingUrl || current.url) !== decision.url) continue;
+        const siblings = await api.tabs.query({ windowId: current.windowId });
+        if (siblings.length === 1) {
+          // Removing a window's last tab closes the entire window in many browsers.
+          // If a replacement cannot be created, leave the existing tab untouched.
+          await api.tabs.create({ windowId: current.windowId, url: 'about:blank', active: false });
+        }
+        const checked = await api.tabs.get(decision.id);
+        if ((checked.pendingUrl || checked.url) === decision.url) await api.tabs.remove(decision.id);
       } catch (_) { /* The user may have already closed the tab. */ }
     }
   } catch (_) {

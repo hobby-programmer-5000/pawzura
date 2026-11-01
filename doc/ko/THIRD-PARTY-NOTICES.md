@@ -31,6 +31,8 @@ CPython 표준 바이너리 확장의 구성은 버전과 import 그래프에 �
 
 ## 원문 보관
 
+선택적 브라우저 검사에는 Playwright(Apache-2.0)와 개별 고지가 적용되는 별도 Chromium을 사용합니다. 개발·검사 도구이며 Pawzura EXE ZIP에 재배포하지 않습니다. `test-browser` 추가 의존성은 선택 사항이고 검사 환경 자체를 배포한다면 설치된 도구의 라이선스 원문도 유지해야 합니다.
+
 [licenses/SOURCES.json](../../licenses/SOURCES.json)에 파일별 공식 출처를 기록합니다. `licenses/upstream/qtbase`, `pyside-setup`, `qtsvg`의 v6.12.0 원문과 qt_attribution.json에는 FreeType, HarfBuzz, PNG/JPEG, PCRE2, double-conversion, zlib, Zstandard, Vulkan, md4c 등 Qt의 포함·선택 구성요소 고지가 있습니다. 실제 사용하지 않는 upstream 구성요소의 고지도 넓게 보존합니다.
 
 설치된 휠·빌드 도구 고지는 배포의 `licenses/installed`로 복사합니다. 일부 휠 dist-info에는 상용 라이선스 참조만 있지만 메타데이터는 LGPL/GPL 선택지를 명시하므로, 같은 공식 소스 버전의 LGPL/GPL 원문을 별도로 제공합니다. 이 프로젝트가 상용 Qt 라이선스를 보유한다고 주장하지 않습니다.

@@ -4,6 +4,14 @@
 
 Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
 
+## 0.1.3 application protection and automatic connection
+
+**42 Python tests and 18 extension tests passed locally.** Regressions cover Codex/ChatGPT executable aliases in old settings, browser exclusion at the native close boundary, TAB marker placement, last-tab replacement, replacement failure, one-time pairing, origin binding, approval, denial and expiration.
+
+A real headless Chromium extension probe passed in an isolated temporary profile: code-free automatic connection, own-options protection, unlisted-tab removal, allowed-tab preservation, and retention of the same browser window ID with a blank tab after the last blocked tab closes. The test acknowledges desktop approval and animation events itself; it does not claim to automate the packaged GUI confirmation. No user profile or user settings were used.
+
+English and Korean automatic-connection screenshots were reviewed. The TAB marker rendered successfully. The 0.1.3 portable EXE built and its offscreen rendering check exited with code 0.
+
 ## 0.1.2 URL rule checks
 
 The updated local suite passes **33 Python tests and 14 extension tests**. It covers domains, HTTP/HTTPS URLs, path boundaries, query conditions, Unicode, legacy wildcard entries, malformed paths, localized line numbers and the real HTTP bridge's use of scoped rules. All seven example address formats supplied in the bug report pass validation. Documentation checks cover **33 authored Markdown files and 12 topic language pairs**. This does not imply that login redirects or every linked page on those websites is automatically allowed.
@@ -32,8 +40,8 @@ The Windows automation helper's screenshot capture timed out in baseline testing
 ## Remaining limits
 
 - Windows 11 physical devices, Windows 10 1809 minimum version, ARM64 and Remote Desktop need separate validation.
-- Real browser extension installation/navigation/closing E2E, store distribution and permanent signed Firefox packages need separate checks. HTTP bridge and extension API tests do not replace that work.
-- Browser APIs do not provide exact tab X positions. Animation uses the browser window's close area or a desktop fallback; the extension closes the revalidated tab itself.
+- Chrome/Edge/Firefox user-profile and packaged-GUI flows, store distribution and permanent signed Firefox packages need separate checks beyond the isolated Chromium probe above.
+- Browser APIs do not provide exact tab X positions. Animation uses a TAB marker below the title bar or a desktop fallback; it never targets the browser window X.
 - Custom title bars, elevated apps that reject close requests, full-screen/virtual-desktop behavior and all monitor arrangements need further testing.
 - Navigation occurs before tab closing. The app fails open if stopped/disconnected and is a focus aid, not a tamper-resistant security tool.
 
