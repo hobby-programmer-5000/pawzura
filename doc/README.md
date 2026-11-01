@@ -9,6 +9,7 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [Browser connection and examples](en/BROWSERS.md)
 - [Source setup and EXE builds](en/BUILD.md)
 - [Models and character generation](en/MODELS.md)
+- [Character rights and provenance](en/CHARACTER-RIGHTS.md)
 - [Contributors and roles](en/CONTRIBUTORS.md)
 - [Validation and known limits](en/VALIDATION.md)
 - [Original product requirements](en/PRODUCT-BRIEF.md)

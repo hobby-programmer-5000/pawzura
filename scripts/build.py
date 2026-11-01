@@ -58,7 +58,7 @@ def main():
         content = newest.read_bytes()
         for destination in {output / "_internal" / name, *(p for _, p in candidates)}:
             destination.write_bytes(content)
-    for name in ("README.md", "README.ko.md", "LICENSE", "LICENSE.ko.md", "THIRD-PARTY-NOTICES.md", "THIRD-PARTY-NOTICES.ko.md", "CONTRIBUTORS.md", "CONTRIBUTORS.ko.md"):
+    for name in ("README.md", "README.ko.md", "LICENSE", "LICENSE.ko.md", "CHARACTER-POLICY.md", "CHARACTER-POLICY.ko.md", "THIRD-PARTY-NOTICES.md", "THIRD-PARTY-NOTICES.ko.md", "CONTRIBUTORS.md", "CONTRIBUTORS.ko.md"):
         shutil.copy2(ROOT / name, output / name)
     for name in ("doc", "extensions", "licenses"):
         shutil.copytree(ROOT / name, output / name, dirs_exist_ok=True)

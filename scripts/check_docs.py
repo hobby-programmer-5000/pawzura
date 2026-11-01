@@ -12,7 +12,7 @@ def check():
     korean = {p.name for p in (ROOT / "doc/ko").glob("*.md")}
     if english != korean:
         errors.append(f"Unpaired topic guides: {english ^ korean}")
-    roots = ("README", "CONTRIBUTORS", "THIRD-PARTY-NOTICES")
+    roots = ("README", "CONTRIBUTORS", "THIRD-PARTY-NOTICES", "CHARACTER-POLICY")
     for name in roots:
         for suffix in (".md", ".ko.md"):
             if not (ROOT / (name + suffix)).exists():

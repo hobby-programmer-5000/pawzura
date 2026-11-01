@@ -26,7 +26,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 
 Output: `dist/Pawzura/Pawzura.exe` and `dist/Pawzura-<version>-windows-x64.zip`. Development builds are not published releases. The executable is a portable folder with replaceable Qt DLLs; distribute the whole folder. Ollama and model weights are not bundled. A distribution privacy check runs before ZIP creation; see [local settings and privacy](PRIVACY.md).
 
-The build copies both documentation languages and original third-party licenses. `BUILD-INFO.json` records Python and dependency versions. `BINARY-MANIFEST.json` records SHA-256 of each executable/DLL/PYD. MSVC redistributable copies are unified to the newest unmodified shipped version to avoid loader-order conflicts.
+The build copies both documentation languages, the [character rights notice](../../CHARACTER-POLICY.md) and original third-party licenses. `BUILD-INFO.json` records Python and dependency versions. `BINARY-MANIFEST.json` records SHA-256 of each executable/DLL/PYD. MSVC redistributable copies are unified to the newest unmodified shipped version to avoid loader-order conflicts.
 
 When updating Qt, update `scripts/fetch_licenses.py` and collect the matching upstream notices before building:
 

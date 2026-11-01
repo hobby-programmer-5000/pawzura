@@ -32,6 +32,7 @@ The app starts in English. Switch with **General → Language → 한국어 → 
 | Check test results and current limits | [Validation](doc/en/VALIDATION.md) |
 | See ownership and AI contribution roles | [Contributors](doc/en/CONTRIBUTORS.md) |
 | Review library/model licenses | [Third-party notices](doc/en/THIRD-PARTY-NOTICES.md) |
+| Understand character rights and provenance | [Character rights](doc/en/CHARACTER-RIGHTS.md) |
 
 **Preview limitations:** browser monitoring closes tabs after navigation; exact tab X coordinates are approximate. Windows 11 device testing and real-browser E2E remain pending. See the validation guide.
 

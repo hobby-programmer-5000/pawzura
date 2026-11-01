@@ -32,6 +32,7 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | 테스트 결과·현재 제한 | [검증 기록](doc/ko/VALIDATION.md) |
 | 기획자·AI 기여 역할 | [기여자](doc/ko/CONTRIBUTORS.md) |
 | 라이브러리·모델 라이선스 | [제3자 고지](doc/ko/THIRD-PARTY-NOTICES.md) |
+| 캐릭터 권리와 제작 이력 | [캐릭터 권리](doc/ko/CHARACTER-RIGHTS.md) |
 
 **Preview 제한:** 탐색 후 탭을 닫고, 탭 X 위치는 추정 표시입니다. Windows 11 실기기와 실제 브라우저 전체 동작 검증은 남아 있습니다. 상세 범위는 검증 기록을 참고하세요.
 

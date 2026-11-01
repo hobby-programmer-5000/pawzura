@@ -33,6 +33,8 @@ Downloads are explicit, not automatic. No weights or Ollama executable are bundl
 
 ## Rights and reproducibility
 
+The [character policy and provenance](CHARACTER-RIGHTS.md) record the default design, source hashes and objection to exclusive appropriation. Existing MIT permissions remain unchanged; the policy cannot block third-party applications automatically.
+
 The default character is original vector-drawing code produced with AI assistance; it is not a licensed third-party mascot. No formal trademark/image clearance has been completed. Independent drawing does not by itself guarantee that no existing protected design or similar trademark conflicts with it. Copyright and trademark rights are distinct, and exclusive copyright in AI-assisted output depends on the applicable rules and human creative contribution. Keep design provenance and obtain suitable rights checks before branding or commercialization. [Official Korean AI copyright guidance](https://www.kipo.go.kr/ko/kpoBultnDetail.do?aprchId=BUT0000029&menuCd=SCD0200618&ntatcSeq=21075&sysCd=SCD02), [trademark scope](https://www.kipo.go.kr/ko/kpoContentView.do?menuCd=SCD0200242).
 
 Apache-2.0 covers the model's terms and does not guarantee originality or non-infringement of generated output. Restricted prompts and original drawing primitives avoid intentionally copying known characters. External reference images and arbitrary user prompts are not supported.

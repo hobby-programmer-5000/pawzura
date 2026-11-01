@@ -9,6 +9,7 @@
 - [브라우저 연결과 예시](ko/BROWSERS.md)
 - [소스 실행과 EXE 빌드](ko/BUILD.md)
 - [모델과 캐릭터 생성](ko/MODELS.md)
+- [캐릭터 권리와 제작 이력](ko/CHARACTER-RIGHTS.md)
 - [기여자와 역할](ko/CONTRIBUTORS.md)
 - [검증 범위와 알려진 제한](ko/VALIDATION.md)
 - [원래 제품 요구사항](ko/PRODUCT-BRIEF.md)
