@@ -13,7 +13,7 @@ from PySide6.QtCore import QPointF
 class RoutingTests(unittest.TestCase):
     def harness(self):
         config = defaults()
-        config.update(guard_enabled=True,preview_only=False,allowed_apps=["codex.exe"])
+        config.update(guard_enabled=True,preview_only=False,browser_control_enabled=True,allowed_apps=["codex.exe"])
         fake = SimpleNamespace(settings=SimpleNamespace(snapshot=lambda: config),
                                pet=SimpleNamespace(action=None,bite=Mock(),tab_target_point=Mock(return_value=QPointF(480,650))),
                                bridge=SimpleNamespace(events=Queue(),pairing_events=Queue(),complete=Mock()),
@@ -34,6 +34,20 @@ class RoutingTests(unittest.TestCase):
         with patch("pawzura.windows.inspect_window") as inspect:
             self.assertFalse(close_window(self.window("chrome.exe")))
             inspect.assert_not_called()
+
+    def test_program_guardian_still_operates_with_website_control_off(self):
+        fake,config = self.harness()
+        config["browser_control_enabled"] = False
+        window = self.window("unlisted.exe")
+        fake.observed[(window.hwnd,window.pid,window.executable,window.title)] = 90
+        with patch("pawzura.app.time.monotonic",return_value=100), \
+             patch("pawzura.app.windows.list_windows",return_value=[window]), \
+             patch("pawzura.app.windows.physical_to_logical",return_value=(975,115)), \
+             patch("pawzura.app.QApplication.screens",return_value=[]), \
+             patch("pawzura.app.windows.close_window") as close:
+            Companion.tick(fake)
+            fake.pet.bite.call_args.args[1]()
+            close.assert_called_once_with(window)
 
     def test_browser_actions_use_only_synthetic_tab_target_in_preview_and_live(self):
         for active in (False, True):

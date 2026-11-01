@@ -17,6 +17,7 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [0.1.2 release history](en/RELEASE-v0.1.2.md)
 - [0.1.3 rebuilt preview](en/RELEASE-v0.1.3.md)
 - [0.1.4 tab indication fix](en/RELEASE-v0.1.4.md)
+- [0.1.5 guided browser setup](en/RELEASE-v0.1.5.md)
 - [0.1.1 release history](en/RELEASE-v0.1.1.md)
 - [0.1.0 release history](en/RELEASE-v0.1.0.md)
 - [Third-party licenses and notices](en/THIRD-PARTY-NOTICES.md)

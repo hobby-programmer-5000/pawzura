@@ -31,6 +31,7 @@ class BridgeTests(unittest.TestCase):
 
     def enable(self, preview=False):
         self.settings.data["guard_enabled"] = True
+        self.settings.data["browser_control_enabled"] = True
         self.settings.data["preview_only"] = preview
         self.settings.data["browsers"]["chrome"]["enabled"] = True
 
@@ -44,6 +45,29 @@ class BridgeTests(unittest.TestCase):
         result = self.send()
         self.assertTrue(result["decisions"][0]["allowed"])
         self.assertTrue(self.bridge.events.empty())
+
+    def test_master_switch_overrides_ready_ticket_without_pausing_app_guardian(self):
+        self.enable()
+        self.send()
+        self.bridge.complete(self.bridge.events.get_nowait()["ticket"])
+        self.settings.save({"browser_control_enabled": False})
+        result = self.send()
+        self.assertFalse(result["enabled"])
+        self.assertTrue(result["decisions"][0]["allowed"])
+        self.assertFalse(result["decisions"][0]["close"])
+        self.assertTrue(self.settings.snapshot()["guard_enabled"])
+
+    def test_authenticated_status_uses_no_tabs_or_events(self):
+        self.enable()
+        self.bridge.evaluate({"browser":"chrome","tabs":[]})
+        self.assertFalse(self.bridge.is_connected("chrome"))
+        request = Request(self.url.removesuffix("/evaluate") + "/status", json.dumps({"browser":"chrome"}).encode(), {"X-Pawzura-Token":self.settings.data["bridge_token"]})
+        with build_opener(ProxyHandler({})).open(request, timeout=2) as response:
+            result = json.load(response)
+        self.assertTrue(result["enabled"])
+        self.assertTrue(self.bridge.is_connected("chrome"))
+        self.assertTrue(self.bridge.events.empty())
+        self.assertEqual(self.bridge.tickets, {})
 
     def test_close_waits_for_bite(self):
         self.enable()

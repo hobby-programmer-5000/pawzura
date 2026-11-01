@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-async function setup({ installed = true, response = { enabled: false, preview: true }, status = 200, offline = false, saved = {}, pairingState = 'approved' } = {}) {
+async function setup({ installed = true, response = { enabled: false, preview: true }, status = 200, offline = false, saved = {}, pairingState = 'approved', query = '' } = {}) {
   const ids = ['auto-connect','language', 'status', 'browser', 'port', 'token', 'show-code', 'example', 'import', 'pairing', 'connection-form', 'save', 'disconnect', 'preview-warning'];
   const elements = Object.fromEntries(ids.map(id => [id, { value: '', textContent: '', dataset: {}, hidden: id === 'preview-warning', disabled: false, type: 'password', handlers: {}, addEventListener(name, fn) { this.handlers[name] = fn; } }]));
   elements.browser.value = 'chrome'; elements.port.value = '47831';
@@ -14,7 +14,7 @@ async function setup({ installed = true, response = { enabled: false, preview: t
     remove: async name => delete storage[name],
   } } };
   const document = { documentElement: {}, title: '', querySelector: s => elements[s.slice(1)], querySelectorAll: () => [] };
-  const context = vm.createContext({ document, AbortSignal, setTimeout, Date, chrome: installed ? api : undefined, localStorage: { getItem: () => null, setItem() {} }, fetch: async (url, options) => {
+  const context = vm.createContext({ document, AbortSignal, setTimeout, Date, URLSearchParams, location: {search:query}, chrome: installed ? api : undefined, localStorage: { getItem: () => null, setItem() {} }, fetch: async (url, options) => {
     requests.push({ url, options });
     if (offline) throw new Error('offline');
     const body = url.endsWith('/pair/request') ? {request:'test-challenge',state:'pending'} :
@@ -57,9 +57,9 @@ test('legacy JSON fills fields without saving or connecting', async () => {
 test('successful check sends no tabs and saves pairing', async () => {
   const ui = await setup(); ui.elements.token.value = token; await ui.fire('connection-form', 'submit');
   assert.equal(ui.storage.pairing.token, token);
-  assert.deepEqual(JSON.parse(ui.requests[0].options.body).tabs, []);
-  assert.equal(ui.requests[0].url, 'http://127.0.0.1:47831/evaluate');
-  assert.match(ui.elements.status.textContent, /Guardian is off/);
+  assert.deepEqual(JSON.parse(ui.requests[0].options.body), {browser:'chrome'});
+  assert.equal(ui.requests[0].url, 'http://127.0.0.1:47831/status');
+  assert.match(ui.elements.status.textContent, /Website control is off/);
 });
 test('rejected code and unreachable app do not overwrite saved pairing', async () => {
   for (const options of [{ status: 401 }, { offline: true }]) {
@@ -90,7 +90,7 @@ test('automatic pairing saves approved credentials without a code field', async 
   await ui.fire('auto-connect');
   assert.equal(ui.storage.pairing.token,token);
   assert.match(ui.elements.status.textContent,/Connected automatically/);
-  assert.deepEqual(ui.requests.map(r=>new URL(r.url).pathname),['/pair/request','/pair/result']);
+  assert.deepEqual(ui.requests.map(r=>new URL(r.url).pathname),['/pair/request','/pair/result','/status']);
 });
 test('denied or expired automatic pairing does not save credentials', async () => {
   for(const pairingState of ['denied','expired']) {
@@ -98,4 +98,13 @@ test('denied or expired automatic pairing does not save credentials', async () =
     assert.equal(ui.storage.pairing,undefined);
     assert.equal(ui.elements.status.dataset.kind,'error');
   }
+});
+
+test('desktop setup link prefills safe fields and requests approval without a code', async () => {
+  const ui = await setup({query:'?browser=chrome&port=47831&lang=ko&setup=1'});
+  assert.equal(ui.elements.language.value,'ko');
+  assert.equal(ui.storage.pairing.token,token);
+  assert.deepEqual(ui.requests.map(r=>new URL(r.url).pathname),['/pair/request','/pair/result','/status']);
+  const preview = await setup({installed:false, query:'?setup=1'});
+  assert.equal(preview.requests.length,0);
 });

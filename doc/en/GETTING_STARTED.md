@@ -26,7 +26,7 @@ Return to **General**, leave **Preview mode** checked, enable **Enable focus gua
 
 ## 5. Connect a browser (optional)
 
-The desktop app alone cannot inspect browser addresses. Install the included extension in each browser, then click Connect automatically and approve the request in the desktop app. Follow the [Chrome/Edge walkthrough with examples](BROWSERS.md). Opening `options.html` as a local file only previews the page; it does not install the extension.
+**Website control requires the extension.** Start with **Browsers → choose browser → Install/connect extension…**. The helper opens installation, copies the correct folder and opens connection without code copying. [Short Chrome/Edge steps](BROWSERS.md). For applications only, leave **Website control OFF**; this applies immediately and needs no extension. Opening `options.html` from Explorer only previews a file.
 
 ## Everyday controls
 
@@ -34,6 +34,7 @@ The desktop app alone cannot inspect browser addresses. Install the included ext
 | --- | --- |
 | Open settings | Click the Pawzura icon near the Windows clock; check the hidden-icon arrow if needed |
 | Pause closing | Right-click that icon → Pause guardian |
+| Control applications while browsing freely | Browsers → Website control OFF, or the tray's website-control switch |
 | Hide only the character | Right-click → Hide companion |
 | Recover a missing/broken companion | Right-click → Recover companion on screen |
 | Separate work/leisure lists | Settings top → Allowlist profile; [instructions](PROFILES-AND-RECOVERY.md) |

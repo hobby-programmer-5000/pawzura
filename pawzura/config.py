@@ -93,6 +93,7 @@ def defaults() -> dict:
     return {
         "version": 1, "language": "en", "start_at_login": False,
         "guard_enabled": False, "preview_only": True, "pet_visible": True,
+        "browser_control_enabled": False,
         "allowed_apps": DEFAULT_APPS.copy(), "startup_apps": [],
         "browsers": {name: {"enabled": False, "allowed_sites": []} for name in BROWSERS},
         "bridge_token": secrets.token_urlsafe(32), "bridge_port": 47831,
@@ -117,6 +118,8 @@ class Settings:
                     raise ValueError("Invalid allowlist")
                 for name in BROWSERS:
                     self.data["browsers"].setdefault(name, {"enabled": False, "allowed_sites": []})
+                if "browser_control_enabled" not in saved:
+                    self.data["browser_control_enabled"] = any(entry.get("enabled", False) for entry in self.data["browsers"].values())
                 self.data["allowed_apps"] = expand_app_aliases(self.data["allowed_apps"])
             except (ValueError, TypeError, KeyError) as error:
                 # Never silently replace a damaged allowlist and begin closing windows.

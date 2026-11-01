@@ -1,6 +1,6 @@
 globalThis.PawzuraOptionsText = {
   "en": {
-    "auto_connected": "Connected automatically. Configure allowed sites and the guardian in the desktop app.",
+    "auto_connected": "Connected automatically. Website control is optional and can stay OFF in the desktop app.",
     "language": "Language",
     "eyebrow": "BROWSER CONNECTION",
     "title": "Connect your companion.",
@@ -29,7 +29,7 @@ globalThis.PawzuraOptionsText = {
     "import_button": "Use these details",
     "import_hint": "Import only fills the form. Click Connect and test to finish.",
     "privacy": "The connection stays on this computer. URLs are not logged or sent to a cloud service.",
-    "defaults": "Only built-in new-tab/home pages are allowed by default. Add other sites in the desktop app. Browser windows are protected; closing the last blocked tab leaves a blank tab open.",
+    "defaults": "With website control on, built-in new-tab/home and extension-setup pages are allowed by default. Add other sites in the desktop app. Browser windows are protected; closing the last blocked tab leaves a blank tab open.",
     "bad_code": "Paste your connection code from the desktop app. It contains at least 32 letters, numbers, underscores or hyphens.",
     "bad_port": "Enter a port between 1024 and 65535.",
     "bad_browser": "Choose a supported browser.",
@@ -40,7 +40,7 @@ globalThis.PawzuraOptionsText = {
     "wrong_code": "The app rejected this code. Copy a fresh connection code from Pawzura → Browsers.",
     "unavailable": "Cannot reach Pawzura. Start the desktop app, check that the port matches, then try again.",
     "bridge_error": "The app could not accept this connection. Check the browser and port.",
-    "connected_off": "Connected. Guardian is off for this browser. Add allowed sites and enable the browser and guardian in the desktop app.",
+    "connected_off": "Connected. Website control is off for this browser. Application monitoring is separate.",
     "connected_preview": "Connected · Preview mode. Animations are enabled; tabs will stay open.",
     "connected_live": "Connected · Guardian is on. Unlisted tabs can now close.",
     "saved": "Connection saved. Click Connect and test to check the desktop app.",
@@ -52,11 +52,11 @@ globalThis.PawzuraOptionsText = {
     "approval_wait": "Waiting for approval in the Pawzura desktop app. Choose Yes there to connect.",
     "approval_denied": "Connection was declined. Click Connect automatically to try again.",
     "approval_expired": "The request expired or was cancelled. Click Connect automatically and approve in the app within one minute.",
-    "update_app": "Automatic connection requires Pawzura 0.1.3 or newer. Update the desktop app, or use advanced manual connection.",
+    "update_app": "This extension requires Pawzura 0.1.5 or newer. Update the desktop app and extension together.",
     "pairing_busy": "Another connection request is waiting. Approve or decline it in the app, then retry."
   },
   "ko": {
-    "auto_connected": "자동 연결됐습니다. 데스크톱 앱에서 허용 사이트와 집중 지킴이를 설정하세요.",
+    "auto_connected": "자동 연결됐습니다. 사이트 제어는 선택 기능이며 데스크톱 앱에서 OFF로 두어도 됩니다.",
     "language": "언어",
     "eyebrow": "브라우저 연결",
     "title": "캐릭터와 브라우저를 연결하세요.",
@@ -85,7 +85,7 @@ globalThis.PawzuraOptionsText = {
     "import_button": "입력 칸에 적용",
     "import_hint": "가져오기는 입력 칸만 채웁니다. 마지막으로 ‘연결하고 확인’을 누르세요.",
     "privacy": "연결은 이 컴퓨터 안에서만 이루어집니다. 주소를 기록하거나 클라우드에 보내지 않습니다.",
-    "defaults": "기본 허용은 내장 새 탭/홈 화면뿐입니다. 다른 사이트는 앱에서 추가하세요. 브라우저 창은 보호하며 마지막 미허용 탭을 닫을 때는 빈 탭을 남깁니다.",
+    "defaults": "사이트 제어를 켜면 내장 새 탭/홈과 확장 설치 페이지를 기본 허용합니다. 다른 사이트는 앱에서 추가하세요. 브라우저 창은 보호하며 마지막 미허용 탭을 닫을 때는 빈 탭을 남깁니다.",
     "bad_code": "데스크톱 앱에서 복사한 연결 코드를 넣으세요. 영문·숫자·밑줄·하이픈으로 된 32자 이상의 코드입니다.",
     "bad_port": "포트는 1024부터 65535 사이의 숫자여야 합니다.",
     "bad_browser": "지원되는 브라우저를 선택하세요.",
@@ -108,7 +108,7 @@ globalThis.PawzuraOptionsText = {
     "approval_wait": "Pawzura 데스크톱 앱에서 승인을 기다립니다. 앱의 확인창에서 ‘예’를 누르세요.",
     "approval_denied": "앱에서 연결을 거절했습니다. 다시 하려면 ‘자동 연결’을 누르세요.",
     "approval_expired": "요청이 만료되거나 취소됐습니다. ‘자동 연결’을 다시 누르고 1분 안에 앱에서 승인하세요.",
-    "update_app": "자동 연결은 Pawzura 0.1.3 이상이 필요합니다. 앱을 업데이트하거나 고급 수동 연결을 사용하세요.",
+    "update_app": "이 확장은 Pawzura 0.1.5 이상이 필요합니다. 데스크톱 앱과 확장을 함께 업데이트하세요.",
     "pairing_busy": "다른 연결 요청이 대기 중입니다. 앱에서 승인하거나 거절한 뒤 다시 시도하세요."
   }
 };

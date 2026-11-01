@@ -4,12 +4,13 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 async function run({ decision, currentUrl = 'https://unlisted.example', enabled = true, preview = false, offline = false, siblingCount = 2, createFails = false }) {
-  const removed = [], badges = [], created = [], calls = [];
+  const removed = [], badges = [], created = [], calls = [], requests = [];
+  let tabQueries = 0;
   const listener = { addListener() {} };
   const api = {
     storage: { local: { get: async () => ({ pairing: { token: 'x'.repeat(43), port: 47831, browser: 'chrome' } }) }, onChanged: listener },
     tabs: {
-      query: async options => options?.windowId ? Array.from({length: siblingCount}, (_, i) => ({id:7+i,windowId:3})) : [{id:7,url:currentUrl,active:true,windowId:3}],
+      query: async options => { tabQueries++; return options?.windowId ? Array.from({length: siblingCount}, (_, i) => ({id:7+i,windowId:3})) : [{id:7,url:currentUrl,active:true,windowId:3}]; },
       get: async () => ({ id: 7, url: currentUrl, windowId:3 }),
       create: async options => { if (createFails) throw new Error('Cannot create tab'); created.push(options); calls.push('create'); },
       remove: async id => { removed.push(id); calls.push('remove'); }, onUpdated: listener, onActivated: listener,
@@ -18,13 +19,14 @@ async function run({ decision, currentUrl = 'https://unlisted.example', enabled 
     runtime: { onStartup: listener, onInstalled: listener },
     alarms: { create() {}, onAlarm: listener },
   };
-  const context = vm.createContext({ chrome: api, AbortSignal, setInterval() {}, fetch: async () => {
+  const context = vm.createContext({ chrome: api, AbortSignal, setInterval() {}, fetch: async (url, options) => {
+    requests.push({url,options});
     if (offline) throw new Error('App stopped');
     return { ok: true, json: async () => ({ enabled, preview, decisions: [decision] }) };
   } });
   vm.runInContext(fs.readFileSync('extensions/chromium/background.js', 'utf8'), context);
   await new Promise(resolve => setImmediate(resolve));
-  return { removed, badges, created, calls };
+  return { removed, badges, created, calls, requests, tabQueries };
 }
 
 const close = { id: 7, url: 'https://unlisted.example', close: true, allowed: false };
@@ -39,7 +41,12 @@ test('preview never closes', async () => {
   assert.deepEqual((await run({ decision: close, preview: true })).removed, []);
 });
 test('disabled guardian never closes', async () => {
-  assert.deepEqual((await run({ decision: close, enabled: false })).removed, []);
+  const result = await run({ decision: close, enabled: false });
+  assert.deepEqual(result.removed, []);
+  assert.equal(result.tabQueries, 0);
+  assert.equal(result.requests.length, 1);
+  assert.ok(result.requests[0].url.endsWith('/status'));
+  assert.deepEqual(JSON.parse(result.requests[0].options.body), {browser:'chrome'});
 });
 test('allowed tab never closes', async () => {
   assert.deepEqual((await run({ decision: { ...close, allowed: true } })).removed, []);

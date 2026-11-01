@@ -65,6 +65,12 @@ class PolicyTests(unittest.TestCase):
         for url in ("chrome://settings", "file:///secret", "javascript:alert(1)", "https://www.google.com", "about:blank.evil"):
             self.assertFalse(allowed_url(url, []), url)
 
+    def test_extension_setup_pages_remain_available_without_allowing_settings_or_websites(self):
+        for url in ("chrome://extensions/", "chrome://extensions/?id=example", "edge://extensions/", "about:addons", "about:debugging#/runtime/this-firefox"):
+            self.assertTrue(allowed_url(url, []), url)
+        for url in ("chrome://settings", "chrome://extensions.evil", "https://extensions.example"):
+            self.assertFalse(allowed_url(url, []), url)
+
     def test_idn_and_ports(self):
         self.assertEqual(site_rule("https://EXAMPLE.COM:443/"), "https://example.com")
         self.assertTrue(allowed_url("https://example.com:443/path", ["https://example.com"]))

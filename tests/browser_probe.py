@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from pawzura.bridge import Bridge
 from pawzura.config import Settings
+from pawzura.browser_setup import connection_url, extension_id as expected_extension_id
 
 
 def main():
@@ -39,7 +40,7 @@ def main():
         settings.data['bridge_port'] = 0
         origin = f'http://127.0.0.1:{server.server_port}'
         settings.data['browsers']['chrome'] = {'enabled':True,'allowed_sites':[origin+'/allowed']}
-        settings.data.update(guard_enabled=True,preview_only=False)
+        settings.data.update(guard_enabled=True,preview_only=False,browser_control_enabled=True)
         bridge = Bridge(settings)
         bridge.start()
         stop = threading.Event()
@@ -56,7 +57,7 @@ def main():
         threading.Thread(target=acknowledge,daemon=True).start()
         try:
             with sync_playwright() as p:
-                extension = str(ROOT/'extensions/chromium')
+                extension = ROOT/'extensions/chromium'
                 context = p.chromium.launch_persistent_context(
                     str(Path(temporary)/'profile'),executable_path=str(args.chromium),headless=True,
                     ignore_default_args=['--disable-extensions'],
@@ -64,11 +65,9 @@ def main():
                 try:
                     worker = context.service_workers[0] if context.service_workers else context.wait_for_event('serviceworker',timeout=15000)
                     extension_id = worker.url.split('/')[2]
+                    assert extension_id == expected_extension_id(extension / 'manifest.json')
                     options = context.new_page()
-                    options.goto(f'chrome-extension://{extension_id}/options.html')
-                    options.locator('#port').fill(str(bridge.server.server_port))
-                    assert options.locator('#token').input_value() == ''
-                    options.locator('#auto-connect').click()
+                    options.goto(connection_url('chrome',extension,bridge.server.server_port,'en'))
                     expect(options.locator('#status')).to_contain_text('Connected automatically',timeout=15000)
                     assert not options.is_closed(), 'Extension must not close its own options'
                     options.screenshot(path=str(ROOT/'artifacts/connection-automatic-en.png'),full_page=True)

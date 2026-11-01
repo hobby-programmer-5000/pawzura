@@ -66,7 +66,7 @@ def main(dist_dir: Path | None = None):
         shutil.copytree(ROOT / name, output / name, dirs_exist_ok=True)
     # Only reviewed model evidence is shipped, never an arbitrary artifact folder.
     (output / "artifacts").mkdir(exist_ok=True)
-    for name in ("model-provenance.json", "qwen-character.json"):
+    for name in ("model-provenance.json", "qwen-character.json", "browser-setup-en.png", "browser-setup-ko.png"):
         shutil.copy2(ROOT / "artifacts" / name, output / "artifacts" / name)
     bundled = output / "licenses/installed"
     bundled.mkdir(parents=True, exist_ok=True)

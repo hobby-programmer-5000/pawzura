@@ -78,6 +78,19 @@ class Bridge:
             if ticket in self.tickets:
                 self.tickets[ticket]["ready"] = True
 
+    def is_connected(self, browser: str) -> bool:
+        with self.lock:
+            return time.monotonic() - self.peers.get(browser, float("-inf")) < 5
+
+    def status(self, data: dict) -> dict:
+        config = self.settings.snapshot()
+        browser = data.get("browser")
+        if browser not in config["browsers"]:
+            raise ValueError("Unknown browser")
+        with self.lock:
+            self.peers[browser] = time.monotonic()
+        return {"enabled": bool(config["guard_enabled"] and config.get("browser_control_enabled", False) and config["browsers"][browser]["enabled"]), "preview": config["preview_only"]}
+
     def invalidate_tickets(self):
         with self.lock:
             self.tickets.clear()
@@ -95,9 +108,10 @@ class Bridge:
             raise ValueError("Invalid tabs")
         now = time.monotonic()
         with self.lock:
-            self.peers[browser] = now
+            # Setup completion requires the new status handshake, not an older
+            # extension's URL-evaluation traffic from a different installation.
             self.tickets = {k: v for k, v in self.tickets.items() if now - v["created"] < 20}
-            enabled = config["guard_enabled"] and config["browsers"][browser]["enabled"]
+            enabled = config["guard_enabled"] and config.get("browser_control_enabled", False) and config["browsers"][browser]["enabled"]
             preview = config["preview_only"]
             decisions = []
             seen = self.preview_seen.get(browser, set())
@@ -184,13 +198,13 @@ class Bridge:
                     if not hmac.compare_digest(token.encode(), config["bridge_token"].encode()):
                         self.send_json(401, {"error": "Pairing required"})
                         return
-                    if self.path != "/evaluate":
+                    if self.path not in ("/evaluate", "/status"):
                         self.send_json(404, {"error": "Unknown endpoint"})
                         return
                     data = json.loads(self.rfile.read(length))
                     if not isinstance(data, dict):
                         raise ValueError("Invalid object")
-                    self.send_json(200, bridge.evaluate(data))
+                    self.send_json(200, bridge.status(data) if self.path == "/status" else bridge.evaluate(data))
                 except PermissionError:
                     self.send_json(403, {"error": "Pairing origin rejected"})
                 except (ValueError, TypeError, KeyError):

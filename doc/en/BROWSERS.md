@@ -1,28 +1,52 @@
 [English](../en/BROWSERS.md) | [한국어](../ko/BROWSERS.md) · [Documentation](../README.md)
 
-# Connect a browser
+# Browser setup — start in the app
 
-## Install the extension first
+**The extension is required only for website control.** If you want applications controlled while browsing freely, turn **Browsers → Website control OFF**. This switch applies immediately; application monitoring and site lists stay as configured. The tray has the same switch. It is shared across profiles. New installs default to OFF; upgrades preserve previously enabled site monitoring.
 
-For **Chrome**, open `chrome://extensions`. For **Edge**, open `edge://extensions`. Turn on **Developer mode**, choose **Load unpacked**, then select the extracted `Pawzura/extensions/chromium` folder. Select the folder containing `manifest.json`, not `options.html`.
+## Chrome / Edge: the shortest setup
 
-In the extension's **Details** page, choose **Extension options**. You can also click the Pawzura extension icon. This is the page that can actually connect to the desktop app.
+1. In Pawzura 0.1.5+, open **Browsers**, choose **chrome** or **edge**, and click **Install/connect extension…**.
+2. Click **Open install page + copy folder**. The app opens the browser's extension manager and puts the correct folder on the clipboard.
+3. **In the browser:** turn on **Developer mode**, then click **Load unpacked**. In the folder picker, press **Alt+D → Ctrl+V → Enter → Select Folder**. No manual folder search is needed.
+4. Return to the helper → **I loaded the extension → Next → Open connection and request pairing**. Choose **Yes** in Pawzura's confirmation. The helper detects a recent authenticated connection and shows completion.
 
-**If you opened `file:///.../options.html`:** that is a preview, with a visible explanation and disabled connection buttons. Install the extension using the steps above, then open Extension options. The local preview still supports language switching and the sample.
+The browser and port are filled automatically. Do not open `options.html` from Explorer; that is only a file preview. Installation requires the browser's own controls and cannot be silently approved by this helper. It does not change enterprise policies or browser profiles. [Chrome's local-load steps](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked), [Edge's local-load steps](https://learn.microsoft.com/en-us/microsoft-edge/extensions/getting-started/extension-sideloading).
 
-Brave/Opera/Vivaldi use the Chromium extension folder, subject to each browser's extension support. For Firefox, open `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → `extensions/firefox/manifest.json`. Temporary installation disappears after restart; permanent Firefox distribution requires Mozilla signing. Zen compatibility needs separate validation.
+## If a button or page is missing
 
-## Connect automatically — no code entry
+![Setup helper with an illustrative generic folder path](../../artifacts/browser-setup-en.png)
 
-1. Start **Pawzura 0.1.3 or newer** and keep it running.
-2. Open the installed extension's options, select your browser, and click **Connect automatically**. Keep port **47831** unless the app uses another port.
-3. In the desktop app's confirmation, choose **Yes**. Connection information is exchanged and saved automatically.
+The actual folder is filled and copied on your PC when you click Open install page.
 
-The extension is still needed once: its browser permission is what lets it read URLs and close individual tabs. The desktop app never sends native close requests to browser windows, even if a browser was removed from the application list. No browser password or account login is needed for pairing. Allowed sites and guardian settings do not change when you connect.
+| What you see | Do this |
+| --- | --- |
+| No Load unpacked button | Turn on Developer mode on the extension-manager page first. Chrome puts it at the upper right; Edge's layout can differ. |
+| Browser not found | In the helper, use Choose browser executable, select the chosen browser's EXE, then retry Open install page. |
+| A folder picker with unrelated folders | Alt+D focuses its address bar. Ctrl+V pastes the path copied by the helper. Enter opens that folder; then Select Folder. |
+| Cannot find manifest / failed to load | Select the folder prepared by the helper, not the entire Pawzura folder, a ZIP, or options.html. Extract the complete app ZIP first. |
+| Connection page cannot open | Finish Load unpacked first. For an existing installation, use Reload on its Pawzura card after the helper updates files. |
+| Developer mode is unavailable or managed | Local installation may be blocked by browser/organization policy. The helper cannot override it; apps-only mode remains available. |
+| Connected but no tab closing | Turn on the global Website control switch, this browser's allowlist switch and the General guardian. Preview must be off for actual closing. |
 
-**Upgrade both parts:** quit the old app, extract the new ZIP, and reload the extension from `extensions/chromium` in the browser's extension manager (or reload Firefox's temporary add-on). If the folder changed, load the new folder. Close old options tabs and reopen options. Existing saved connections remain valid.
+## What gets installed
 
-The extension's Language menu offers English and 한국어 independently from the desktop app.
+The helper copies six public extension files to `%LOCALAPPDATA%/Pawzura/extensions/chromium` (or `firefox`). This location stays stable when a new EXE is extracted elsewhere. Keep that installed folder. Updates copy the new public files to the same folder; reload the browser's extension card afterwards. The folder path is what the helper copies, not a connection credential.
+
+Chromium uses a fixed public manifest key to keep a stable development ID. This public key is not a private signing key or a pairing credential. The connection link carries only browser, port, language and a request flag. The actual token is exchanged on loopback only after desktop approval. [Chrome extension IDs](https://developer.chrome.com/docs/extensions/reference/manifest/key).
+
+<details>
+<summary>Upgrading from 0.1.4 or an older unpacked copy</summary>
+
+The new helper's fixed ID can differ from older path-derived IDs. Remove the older Pawzura card before loading the new helper folder to avoid duplicate extensions. Desktop allowlists remain in the same local settings file. This is a one-time change; later helper updates retain the folder and ID.
+
+</details>
+
+## Other browsers
+
+Brave/Opera/Vivaldi use the Chromium folder and their extension-manager page where supported; Arc compatibility and nonstandard browser executable discovery need separate testing. If detection fails, the helper lets you select the EXE.
+
+Firefox/Zen use the helper's temporary add-on instructions: **Load Temporary Add-on → manifest.json**. Restarting the browser removes this temporary installation. The connection button opens `about:addons`; open Pawzura's Options/Preferences (or its toolbar icon), select the browser and click **Connect automatically**, then approve in the app. Firefox assigns its own extension UUID, so the Chromium direct-options shortcut is not used. Permanent Firefox installation needs Mozilla signing; Zen requires separate validation. [Mozilla distribution requirements](https://extensionworkshop.com/documentation/publish/signing-and-distribution-overview/).
 
 <details>
 <summary>Advanced manual connection and old JSON examples</summary>
@@ -59,10 +83,10 @@ Expand **See an example / import old JSON**. Paste the complete copied text into
 ## Add allowed sites and enable monitoring
 
 1. In desktop **Browsers**, select the connected browser. Enter sites, one per line, for example `https://example.com`.
-2. Check **Apply website allowlist to this browser** and click **Save settings**.
+2. Check **Apply website allowlist to this browser** and click **Save settings**, then turn on the global **Website control** switch.
 3. In **General**, check **Enable focus guardian**, leave preview on, and save. Verify the behavior before turning preview off.
 
-Only built-in new-tab/home pages and explicit blank-page URLs are initially allowed. Custom startup URLs are **not** detected automatically: add them yourself. Install the extension before enabling site monitoring, since internal settings pages are not default-allowed pages.
+Built-in new-tab/home pages, blank pages and the narrow extension-installation pages are initially allowed. General browser settings and custom startup URLs are **not** automatically allowed. Add custom home URLs yourself. Install and connect the extension before enabling site monitoring.
 
 | Rule | Allows | Does not allow |
 | --- | --- | --- |

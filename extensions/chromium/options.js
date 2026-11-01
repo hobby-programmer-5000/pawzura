@@ -59,6 +59,12 @@ async function automaticConnection() {
       if (result.state === 'approved') {
         const pairing = validate(result.pairing);
         if (pairing.browser !== browser || pairing.port !== port) throw new Error('bridge_error');
+        const check = await fetch(`http://127.0.0.1:${pairing.port}/status`, {
+          method:'POST', headers:{'Content-Type':'application/json','X-Pawzura-Token':pairing.token},
+          body:JSON.stringify({browser:pairing.browser}), signal:AbortSignal.timeout(3000),
+        });
+        if (check.status === 404) throw new Error('update_app');
+        if (!check.ok) throw new Error('bridge_error');
         await api.storage.local.set({ pairing, language });
         if (attempt !== connectionAttempt) { await api.storage.local.remove('pairing'); return; }
         fill(pairing); message('auto_connected');
@@ -102,12 +108,13 @@ $('#connection-form').addEventListener('submit', async event => {
     message('testing');
     let response;
     try {
-      response = await fetch(`http://127.0.0.1:${pairing.port}/evaluate`, {
+      response = await fetch(`http://127.0.0.1:${pairing.port}/status`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pawzura-Token': pairing.token },
-        body: JSON.stringify({ browser: pairing.browser, tabs: [] }), signal: AbortSignal.timeout(3000),
+        body: JSON.stringify({ browser: pairing.browser }), signal: AbortSignal.timeout(3000),
       });
     } catch (_) { throw new Error('unavailable'); }
     if (response.status === 401) throw new Error('wrong_code');
+    if (response.status === 404) throw new Error('update_app');
     if (!response.ok) throw new Error('bridge_error');
     const state = await response.json();
     if (typeof state.enabled !== 'boolean' || typeof state.preview !== 'boolean') throw new Error('bridge_error');
@@ -135,6 +142,12 @@ async function initialize() {
     const saved = await api.storage.local.get(['pairing', 'language']);
     translate(saved.language);
     if (saved.pairing) { fill(validate(saved.pairing)); message('saved'); }
+    const setup = new URLSearchParams(globalThis.location?.search || '');
+    if (browsers.includes(setup.get('browser'))) $('#browser').value = setup.get('browser');
+    const port = Number(setup.get('port'));
+    if (Number.isInteger(port) && port >= 1024 && port <= 65535) $('#port').value = String(port);
+    if (['en', 'ko'].includes(setup.get('lang'))) translate(setup.get('lang'));
+    if (setup.get('setup') === '1') await automaticConnection();
   } catch (_) { message('storage_error', 'error'); }
 }
 void initialize();

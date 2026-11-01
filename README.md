@@ -14,6 +14,12 @@ Windows 10 (1809+) / Windows 11 · x64 · Python 3.12–3.15 for source use · M
 
 The app starts in English. Switch with **General → Language → 한국어 → Save settings**. Source users can double-click **run.bat** instead of building.
 
+## Browser control is optional
+
+**Website control requires the Pawzura browser extension.** For applications only, leave **Browsers → Website control OFF**; no extension is needed.
+
+For websites, choose your browser and click **Install/connect extension…**. The app opens the install page, copies the correct folder and guides you through loading it, then opens the connection page. You approve installation and pairing. [Short walkthrough and missing-button help](doc/en/BROWSERS.md).
+
 ## What it does
 
 - Walks across connected monitors with an original, changeable character.

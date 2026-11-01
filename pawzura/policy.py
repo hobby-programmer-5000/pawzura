@@ -10,6 +10,8 @@ INTERNAL_PAGES = {
     "chrome://newtab", "chrome://new-tab-page", "chrome://welcome",
     "edge://newtab", "edge://welcome", "brave://newtab", "vivaldi://newtab",
     "opera://startpage", "chrome-search://local-ntp/local-ntp.html",
+    "chrome://extensions", "edge://extensions", "brave://extensions", "vivaldi://extensions",
+    "opera://extensions", "about:addons", "about:debugging",
 }
 
 
@@ -106,7 +108,7 @@ def site_rule(value: str) -> str:
 def allowed_url(url: str, rules: list[str]) -> bool:
     try:
         # Internal new-tab pages are exact matches, never trust arbitrary internal URLs.
-        if url.rstrip("/").split("#", 1)[0].split("?", 1)[0] in INTERNAL_PAGES:
+        if url.split("#", 1)[0].split("?", 1)[0].rstrip("/") in INTERNAL_PAGES:
             return True
         parsed, host, port, _ = _split(url)
         for rule in rules:

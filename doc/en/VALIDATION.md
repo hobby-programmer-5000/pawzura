@@ -4,6 +4,16 @@
 
 Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
 
+## 0.1.5 guided installation and website switch
+
+**70 Python tests and 19 extension tests passed locally.** Tests cover fixed-file staging without preferences, stable folder updates, token-free setup links, missing-browser feedback, immediate website OFF despite invalid unsaved rule text, retained application monitoring, migration, authenticated status without URL payloads, URL-query preflight while disabled and safe installation pages.
+
+The real isolated Chromium probe confirmed that its installed ID matches the public manifest key and that the helper's direct options link fills browser/port, starts pairing and connects after test-controlled approval. Allowed/options tabs and last-tab window preservation remained passing. English/Korean helper and settings renders were reviewed with disposable defaults and illustrative paths.
+
+The final 0.1.5 Windows EXE passed offscreen rendering and normal exit. All ten embedded app modules matched final source; earlier 0.1.3/0.1.4 release archive checksums were unchanged. Completion status requires the new authenticated status handshake rather than older extension evaluation traffic.
+
+The installed user's Chrome Developer mode toggle and directory-picker clicks were **not** automated/verified; the earlier desktop controller stopped because it could not identify the current URL confidently. The helper's browser-launch calls are unit-tested, while the post-load connection link was tested in isolated Chromium. Firefox/Zen and other browser UI layouts still require separate device testing. No user profile or user list was used for these checks.
+
 ## 0.1.4 browser tab indication
 
 **61 Python tests and 18 extension tests passed locally.** Active/background browser events use only a synthetic taskbar-side tab marker in preview and live modes; routing tests assert no foreground-window lookup, native close coordinates or native close call. Preview tests advance time beyond ticket expiry and verify no repeat/close, then verify rearming after allowed navigation/settings apply. A rendering test checks marker bounds and removal on cancellation. Existing allowed-tab, stale-navigation, preview and last-tab window-preservation checks remain passing.

@@ -8,6 +8,14 @@ async function sweep() {
   try {
     const { pairing } = await api.storage.local.get("pairing");
     if (!pairing) return;
+    const statusResponse = await fetch(`http://127.0.0.1:${pairing.port}/status`, {
+      method: "POST", headers: { "Content-Type": "application/json", "X-Pawzura-Token": pairing.token },
+      body: JSON.stringify({ browser: pairing.browser }), signal: AbortSignal.timeout(2500),
+    });
+    if (!statusResponse.ok) throw new Error(`Bridge: ${statusResponse.status}`);
+    const status = await statusResponse.json();
+    await api.action.setBadgeText({ text: status.enabled ? (status.preview ? "PRE" : "ON") : "" });
+    if (!status.enabled) return; // Website control OFF: do not even query tab URLs.
     const tabs = await api.tabs.query({});
     const ownRoot = api.runtime.getURL?.('');
     const candidates = tabs.filter(t => !ownRoot || !(t.pendingUrl || t.url || '').startsWith(ownRoot));
@@ -48,9 +56,10 @@ async function sweep() {
 api.tabs.onUpdated.addListener(() => { void sweep(); });
 api.tabs.onActivated.addListener(() => { void sweep(); });
 api.runtime.onStartup.addListener(() => { void sweep(); });
-api.runtime.onInstalled.addListener(() => {
+api.runtime.onInstalled.addListener(details => {
   api.alarms.create("pawzura-sweep", { periodInMinutes: 0.5 });
   void sweep();
+  if (details?.reason === 'install') void api.runtime.openOptionsPage();
 });
 api.alarms.onAlarm.addListener(() => { void sweep(); });
 api.action.onClicked.addListener(() => { void api.runtime.openOptionsPage(); });

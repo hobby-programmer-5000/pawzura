@@ -37,6 +37,15 @@ class LanguageTests(unittest.TestCase):
         self.assertEqual(dialog.tabs.tabText(0), "General")
         self.assertEqual(dialog.language.currentData(), "en")
 
+    def test_website_switch_turns_off_immediately_even_with_invalid_draft(self):
+        self.settings.save({"guard_enabled":True,"browser_control_enabled":True})
+        dialog = self.make_dialog()
+        dialog.sites.setPlainText("https://")
+        dialog.website_control.setChecked(False)
+        self.assertFalse(self.settings.snapshot()["browser_control_enabled"])
+        self.assertTrue(self.settings.snapshot()["guard_enabled"])
+        self.assertEqual(self.settings.snapshot()["browsers"]["chrome"]["allowed_sites"], [])
+
     def test_korean_save_notifies_and_persists(self):
         dialog = self.make_dialog()
         events = []

@@ -4,7 +4,7 @@ import copy
 import json
 from pathlib import Path
 import sys
-from PySide6.QtCore import QThread, Signal, Qt
+from PySide6.QtCore import QThread, Signal, Qt, QTimer
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtCore import QUrl
 from PySide6.QtWidgets import (
@@ -16,6 +16,7 @@ from . import __version__, windows
 from .characters import MODEL, generate_character, random_character
 from .config import BROWSERS, default_character, profile_lists
 from .pet import CharacterPreview
+from .browser_setup import BrowserSetupDialog
 from .policy import SiteRuleError, normalize_app, site_rule
 
 TEXT = {
@@ -25,11 +26,15 @@ TEXT = {
         "guard": "집중 지킴이 켜기", "preview": "미리보기 모드 · 애니메이션만 표시하고 닫지 않기",
         "visible": "바탕화면에 캐릭터 표시", "startup": "Windows 로그인 시 자동 실행", "language": "언어",
         "save": "설정 저장", "close": "트레이로 돌아가기", "saved": "설정을 저장했습니다.",
-        "intro": "먼저 미리보기로 허용 목록을 확인하세요.\n미리보기를 끄면 미허용 프로그램에 일반 닫기 요청을 보내고 미허용 탭을 닫습니다.",
+        "intro": "먼저 미리보기로 허용 목록을 확인하세요.\n프로그램을 제어하며, 사이트 제어도 켜고 확장을 연결한 경우에만 미허용 탭을 닫습니다.",
         "apps_help": "허용할 실행 파일 이름을 한 줄에 하나씩 입력하세요. 경로를 붙여넣으면 파일명만 사용합니다.\nWindows 시스템 창과 이 앱은 항상 보호합니다. 같은 이름의 실행 파일은 모두 허용됩니다.",
         "browse": "실행 파일 추가…", "running": "열려 있는 프로그램 추가…", "startup_scan": "시작프로그램 다시 탐색",
         "browser_help": "브라우저마다 확장을 설치하고 연결해야 합니다. 기본 허용은 새 탭/기본 홈 화면뿐입니다.\n도메인은 사이트 전체를, 경로를 넣은 주소는 해당 구역만 허용합니다. http://와 https:// 모두 입력할 수 있습니다.",
         "browser_on": "이 브라우저의 사이트 허용 목록 적용", "pair": "연결 코드 복사", "extension": "확장 폴더 열기",
+        "website_control": "사이트 제어 ON/OFF — 변경 즉시 적용",
+        "website_help": "OFF이면 프로그램만 제어하고 브라우저 탭은 건드리지 않습니다. 사이트 제어에는 별도 확장이 필수입니다.",
+        "setup": "확장 설치·연결…", "connected": "확장 연결됨", "not_connected": "확장 미연결 — 설치·연결 버튼을 누르세요",
+        "website_saved": "사이트 제어를 즉시 저장했습니다. 프로그램 감시 설정은 유지됩니다.",
         "connection_code": "연결 코드", "port": "포트", "startup_list": "시작프로그램",
         "rules": "허용 주소 · 한 줄에 하나 (example.com/* 또는 example.com/section/*)",
         "site_line": "허용 주소 {line}번째 줄: {message}",
@@ -50,9 +55,9 @@ TEXT = {
         "credit": "기획·요구사항·관리: hobby-programmer-5000\n구현·문서·검증 지원: ChatGPT (Codex, OpenAI)\n\n앱 코드: MIT · Qt/Python/모델: 각각의 라이선스 적용",
         "status": "감시가 꺼져 있습니다. 캐릭터와 설정만 동작합니다.",
         "demo": "깨물기 애니메이션 미리보기", "pair_help": "코드를 복사했습니다. 확장 설정에서 같은 브라우저와 포트를 선택하고 ‘연결 코드’에 붙여넣은 뒤 ‘연결하고 확인’을 누르세요.",
-        "connection_help": "브라우저의 Pawzura 확장 아이콘 → ‘자동 연결’ → 이 앱의 확인창에서 ‘예’를 누르세요. 코드를 입력할 필요가 없습니다.",
+        "connection_help": "위 ‘확장 설치·연결’을 누르면 도우미가 설치·연결 화면을 엽니다. 마지막 확인창에서 ‘예’를 누르세요.",
         "manual_connection": "수동 연결 — 고급 설정",
-        "pair_question": "{browser} 확장을 연결할까요?\n\n확장에서 ‘자동 연결’을 눌렀다면 예를 선택하세요.\n{origin}\n\n허용 사이트와 감시 설정은 바뀌지 않습니다.",
+        "pair_question": "{browser} 확장을 연결할까요?\n\n설치·연결 도우미 또는 확장에서 연결을 시작했다면 예를 선택하세요.\n{origin}\n\n허용 사이트와 감시 설정은 바뀌지 않습니다.",
         "quit_wait": "캐릭터 생성이 끝난 뒤 종료하세요.", "bridge_error": "브라우저 연결을 시작할 수 없습니다: ",
         "bad_exe": "실행 파일 이름은 .exe로 끝나야 합니다.", "exe_filter": "Windows 실행 파일 (*.exe)",
     },
@@ -62,11 +67,15 @@ TEXT = {
         "guard": "Enable focus guardian", "preview": "Preview mode · animate without closing anything",
         "visible": "Show desktop companion", "startup": "Run when I sign in to Windows", "language": "Language",
         "save": "Save settings", "close": "Back to tray", "saved": "Settings saved.",
-        "intro": "Check your allowlist in preview mode first.\nWith preview off, unlisted apps receive a normal close request and unlisted tabs close.",
+        "intro": "Check your allowlist in preview mode first.\nApps are controlled; tabs close only when website control is also on and the extension is connected.",
         "apps_help": "Enter one executable filename per line. Pasted paths are reduced to filenames.\nWindows system windows and this app are always protected. All files with the same name are allowed.",
         "browse": "Add executable…", "running": "Add open application…", "startup_scan": "Rescan startup apps",
         "browser_help": "Install and pair the extension in each browser. Only built-in new-tab/home pages are allowed initially.\nDomains allow whole sites; a URL path limits access to that section. Both http:// and https:// URLs work.",
         "browser_on": "Apply website allowlist to this browser", "pair": "Copy connection code", "extension": "Open extension folder",
+        "website_control": "Website control ON/OFF — applies immediately",
+        "website_help": "OFF controls applications only and leaves browser tabs alone. Website control requires the separate extension.",
+        "setup": "Install/connect extension…", "connected": "Extension connected", "not_connected": "Extension not connected — use Install/connect",
+        "website_saved": "Website control saved immediately. Application guardian settings are unchanged.",
         "connection_code": "Connection code", "port": "Port", "startup_list": "Startup applications",
         "rules": "Allowed addresses · one per line (example.com/* or example.com/section/*)",
         "site_line": "Allowed address, line {line}: {message}",
@@ -87,9 +96,9 @@ TEXT = {
         "credit": "Product direction, requirements, maintenance: hobby-programmer-5000\nImplementation, documentation, validation assistance: ChatGPT (Codex, OpenAI)\n\nApp code: MIT · Qt, Python and model retain their own licenses",
         "status": "Guardian is off. Only the companion and settings are active.",
         "demo": "Preview bite animation", "pair_help": "Code copied. In extension settings, choose this browser and port, paste into Connection code, then click Connect and test.",
-        "connection_help": "Click the Pawzura extension icon → Connect automatically → approve in this app. No connection code entry is needed.",
+        "connection_help": "Use Install/connect extension above. Its helper opens installation and connection pages; approve the final request in this app.",
         "manual_connection": "Manual connection — advanced",
-        "pair_question": "Connect this {browser} extension?\n\nChoose Yes if you clicked Connect automatically in the extension.\n{origin}\n\nAllowlist and guardian settings will stay as configured.",
+        "pair_question": "Connect this {browser} extension?\n\nChoose Yes if you started connection in the setup helper or the extension.\n{origin}\n\nAllowlist and guardian settings will stay as configured.",
         "quit_wait": "Wait for character generation to finish before quitting.", "bridge_error": "Browser connection unavailable: ",
         "bad_exe": "Executable names must end with .exe.", "exe_filter": "Windows application (*.exe)",
     },
@@ -137,12 +146,14 @@ class SettingsDialog(QDialog):
     demo_requested = Signal()
     recovery_requested = Signal()
 
-    def __init__(self, settings, parent=None):
+    def __init__(self, settings, parent=None, connection_check=None):
         super().__init__(parent)
         self.settings = settings
         self.config = settings.snapshot()
         self.t = TEXT.get(self.config["language"], TEXT["en"])
         self.worker = None
+        self.connection_check = connection_check or (lambda _: False)
+        self.setup_dialog = None
         self.setWindowTitle("Pawzura")
         self.resize(920, 720)
         self.setMinimumSize(820, 640)
@@ -179,6 +190,9 @@ class SettingsDialog(QDialog):
         footer.addWidget(close)
         footer.addWidget(save)
         outer.addLayout(footer)
+        self.connection_timer = QTimer(self)
+        self.connection_timer.timeout.connect(self.refresh_connection)
+        self.connection_timer.start(1000)
 
     def build_profiles(self, outer):
         row = QHBoxLayout()
@@ -346,10 +360,22 @@ class SettingsDialog(QDialog):
 
     def build_browsers(self):
         layout = self.page("web")
-        layout.addWidget(self.label(self.t["browser_help"]))
+        self.website_control = QCheckBox(self.t["website_control"].replace("ON/OFF", "ON" if self.config["browser_control_enabled"] else "OFF"))
+        self.website_control.setChecked(self.config["browser_control_enabled"])
+        self.website_control.toggled.connect(self.toggle_website_control)
+        layout.addWidget(self.website_control)
+        layout.addWidget(self.label(self.t["website_help"]))
+        row = QHBoxLayout()
         self.browser_select = QComboBox()
         self.browser_select.addItems(BROWSERS)
-        layout.addWidget(self.browser_select)
+        row.addWidget(self.browser_select)
+        self.setup_button = QPushButton(self.t["setup"])
+        self.setup_button.setObjectName("primary")
+        self.setup_button.clicked.connect(self.open_setup)
+        row.addWidget(self.setup_button)
+        layout.addLayout(row)
+        self.connection_status = self.label(self.t["not_connected"])
+        layout.addWidget(self.connection_status)
         self.browser_on = QCheckBox(self.t["browser_on"])
         layout.addWidget(self.browser_on)
         layout.addWidget(self.label(self.t["rules"]))
@@ -360,11 +386,6 @@ class SettingsDialog(QDialog):
         self.current_browser = BROWSERS[0]
         self.load_browser()
         self.browser_select.currentTextChanged.connect(self.switch_browser)
-        buttons = QHBoxLayout()
-        extension = QPushButton(self.t["extension"])
-        extension.clicked.connect(self.open_extension)
-        buttons.addWidget(extension)
-        layout.addLayout(buttons)
         layout.addWidget(self.label(self.t["connection_help"]))
         manual = QCheckBox(self.t["manual_connection"])
         layout.addWidget(manual)
@@ -381,6 +402,32 @@ class SettingsDialog(QDialog):
         panel.setVisible(False)
         manual.toggled.connect(panel.setVisible)
         layout.addWidget(panel)
+
+    def toggle_website_control(self, enabled):
+        try:
+            self.settings.save({"browser_control_enabled": enabled})
+            self.config["browser_control_enabled"] = enabled
+            self.website_control.setText(self.t["website_control"].replace("ON/OFF", "ON" if enabled else "OFF"))
+            self.applied.emit()
+            self.message.setText(self.t["website_saved"])
+        except (ValueError, OSError) as error:
+            self.website_control.blockSignals(True)
+            self.website_control.setChecked(self.settings.snapshot()["browser_control_enabled"])
+            self.website_control.blockSignals(False)
+            QMessageBox.warning(self, "Pawzura", str(error))
+
+    def refresh_connection(self):
+        if self.isVisible():
+            self.website_control.setText(self.t["website_control"].replace("ON/OFF", "ON" if self.website_control.isChecked() else "OFF"))
+            self.connection_status.setText(self.t["connected"] if self.connection_check(self.current_browser) else self.t["not_connected"])
+
+    def open_setup(self):
+        if self.setup_dialog:
+            self.setup_dialog.hide()
+            self.setup_dialog.deleteLater()
+        self.setup_dialog = BrowserSetupDialog(self.current_browser, self.config["bridge_port"], self.config["language"], self.connection_check, self)
+        self.setup_dialog.show()
+        self.setup_dialog.raise_()
 
     def store_browser(self):
         rules = []
@@ -497,6 +544,7 @@ class SettingsDialog(QDialog):
         try:
             self.store_profile()
             updates = {"guard_enabled": self.guard.isChecked(), "preview_only": self.preview.isChecked(),
+                       "browser_control_enabled": self.website_control.isChecked(),
                        "pet_visible": self.visible.isChecked(), "start_at_login": self.startup.isChecked(),
                        "language": self.language.currentData(), "allowed_apps": self.config["allowed_apps"],
                        "profiles": self.config["profiles"], "active_profile": self.config["active_profile"],

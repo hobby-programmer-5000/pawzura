@@ -65,6 +65,7 @@ class Companion:
             (("집중 지킴이 끄기" if config["guard_enabled"] else "집중 지킴이 켜기") if ko else ("Pause guardian" if config["guard_enabled"] else "Enable guardian"), self.toggle_guard),
             (("캐릭터 숨기기" if config["pet_visible"] else "캐릭터 보이기") if ko else ("Hide companion" if config["pet_visible"] else "Show companion"), self.toggle_pet),
             ("캐릭터 화면 복구" if ko else "Recover companion on screen", self.recover_pet),
+            (("사이트 제어 끄기" if config["browser_control_enabled"] else "사이트 제어 켜기") if ko else ("Turn website control off" if config["browser_control_enabled"] else "Turn website control on"), self.toggle_browser_control),
         ]
         for title, callback in items:
             action = self.menu.addAction(title)
@@ -91,6 +92,10 @@ class Companion:
         self.settings.save({"pet_visible": not self.settings.snapshot()["pet_visible"]})
         self.apply()
 
+    def toggle_browser_control(self):
+        self.settings.save({"browser_control_enabled": not self.settings.snapshot()["browser_control_enabled"]})
+        self.apply()
+
     def recover_pet(self):
         # Recreate the native transparent window as well as resetting its position.
         self.settings.save({"pet_visible": True})
@@ -115,6 +120,10 @@ class Companion:
         self.tray.setToolTip("Pawzura · " + ("Preview" if config["guard_enabled"] and config["preview_only"] else "Guardian on" if config["guard_enabled"] else "Guardian off"))
         self.refresh_menu()
         self.observed.clear()
+        if self.dialog:
+            self.dialog.website_control.blockSignals(True)
+            self.dialog.website_control.setChecked(config["browser_control_enabled"])
+            self.dialog.website_control.blockSignals(False)
 
     def show_settings(self):
         language = self.settings.snapshot()["language"]
@@ -122,7 +131,7 @@ class Companion:
             self.dialog.deleteLater()
             self.dialog = None
         if not self.dialog:
-            self.dialog = SettingsDialog(self.settings)
+            self.dialog = SettingsDialog(self.settings, connection_check=self.bridge.is_connected)
             self.dialog.applied.connect(self.apply)
             self.dialog.language_changed.connect(lambda: QTimer.singleShot(0, self.show_settings))
             self.dialog.demo_requested.connect(self.demo)
@@ -131,6 +140,9 @@ class Companion:
         config = self.settings.snapshot()
         self.dialog.guard.setChecked(config["guard_enabled"])
         self.dialog.visible.setChecked(config["pet_visible"])
+        self.dialog.website_control.blockSignals(True)
+        self.dialog.website_control.setChecked(config["browser_control_enabled"])
+        self.dialog.website_control.blockSignals(False)
         if self.bridge_error:
             self.dialog.message.setText(self.dialog.t["bridge_error"] + self.bridge_error)
         self.dialog.show()
@@ -170,7 +182,7 @@ class Companion:
         # Browser tickets receive the same animation acknowledgement as native windows.
         try:
             event = self.bridge.events.get_nowait()
-            if config["guard_enabled"] and config["browsers"][event["browser"]]["enabled"]:
+            if config["guard_enabled"] and config.get("browser_control_enabled", False) and config["browsers"][event["browser"]]["enabled"]:
                 # A browser's tab ID cannot identify a native window's X coordinates.
                 # Use a separate taskbar-side tab marker, never another window's controls.
                 point = self.pet.tab_target_point()
