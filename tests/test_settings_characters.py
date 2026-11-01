@@ -31,6 +31,18 @@ class SettingsTests(unittest.TestCase):
             self.assertTrue(data["preview_only"])
             self.assertTrue(all(not b["enabled"] and not b["allowed_sites"] for b in data["browsers"].values()))
 
+    def test_legacy_settings_migrate_to_profile_without_losing_lists(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "settings.json"
+            path.write_text(json.dumps({"version": 1, "allowed_apps": ["custom.exe"], "browsers": {"chrome": {"enabled": True, "allowed_sites": ["example.com/*"]}}}), encoding="utf-8")
+            settings = Settings(path)
+            self.assertEqual(settings.snapshot()["profiles"]["Default"]["allowed_apps"], ["custom.exe"])
+            self.assertEqual(settings.snapshot()["browsers"]["chrome"]["allowed_sites"], ["example.com/*"])
+            self.assertNotIn("profiles", json.loads(path.read_text(encoding="utf-8")))
+            settings.save()
+            self.assertEqual(Settings(path).snapshot()["profiles"]["Default"]["browsers"]["chrome"]["allowed_sites"], ["example.com/*"])
+
     def test_generated_values_are_bounded(self):
         result = validate_character({"body": "exec('malware')", "accent": "#123456", "ears": "famous-character", "accessory": "star"}, 123)
         self.assertEqual(result["accent"], "#123456")

@@ -64,6 +64,7 @@ class Companion:
             ("설정 열기" if ko else "Open settings", self.show_settings),
             (("집중 지킴이 끄기" if config["guard_enabled"] else "집중 지킴이 켜기") if ko else ("Pause guardian" if config["guard_enabled"] else "Enable guardian"), self.toggle_guard),
             (("캐릭터 숨기기" if config["pet_visible"] else "캐릭터 보이기") if ko else ("Hide companion" if config["pet_visible"] else "Show companion"), self.toggle_pet),
+            ("캐릭터 화면 복구" if ko else "Recover companion on screen", self.recover_pet),
         ]
         for title, callback in items:
             action = self.menu.addAction(title)
@@ -90,8 +91,23 @@ class Companion:
         self.settings.save({"pet_visible": not self.settings.snapshot()["pet_visible"]})
         self.apply()
 
+    def recover_pet(self):
+        # Recreate the native transparent window as well as resetting its position.
+        self.settings.save({"pet_visible": True})
+        self.bridge.invalidate_tickets()
+        self.pet.dispose()
+        self.pet = Pet(self.settings.snapshot()["character"])
+        self.pet.settings_requested.connect(self.show_settings)
+        self.pet.show()
+        self.pet.raise_()
+        self.refresh_menu()
+        if self.dialog:
+            self.dialog.visible.setChecked(True)
+            self.dialog.message.setText(self.dialog.t["recovered"])
+
     def apply(self):
         config = self.settings.snapshot()
+        self.bridge.invalidate_tickets()
         self.pet.cancel_bite()
         self.pet.spec = config["character"]
         self.pet.setVisible(config["pet_visible"])
@@ -110,6 +126,7 @@ class Companion:
             self.dialog.applied.connect(self.apply)
             self.dialog.language_changed.connect(lambda: QTimer.singleShot(0, self.show_settings))
             self.dialog.demo_requested.connect(self.demo)
+            self.dialog.recovery_requested.connect(self.recover_pet)
         # Synchronize quick tray toggles without overwriting unsaved allowlist edits.
         config = self.settings.snapshot()
         self.dialog.guard.setChecked(config["guard_enabled"])

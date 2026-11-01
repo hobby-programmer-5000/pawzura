@@ -21,8 +21,8 @@ MIT에 임의의 ‘등록 금지’ 조건을 붙이면 원래 조건을 변경
 | 도형 구현 | ChatGPT/Codex를 통한 AI 지원 QPainter 코드 작성. 사람이 직접 그린 외주 도안이 아님 |
 | 렌더러 최초 기록 | 커밋 `e954e5947e0b361aa3004f6d8ad62ee4b40043d7`, 기록 시각 2026-11-02 03:50:46 +09:00 |
 | 이 고지의 소스 기준점 | 커밋 `bd2c0734db4a8a4f1aa90571f12c5c9ebdb44c9a` |
-| 기준점의 렌더러 | [pawzura/pet.py](../../pawzura/pet.py)의 `draw_character` |
-| 기준점의 기본 외형 | [pawzura/config.py](../../pawzura/config.py): 몸 `#b8a4ed`, 강조색 `#f9ce80`, 토끼 귀, 목도리. seed는 가변 |
+| 기준점의 렌더러 | [pawzura/pet.py](https://github.com/hobby-programmer-5000/pawzura/blob/bd2c0734db4a8a4f1aa90571f12c5c9ebdb44c9a/pawzura/pet.py)의 `draw_character` |
+| 기준점의 기본 외형 | [pawzura/config.py](https://github.com/hobby-programmer-5000/pawzura/blob/bd2c0734db4a8a4f1aa90571f12c5c9ebdb44c9a/pawzura/config.py): 몸 `#b8a4ed`, 강조색 `#f9ce80`, 토끼 귀, 목도리. seed는 가변 |
 | 다른 외형과 동작 | 제한된 난수 또는 선택적 Qwen 외형 값, 절차적 동작. 외부 마스코트·스프라이트·모션 모델 자산을 가져오지 않음 |
 
 아래 SHA-256은 기준 커밋의 정확한 Git blob 바이트를 대상으로 계산했습니다. 운영체제에 따라 개행이 바뀐 작업 사본의 해시가 아닙니다. 이후 변경은 별도 버전 기록을 남겨야 하며 아래 값은 과거 기준점 식별용입니다.

@@ -10,11 +10,11 @@ from PySide6.QtCore import QUrl
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout,
     QHBoxLayout, QLabel, QLineEdit, QListWidget, QMessageBox, QPushButton,
-    QPlainTextEdit, QTabWidget, QVBoxLayout, QWidget, QInputDialog,
+    QPlainTextEdit, QTabWidget, QVBoxLayout, QWidget, QInputDialog, QGridLayout, QScrollArea, QFrame,
 )
 from . import __version__, windows
 from .characters import MODEL, generate_character, random_character
-from .config import BROWSERS
+from .config import BROWSERS, default_character, profile_lists
 from .pet import CharacterPreview
 from .policy import SiteRuleError, normalize_app, site_rule
 
@@ -31,11 +31,19 @@ TEXT = {
         "browser_help": "브라우저마다 확장을 설치하고 연결해야 합니다. 기본 허용은 새 탭/기본 홈 화면뿐입니다.\n도메인은 사이트 전체를, 경로를 넣은 주소는 해당 구역만 허용합니다. http://와 https:// 모두 입력할 수 있습니다.",
         "browser_on": "이 브라우저의 사이트 허용 목록 적용", "pair": "연결 코드 복사", "extension": "확장 폴더 열기",
         "connection_code": "연결 코드", "port": "포트", "startup_list": "시작프로그램",
-        "rules": "허용 주소 · 한 줄에 하나 (example.com 또는 github.com/my-account)",
+        "rules": "허용 주소 · 한 줄에 하나 (example.com/* 또는 example.com/section/*)",
         "site_line": "허용 주소 {line}번째 줄: {message}",
         "invalid_url": "도메인 또는 호스트가 포함된 완전한 http://·https:// 주소를 넣으세요.",
         "invalid_port": "포트는 1부터 65535 사이여야 합니다.",
         "invalid_path": "경로에서 .·.. 구역, 역슬래시와 인코딩된 구분자를 제거하세요.",
+        "invalid_wildcard": "*는 하위 도메인 앞의 *. 또는 경로 끝의 /*로만 사용하세요.",
+        "profile": "허용 목록 프로필", "profile_new": "다른 이름으로 저장…", "profile_rename": "이름 변경…", "profile_delete": "삭제",
+        "profile_name": "프로필 이름 (1–64자)", "profile_error": "중복되지 않는 이름을 입력하세요. 프로필은 최대 32개이며 마지막 프로필은 삭제할 수 없습니다.",
+        "profile_help": "프로그램과 브라우저별 사이트 목록을 함께 보관합니다. 선택·편집 후 ‘설정 저장’을 눌러 적용하세요. 감시·미리보기·시작프로그램은 공통 설정입니다.",
+        "profile_confirm": "‘{name}’ 프로필을 삭제할까요? 설정 저장을 눌러야 삭제가 적용됩니다.",
+        "recover": "캐릭터 화면 복구", "reset_default": "기본 외형으로 초기화",
+        "recover_help": "안 보이거나 깨지면 ‘화면 복구’로 현재 외형을 다시 표시하세요. ‘기본 외형’은 설정 저장 후 적용됩니다.",
+        "recovered": "캐릭터를 주 모니터로 복구했습니다. 허용 목록은 유지됩니다.",
         "random": "임의 캐릭터", "generate": "Qwen으로 생성", "restore": "이전 캐릭터로 변경",
         "model_help": "Qwen이 외형 설계값을 만들고 앱이 직접 그립니다. 애니메이션 모델은 필요 없습니다.\n최초 1회 Ollama에서 아래 명령으로 Hugging Face 모델을 내려받으세요.",
         "generating": "로컬 모델로 생성 중…", "generated": "새 캐릭터를 만들었습니다. 설정 저장을 눌러 적용하세요.",
@@ -60,11 +68,19 @@ TEXT = {
         "browser_help": "Install and pair the extension in each browser. Only built-in new-tab/home pages are allowed initially.\nDomains allow whole sites; a URL path limits access to that section. Both http:// and https:// URLs work.",
         "browser_on": "Apply website allowlist to this browser", "pair": "Copy connection code", "extension": "Open extension folder",
         "connection_code": "Connection code", "port": "Port", "startup_list": "Startup applications",
-        "rules": "Allowed addresses · one per line (example.com or github.com/my-account)",
+        "rules": "Allowed addresses · one per line (example.com/* or example.com/section/*)",
         "site_line": "Allowed address, line {line}: {message}",
         "invalid_url": "Enter a domain or a complete http:// or https:// URL including its hostname.",
         "invalid_port": "Enter a port between 1 and 65535.",
         "invalid_path": "Remove dot segments, backslashes and encoded separators from the path.",
+        "invalid_wildcard": "Use * only as a subdomain prefix (*.host) or a final /* path suffix.",
+        "profile": "Allowlist profile", "profile_new": "Save as…", "profile_rename": "Rename…", "profile_delete": "Delete",
+        "profile_name": "Profile name (1–64 characters)", "profile_error": "Use a unique name. Keep 1–32 profiles; the last profile cannot be deleted.",
+        "profile_help": "Stores applications and per-browser sites together. Select or edit a profile, then Save settings to apply. Guardian, preview and startup apps are shared.",
+        "profile_confirm": "Delete profile ‘{name}’? Save settings to apply the deletion.",
+        "recover": "Recover companion on screen", "reset_default": "Reset default appearance",
+        "recover_help": "If missing or broken, recover the current appearance on screen. Resetting the default appearance takes effect after Save settings.",
+        "recovered": "Companion recovered on the primary monitor. Allowlists are unchanged.",
         "random": "Random character", "generate": "Generate with Qwen", "restore": "Use previous character",
         "model_help": "Qwen designs appearance parameters; the app draws and animates them. No motion model is required.\nFirst download the Hugging Face model once using this Ollama command.",
         "generating": "Generating with local model…", "generated": "Character created. Save settings to apply it.",
@@ -119,6 +135,7 @@ class SettingsDialog(QDialog):
     applied = Signal()
     language_changed = Signal()
     demo_requested = Signal()
+    recovery_requested = Signal()
 
     def __init__(self, settings, parent=None):
         super().__init__(parent)
@@ -139,6 +156,7 @@ class SettingsDialog(QDialog):
         subtitle = QLabel(self.t["subtitle"])
         subtitle.setObjectName("subtitle")
         outer.addWidget(subtitle)
+        self.build_profiles(outer)
         self.tabs = QTabWidget()
         outer.addWidget(self.tabs, 1)
         self.build_general()
@@ -162,12 +180,107 @@ class SettingsDialog(QDialog):
         footer.addWidget(save)
         outer.addLayout(footer)
 
+    def build_profiles(self, outer):
+        row = QHBoxLayout()
+        row.addWidget(QLabel(self.t["profile"]))
+        self.profile_select = QComboBox()
+        self.profile_select.addItems(self.config["profiles"])
+        self.profile_select.setCurrentText(self.config["active_profile"])
+        self.profile_select.currentTextChanged.connect(self.switch_profile)
+        row.addWidget(self.profile_select, 1)
+        for key, callback in (("profile_new", self.new_profile), ("profile_rename", self.rename_profile), ("profile_delete", self.delete_profile)):
+            button = QPushButton(self.t[key])
+            button.clicked.connect(callback)
+            row.addWidget(button)
+        outer.addLayout(row)
+        outer.addWidget(self.label(self.t["profile_help"]))
+
+    def store_profile(self):
+        self.store_browser()
+        apps = sorted({normalize_app(line) for line in self.apps.toPlainText().splitlines() if line.strip()})
+        if any(not app.endswith(".exe") for app in apps):
+            raise ValueError(self.t["bad_exe"])
+        self.config["allowed_apps"] = apps
+        self.config["profiles"][self.config["active_profile"]] = profile_lists(self.config)
+
+    def refresh_profiles(self):
+        self.profile_select.blockSignals(True)
+        self.profile_select.clear()
+        self.profile_select.addItems(self.config["profiles"])
+        self.profile_select.setCurrentText(self.config["active_profile"])
+        self.profile_select.blockSignals(False)
+
+    def load_profile(self, name):
+        self.config.update(copy.deepcopy(self.config["profiles"][name]))
+        self.config["active_profile"] = name
+        self.apps.setPlainText("\n".join(self.config["allowed_apps"]))
+        self.load_browser()
+        self.refresh_profiles()
+
+    def switch_profile(self, name):
+        if not name or name == self.config["active_profile"]:
+            return
+        try:
+            self.store_profile()
+            self.load_profile(name)
+            self.message.setText(self.t["profile_help"])
+        except ValueError as error:
+            self.message.setText(str(error))
+            self.refresh_profiles()
+
+    def request_profile_name(self, current=""):
+        name, ok = QInputDialog.getText(self, "Pawzura", self.t["profile_name"], text=current)
+        if not ok:
+            return None
+        name = name.strip()
+        if not name or len(name) > 64 or any(existing.casefold() == name.casefold() for existing in self.config["profiles"] if existing != current):
+            raise ValueError(self.t["profile_error"])
+        return name
+
+    def new_profile(self):
+        try:
+            self.store_profile()
+            if len(self.config["profiles"]) >= 32:
+                raise ValueError(self.t["profile_error"])
+            name = self.request_profile_name()
+            if name:
+                self.config["profiles"][name] = profile_lists(self.config)
+                self.load_profile(name)
+                self.message.setText(self.t["profile_help"])
+        except ValueError as error:
+            self.message.setText(str(error))
+
+    def rename_profile(self):
+        try:
+            self.store_profile()
+            current = self.config["active_profile"]
+            name = self.request_profile_name(current)
+            if name and name != current:
+                self.config["profiles"][name] = self.config["profiles"].pop(current)
+                self.config["active_profile"] = name
+                self.refresh_profiles()
+        except ValueError as error:
+            self.message.setText(str(error))
+
+    def delete_profile(self):
+        if len(self.config["profiles"]) <= 1:
+            self.message.setText(self.t["profile_error"])
+            return
+        name = self.config["active_profile"]
+        if QMessageBox.question(self, "Pawzura", self.t["profile_confirm"].format(name=name), QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
+            del self.config["profiles"][name]
+            self.load_profile(next(iter(self.config["profiles"])))
+
     def page(self, title):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(22, 20, 22, 20)
         layout.setSpacing(13)
-        self.tabs.addTab(page, self.t[title])
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidget(page)
+        self.tabs.addTab(scroll, self.t[title])
         return layout
 
     def label(self, text):
@@ -241,7 +354,8 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.browser_on)
         layout.addWidget(self.label(self.t["rules"]))
         self.sites = QPlainTextEdit()
-        self.sites.setPlaceholderText("example.com\ngithub.com/my-account\nhttps://example.org/courses?view=video\nhttp://localhost:3000")
+        self.sites.setMinimumHeight(130)
+        self.sites.setPlaceholderText("example.com/*\nexample.org/courses/*\nhttps://example.org/courses?view=video\nhttp://localhost:3000")
         layout.addWidget(self.sites, 1)
         self.current_browser = BROWSERS[0]
         self.load_browser()
@@ -314,7 +428,7 @@ class SettingsDialog(QDialog):
         row = QHBoxLayout()
         self.character_preview = CharacterPreview(self.config["character"])
         row.addWidget(self.character_preview, 1)
-        controls = QVBoxLayout()
+        controls = QGridLayout()
         self.random_button = QPushButton(self.t["random"])
         self.random_button.clicked.connect(lambda: self.apply_character(random_character()))
         self.generate_button = QPushButton(self.t["generate"])
@@ -322,13 +436,20 @@ class SettingsDialog(QDialog):
         self.generate_button.clicked.connect(self.generate)
         previous = QPushButton(self.t["restore"])
         previous.clicked.connect(self.restore_character)
-        controls.addStretch()
-        controls.addWidget(self.random_button)
-        controls.addWidget(self.generate_button)
-        controls.addWidget(previous)
-        controls.addStretch()
-        row.addLayout(controls, 1)
+        controls.addWidget(self.random_button, 0, 0)
+        controls.addWidget(self.generate_button, 0, 1)
+        controls.addWidget(previous, 1, 0)
+        recover = QPushButton(self.t["recover"])
+        recover.clicked.connect(self.recovery_requested.emit)
+        controls.addWidget(recover, 1, 1)
+        self.reset_button = QPushButton(self.t["reset_default"])
+        self.reset_button.clicked.connect(lambda: self.apply_character(default_character()))
+        controls.addWidget(self.reset_button, 2, 0, 1, 2)
+        for button in (self.random_button, self.generate_button, previous, recover, self.reset_button):
+            button.setMinimumHeight(38)
+        row.addLayout(controls, 2)
         layout.addLayout(row, 1)
+        layout.addWidget(self.label(self.t["recover_help"]))
         layout.addWidget(self.label(self.t["model_help"]))
         command = QLineEdit("ollama pull " + MODEL)
         command.setReadOnly(True)
@@ -353,12 +474,14 @@ class SettingsDialog(QDialog):
         if self.worker and self.worker.isRunning():
             return
         self.generate_button.setEnabled(False)
+        self.reset_button.setEnabled(False)
         self.language.setEnabled(False)
         self.message.setText(self.t["generating"])
         self.worker = GenerationWorker(self)
         self.worker.succeeded.connect(self.apply_character)
         self.worker.failed.connect(lambda error: self.message.setText("Ollama: " + error))
         self.worker.finished.connect(lambda: self.generate_button.setEnabled(True))
+        self.worker.finished.connect(lambda: self.reset_button.setEnabled(True))
         self.worker.finished.connect(lambda: self.language.setEnabled(True))
         self.worker.start()
 
@@ -372,13 +495,11 @@ class SettingsDialog(QDialog):
 
     def save(self):
         try:
-            self.store_browser()
-            apps = sorted({normalize_app(line) for line in self.apps.toPlainText().splitlines() if line.strip()})
-            if any(not app.endswith(".exe") for app in apps):
-                raise ValueError(self.t["bad_exe"])
+            self.store_profile()
             updates = {"guard_enabled": self.guard.isChecked(), "preview_only": self.preview.isChecked(),
                        "pet_visible": self.visible.isChecked(), "start_at_login": self.startup.isChecked(),
-                       "language": self.language.currentData(), "allowed_apps": apps,
+                       "language": self.language.currentData(), "allowed_apps": self.config["allowed_apps"],
+                       "profiles": self.config["profiles"], "active_profile": self.config["active_profile"],
                        "startup_apps": self.config["startup_apps"], "browsers": self.config["browsers"],
                        "character": self.config["character"], "character_history": self.config["character_history"]}
             old_startup = self.settings.snapshot()["start_at_login"]

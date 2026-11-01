@@ -27,6 +27,7 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | --- | --- |
 | 실행·한국어 변경·트레이 사용 | [처음 사용하기](doc/ko/GETTING_STARTED.md) |
 | Chrome/Edge/Firefox 연결과 입력 예시 | [브라우저 연결](doc/ko/BROWSERS.md) |
+| 업무·여가 목록 분리·캐릭터 복구 | [프로필과 복구](doc/ko/PROFILES-AND-RECOVERY.md) |
 | Qwen 캐릭터 생성 | [모델과 캐릭터](doc/ko/MODELS.md) |
 | 소스 실행·EXE 빌드 | [설정과 빌드](doc/ko/BUILD.md) |
 | 테스트 결과·현재 제한 | [검증 기록](doc/ko/VALIDATION.md) |

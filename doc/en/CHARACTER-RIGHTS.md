@@ -21,8 +21,8 @@ Adding a bespoke “no registration” condition to MIT would change its terms. 
 | Drawing implementation | AI-assisted QPainter geometry written through ChatGPT/Codex, not a commissioned human-drawn asset |
 | First recorded renderer | Commit `e954e5947e0b361aa3004f6d8ad62ee4b40043d7`, recorded 2026-11-02 03:50:46 +09:00 |
 | Source baseline for this notice | Commit `bd2c0734db4a8a4f1aa90571f12c5c9ebdb44c9a` |
-| Renderer at that baseline | [pawzura/pet.py](../../pawzura/pet.py), `draw_character` |
-| Default appearance at that baseline | [pawzura/config.py](../../pawzura/config.py): body `#b8a4ed`, accent `#f9ce80`, rabbit ears, scarf; seed varies |
+| Renderer at that baseline | [pawzura/pet.py](https://github.com/hobby-programmer-5000/pawzura/blob/bd2c0734db4a8a4f1aa90571f12c5c9ebdb44c9a/pawzura/pet.py), `draw_character` |
+| Default appearance at that baseline | [pawzura/config.py](https://github.com/hobby-programmer-5000/pawzura/blob/bd2c0734db4a8a4f1aa90571f12c5c9ebdb44c9a/pawzura/config.py): body `#b8a4ed`, accent `#f9ce80`, rabbit ears, scarf; seed varies |
 | Other appearances / motion | Bounded random or optional Qwen appearance values; procedural motion, no imported mascot/sprite/motion-model assets |
 
 SHA-256 below is calculated over the exact Git blob bytes at the baseline commit, not a platform's line-ending-converted working copy. Later changes need their own version records; these identify a historical baseline.

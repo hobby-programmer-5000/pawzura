@@ -35,6 +35,8 @@ The desktop app alone cannot inspect browser addresses. Install the included ext
 | Open settings | Click the Pawzura icon near the Windows clock; check the hidden-icon arrow if needed |
 | Pause closing | Right-click that icon → Pause guardian |
 | Hide only the character | Right-click → Hide companion |
+| Recover a missing/broken companion | Right-click → Recover companion on screen |
+| Separate work/leisure lists | Settings top → Allowlist profile; [instructions](PROFILES-AND-RECOVERY.md) |
 | Exit the whole app | Right-click → Quit |
 | Start at sign-in | General → Run when I sign in to Windows → Save settings |
 | Change language | General → Language → Save settings |

@@ -46,6 +46,30 @@ class MotionTests(unittest.TestCase):
         self.pet.tick()
         self.assertEqual(hits, [])
 
+    def test_home_fits_entire_character_above_taskbar(self):
+        area = self.app.primaryScreen().availableGeometry()
+        self.pet.home()
+        self.assertTrue(area.contains(self.pet.geometry()))
+
+    def test_display_change_cancels_pending_close_and_recovers_position(self):
+        hits = []
+        self.pet.bite(QPointF(-9000, -9000), lambda: hits.append("closed"))
+        self.pet.px, self.pet.py = -9000, -9000
+        self.pet.screen_changed()
+        self.assertIsNone(self.pet.action)
+        self.assertTrue(self.app.primaryScreen().availableGeometry().contains(self.pet.geometry()))
+        self.pet.tick()
+        self.assertEqual(hits, [])
+
+    def test_corrupt_appearance_still_renders(self):
+        broken = Pet({"body": None, "ears": "invalid", "seed": []})
+        broken.timer.stop()
+        broken.show()
+        self.app.processEvents()
+        self.assertFalse(broken.grab().isNull())
+        broken.dispose()
+
+
 
 if __name__ == "__main__":
     unittest.main()

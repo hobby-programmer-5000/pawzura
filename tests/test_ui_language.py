@@ -3,6 +3,7 @@ os.environ["QT_QPA_PLATFORM"] = "offscreen"
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QApplication
 from pawzura.config import Settings
@@ -70,3 +71,86 @@ class LanguageTests(unittest.TestCase):
         dialog.sites.setPlainText("example.com\nhttps://")
         with self.assertRaisesRegex(ValueError, "2번째 줄"):
             dialog.store_browser()
+
+    def test_profiles_preserve_independent_lists_and_apply_only_on_save(self):
+        dialog = self.make_dialog()
+        token = self.settings.snapshot()["bridge_token"]
+        dialog.apps.setPlainText("work.exe")
+        dialog.browser_on.setChecked(True)
+        dialog.sites.setPlainText("example.com/work/*")
+        with patch("pawzura.ui.QInputDialog.getText", return_value=("Leisure", True)):
+            dialog.new_profile()
+        dialog.apps.setPlainText("leisure.exe")
+        dialog.sites.setPlainText("example.org/*")
+        dialog.profile_select.setCurrentText("Default")
+        self.assertEqual(dialog.apps.toPlainText(), "work.exe")
+        self.assertEqual(self.settings.snapshot()["active_profile"], "Default")
+        self.assertNotIn("work.exe", self.settings.snapshot()["allowed_apps"])
+        dialog.profile_select.setCurrentText("Leisure")
+        self.assertEqual(dialog.apps.toPlainText(), "leisure.exe")
+        dialog.save()
+        loaded = Settings(self.settings.path).snapshot()
+        self.assertEqual(loaded["active_profile"], "Leisure")
+        self.assertEqual(loaded["allowed_apps"], ["leisure.exe"])
+        self.assertEqual(loaded["profiles"]["Default"]["allowed_apps"], ["work.exe"])
+        self.assertEqual(loaded["profiles"]["Leisure"]["browsers"]["chrome"]["allowed_sites"], ["https://example.org"])
+        self.assertEqual(loaded["bridge_token"], token)
+        self.assertNotIn("bridge_token", loaded["profiles"]["Leisure"])
+
+    def test_reset_default_keeps_allowlists(self):
+        from pawzura.config import default_character
+        dialog = self.make_dialog()
+        dialog.apps.setPlainText("custom.exe")
+        dialog.apply_character({"seed": 1, "body": "#123456", "accent": "#654321", "ears": "cat", "accessory": "star"})
+        dialog.reset_button.click()
+        dialog.save()
+        self.assertEqual(self.settings.snapshot()["character"], default_character())
+        self.assertEqual(self.settings.snapshot()["allowed_apps"], ["custom.exe"])
+
+    def test_invalid_profile_edit_prevents_switch(self):
+        dialog = self.make_dialog()
+        with patch("pawzura.ui.QInputDialog.getText", return_value=("Work", True)):
+            dialog.new_profile()
+        dialog.sites.setPlainText("https://")
+        dialog.profile_select.setCurrentText("Default")
+        self.assertEqual(dialog.config["active_profile"], "Work")
+        self.assertEqual(dialog.profile_select.currentText(), "Work")
+
+    def test_profile_rename_and_delete_preserve_surviving_lists(self):
+        from PySide6.QtWidgets import QMessageBox
+        dialog = self.make_dialog()
+        with patch("pawzura.ui.QInputDialog.getText", return_value=("Work", True)):
+            dialog.new_profile()
+        dialog.apps.setPlainText("work.exe")
+        with patch("pawzura.ui.QInputDialog.getText", return_value=("Office", True)):
+            dialog.rename_profile()
+        self.assertNotIn("Work", dialog.config["profiles"])
+        dialog.profile_select.setCurrentText("Default")
+        with patch("pawzura.ui.QMessageBox.question", return_value=QMessageBox.StandardButton.Yes):
+            dialog.delete_profile()
+        dialog.save()
+        self.assertEqual(self.settings.snapshot()["active_profile"], "Office")
+        self.assertEqual(self.settings.snapshot()["allowed_apps"], ["work.exe"])
+        dialog.delete_profile()
+        self.assertEqual(len(dialog.config["profiles"]), 1)
+
+    def test_recovery_recreates_window_without_executing_pending_close(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from PySide6.QtCore import QPointF
+        from pawzura.app import Companion
+        from pawzura.pet import Pet
+        before = self.settings.snapshot()
+        old = Pet(before["character"])
+        close = Mock()
+        old.bite(QPointF(-9999, -9999), close)
+        fake = SimpleNamespace(settings=self.settings, pet=old, bridge=Mock(), dialog=None, show_settings=Mock(), refresh_menu=Mock())
+        Companion.recover_pet(fake)
+        self.assertIsNot(old, fake.pet)
+        self.assertIsNone(old.action)
+        self.assertFalse(old.timer.isActive())
+        self.assertTrue(fake.pet.isVisible())
+        self.assertTrue(self.app.primaryScreen().availableGeometry().contains(fake.pet.geometry()))
+        self.assertEqual(set(self.settings.snapshot()["allowed_apps"]), set(before["allowed_apps"]))
+        close.assert_not_called()
+        fake.pet.dispose()

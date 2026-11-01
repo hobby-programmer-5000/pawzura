@@ -7,6 +7,7 @@ import time
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPolygonF
 from PySide6.QtWidgets import QApplication, QWidget
+from .config import safe_character
 
 
 def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=False):
@@ -165,6 +166,7 @@ class Crack(QWidget):
 
     def tick(self):
         if time.monotonic() - self.born > 1.8:
+            self.timer.stop()
             self.close()
         else:
             self.update()
@@ -199,7 +201,7 @@ class Pet(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setWindowTitle("Pawzura companion")
         self.resize(144, 146)
-        self.spec = spec
+        self.spec = safe_character(spec)
         self.phase = 0.0
         self.direction = 1
         self.last_tick = time.monotonic()
@@ -209,15 +211,31 @@ class Pet(QWidget):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
         self.timer.start(33)
+        QApplication.instance().screenAdded.connect(self.screen_changed)
+        QApplication.instance().screenRemoved.connect(self.screen_changed)
+        for screen in QApplication.screens():
+            self.watch_screen(screen)
+        QApplication.instance().screenAdded.connect(self.watch_screen)
+
+    def watch_screen(self, screen):
+        screen.availableGeometryChanged.connect(self.screen_changed)
+        screen.geometryChanged.connect(self.screen_changed)
+
+    def screen_changed(self, *_):
+        self.cancel_bite()
+        self.update()
 
     def screens(self):
         return sorted(QApplication.screens(), key=lambda s: (s.geometry().x(), s.geometry().y()))
 
     def home(self):
         screen = QApplication.primaryScreen()
+        if screen is None:
+            self.px, self.py = 0.0, 0.0
+            return
         area = screen.availableGeometry()
-        self.px = float(area.x() + area.width() // 2)
-        self.py = float(area.y() + area.height() - 139)
+        self.px = float(area.x() + max(0, (area.width() - self.width()) // 2))
+        self.py = float(max(area.top(), area.bottom() - self.height() + 1))
         self.move(round(self.px), round(self.py))
 
     def bite(self, point: QPointF, callback, label=""):
@@ -231,6 +249,24 @@ class Pet(QWidget):
     def cancel_bite(self):
         self.action = None
         self.home()
+
+    def dispose(self):
+        self.timer.stop()
+        self.action = None
+        app = QApplication.instance()
+        app.screenAdded.disconnect(self.screen_changed)
+        app.screenRemoved.disconnect(self.screen_changed)
+        app.screenAdded.disconnect(self.watch_screen)
+        for screen in app.screens():
+            screen.availableGeometryChanged.disconnect(self.screen_changed)
+            screen.geometryChanged.disconnect(self.screen_changed)
+        for crack in self.cracks:
+            crack.timer.stop()
+            crack.close()
+            crack.deleteLater()
+        self.cracks.clear()
+        self.close()
+        self.deleteLater()
 
     def tick(self):
         now = time.monotonic()
@@ -263,6 +299,8 @@ class Pet(QWidget):
             self.px, self.py = pos.x(), pos.y()
         elif self.isVisible():
             screens = self.screens()
+            if not screens:
+                return
             screen = QApplication.screenAt(QPointF(self.px + 72, self.py + 72).toPoint())
             if screen not in screens:
                 self.home()
@@ -273,13 +311,17 @@ class Pet(QWidget):
             if self.px + 72 > area.right():
                 index = (screens.index(screen) + 1) % len(screens)
                 area = screens[index].availableGeometry()
-                self.px = area.left() - 60.0
-            self.py = float(area.bottom() - 138)
+                self.px = float(area.left())
+            self.py = float(max(area.top(), area.bottom() - self.height() + 1))
         self.move(round(self.px), round(self.py))
         self.update()
 
     def paintEvent(self, _):
         p = QPainter(self)
+        # Clear the full translucent backing surface before each articulated frame.
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        p.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         draw_character(p, self.spec, self.phase, self.direction, bool(self.action and self.action["hit"]))
 
     def mouseDoubleClickEvent(self, _):

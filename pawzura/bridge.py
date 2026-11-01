@@ -76,6 +76,12 @@ class Bridge:
             if ticket in self.tickets:
                 self.tickets[ticket]["ready"] = True
 
+    def invalidate_tickets(self):
+        with self.lock:
+            self.tickets.clear()
+            while not self.events.empty():
+                self.events.get_nowait()
+
     def evaluate(self, data: dict) -> dict:
         config = self.settings.snapshot()
         browser = data.get("browser")
@@ -98,7 +104,8 @@ class Bridge:
                 allowed = not enabled or allowed_url(url, config["browsers"][browser]["allowed_sites"])
                 entry = {"id": tab["id"], "url": url, "allowed": allowed, "close": False}
                 if not allowed:
-                    key = f"{browser}:{tab['id']}:{url}"
+                    policy = json.dumps([config.get("active_profile"), config["preview_only"], config["browsers"][browser]], sort_keys=True)
+                    key = f"{policy}:{browser}:{tab['id']}:{url}"
                     ticket = next((k for k, v in self.tickets.items() if v["key"] == key), None)
                     if not ticket and not self.events.full() and len(self.tickets) < 256:
                         ticket = secrets.token_hex(12)

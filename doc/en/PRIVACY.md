@@ -8,4 +8,4 @@ The repository's examples use generic domains. User allowlists, browser profiles
 
 The build checks the output folder before creating a ZIP and rejects local settings, pairing files, browser profile files and renamed settings exports. Run `python scripts/check_distribution.py PATH_TO_EXTRACTED_RELEASE` to perform the same check. This structural check does not replace reviewing screenshots and other manually added content.
 
-Release 0.1.3 and its tag/assets were withdrawn. No replacement release is published as part of this privacy change. The source version is an unreleased development version. Local user settings are retained; removing a GitHub release does not erase preferences on a user's PC.
+The earlier 0.1.3 release and its tag/assets were withdrawn. At the maintainer's request, [0.1.3 is rebuilt](RELEASE-v0.1.3.md) from a new source commit with new features and a new ZIP/checksum. Re-download the complete archive to replace the withdrawn build. Local user settings are retained; removing a GitHub release does not erase preferences on a user's PC. Existing lists migrate to a local Default profile; new releases do not distribute that profile's contents.

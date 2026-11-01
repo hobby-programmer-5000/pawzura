@@ -4,6 +4,22 @@ from pawzura.policy import allowed_app, allowed_url, site_rule
 
 
 class PolicyTests(unittest.TestCase):
+    def test_trailing_path_wildcards_allow_descendants_with_exact_host(self):
+        for rule in ("example.com/*", "https://example.com/*"):
+            for path in ("", "/", "/any/depth?x=1#top"):
+                self.assertTrue(allowed_url("https://example.com" + path, [rule]))
+            for url in ("https://example.com.evil.test/a", "https://sub.example.com/a", "http://example.com/a"):
+                self.assertFalse(allowed_url(url, [rule]))
+        self.assertTrue(allowed_url("http://example.com/a", ["http://example.com/*"]))
+        self.assertTrue(allowed_url("https://sub.example.com/a", ["*.example.com/*"]))
+        for path in ("/section", "/section/", "/section/child?x=1"):
+            self.assertTrue(allowed_url("https://example.com" + path, ["example.com/section/*"]))
+        for path in ("/other", "/section-evil", "/section%2fother"):
+            self.assertFalse(allowed_url("https://example.com" + path, ["example.com/section/*"]))
+        for rule in ("example.com/sec*", "example.com/*/child", "example.com/sec%2a"):
+            with self.assertRaises(ValueError):
+                site_rule(rule)
+
     def test_executable_exact_case_insensitive(self):
         config = defaults()
         self.assertTrue(allowed_app(r"C:\Users\Me\Code.EXE", config))

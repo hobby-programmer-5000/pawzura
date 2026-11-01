@@ -25,7 +25,7 @@ def check_distribution(folder: Path):
         if path.suffix.casefold() == ".json":
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
-                if isinstance(data, dict) and ("bridge_token" in data or {"browsers", "allowed_apps"} <= data.keys()):
+                if isinstance(data, dict) and ("bridge_token" in data or "active_profile" in data or "profiles" in data or {"browsers", "allowed_apps"} <= data.keys()):
                     problems.append(str(relative))
             except (UnicodeError, ValueError):
                 pass

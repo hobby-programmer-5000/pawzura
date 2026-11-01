@@ -50,6 +50,19 @@ class BridgeTests(unittest.TestCase):
         self.bridge.complete(event["ticket"])
         self.assertTrue(self.send()["decisions"][0]["close"])
 
+    def test_profile_switch_requires_new_animation_and_can_allow_existing_tab(self):
+        self.enable()
+        self.send()
+        event = self.bridge.events.get_nowait()
+        self.bridge.complete(event["ticket"])
+        self.settings.data["active_profile"] = "Leisure"
+        self.assertFalse(self.send()["decisions"][0]["close"])
+        self.settings.data["browsers"]["chrome"]["allowed_sites"] = ["https://unlisted.example/*"]
+        self.assertTrue(self.send()["decisions"][0]["allowed"])
+        self.bridge.invalidate_tickets()
+        self.assertTrue(self.bridge.events.empty())
+        self.assertEqual(self.bridge.tickets, {})
+
     def test_preview_never_closes(self):
         self.enable(preview=True)
         self.send()

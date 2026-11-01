@@ -34,6 +34,7 @@ class SiteRuleError(ValueError):
             "invalid_url": "Enter a domain or a complete HTTP(S) URL, including its hostname.",
             "invalid_port": "Enter a valid port between 1 and 65535.",
             "invalid_path": "Use a path without dot segments, backslashes or encoded separators.",
+            "invalid_wildcard": "Use * only as a subdomain prefix or a final /* path suffix.",
         }[code])
 
 
@@ -89,7 +90,10 @@ def site_rule(value: str) -> str:
     host = f"[{host}]" if ":" in host else host
     authority = ("*." if wildcard else "") + host + suffix
     try:
-        path = _path(parsed.path)
+        path = parsed.path[:-2] if parsed.path.endswith("/*") else parsed.path
+        if "*" in unquote(path):
+            raise SiteRuleError("invalid_wildcard")
+        path = _path(path)
         query = urlencode(parse_qsl(parsed.query, keep_blank_values=True, errors="strict"))
     except (UnicodeError, ValueError) as error:
         if isinstance(error, SiteRuleError):

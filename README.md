@@ -27,6 +27,7 @@ The app starts in English. Switch with **General → Language → 한국어 → 
 | --- | --- |
 | Run the app, change language, use the tray | [Getting started](doc/en/GETTING_STARTED.md) |
 | Connect Chrome/Edge/Firefox, with examples | [Browser setup](doc/en/BROWSERS.md) |
+| Separate work/leisure lists or recover the companion | [Profiles and recovery](doc/en/PROFILES-AND-RECOVERY.md) |
 | Generate characters with Qwen | [Models and characters](doc/en/MODELS.md) |
 | Run source or build an EXE | [Setup and builds](doc/en/BUILD.md) |
 | Check test results and current limits | [Validation](doc/en/VALIDATION.md) |

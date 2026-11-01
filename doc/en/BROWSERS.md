@@ -67,6 +67,8 @@ Only built-in new-tab/home pages and explicit blank-page URLs are initially allo
 | Rule | Allows | Does not allow |
 | --- | --- | --- |
 | `https://example.com` | Every path on that HTTPS origin | Subdomains, HTTP, non-default ports |
+| `example.com/*` | Every HTTPS path, query and fragment on that host, including `/` | Subdomains, HTTP, lookalike hosts |
+| `example.com/section/*` | `/section` and its children | `/section-other` or other sections |
 | `github.com/my-account` | HTTPS `/my-account` and its child paths | Other accounts or `/my-account-other` |
 | `https://example.com/personal/home` | That path and its child paths | Other sections of the site |
 | `example.com/ko?viewMode=svod` | HTTPS `/ko` and children with `viewMode=svod` | Missing/different `viewMode` values |
@@ -94,6 +96,8 @@ Before 0.1.2, paths or queries caused the whole edited list to fail validation. 
 The badge shows ON for real monitoring, PRE for preview and OFF for a connection failure. A blank badge means monitoring is disabled. Disconnecting removes pairing; closing the desktop app stops tab closing.
 
 ## Technical behavior and limits
+
+A final `/*` is accepted in 0.1.3 and normalized to the equivalent domain/path rule after saving. `/section/*` includes `/section` itself. Other path patterns such as `/section*` or `/*/item` are rejected. Query constraints after `/*` still apply. Use [profiles](PROFILES-AND-RECOVERY.md) for separate work/leisure lists.
 
 The extension checks up to 200 open tabs per sweep. Each unlisted URL gets an animation ticket; the URL is checked again before closing the tab. A suspended Chromium worker can take about 30 seconds to resume through its alarm. Background tabs use a desktop animation point because browser APIs do not expose tab X coordinates. Active browser animations use a TAB marker below the title bar; they do not target the browser window X. Its own extension options pages are excluded from monitoring. Before closing the last blocked tab in a window, the extension creates an about:blank replacement in that same window. If that fails, it leaves the tab open. Other tabs are not closed.
 

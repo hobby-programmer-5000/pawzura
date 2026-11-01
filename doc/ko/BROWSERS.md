@@ -67,6 +67,8 @@ Brave/Opera/Vivaldi는 각 브라우저의 확장 호환 상태에 따라 Chromi
 | 규칙 | 허용 | 허용하지 않음 |
 | --- | --- | --- |
 | `https://example.com` | 같은 HTTPS 사이트의 모든 경로 | 하위 도메인, HTTP, 다른 포트 |
+| `example.com/*` | `/`를 포함한 같은 HTTPS 호스트의 모든 경로·쿼리·fragment | 하위 도메인, HTTP, 위장 호스트 |
+| `example.com/section/*` | `/section`과 하위 경로 | `/section-other`와 다른 구역 |
 | `github.com/my-account` | HTTPS의 `/my-account`와 하위 경로 | 다른 계정이나 `/my-account-other` |
 | `https://example.com/personal/home` | 해당 경로와 하위 경로 | 사이트의 다른 구역 |
 | `example.com/ko?viewMode=svod` | `viewMode=svod`인 HTTPS `/ko`와 하위 경로 | 해당 값이 없거나 다른 경우 |
@@ -94,6 +96,8 @@ Brave/Opera/Vivaldi는 각 브라우저의 확장 호환 상태에 따라 Chromi
 확장 배지는 ON=실제 감시, PRE=미리보기, OFF=연결 실패입니다. 빈 배지는 감시 비활성 상태입니다. 연결 해제는 연결 정보를 제거하고, 데스크톱 앱을 종료하면 탭 닫기가 중지됩니다.
 
 ## 기술 동작과 제한
+
+0.1.3은 끝의 `/*`를 받아들이며 저장 시 같은 의미의 도메인·경로 규칙으로 정리합니다. `/section/*`는 `/section` 자체도 포함합니다. `/section*`·`/*/item` 같은 다른 경로 패턴은 거절합니다. `/*` 뒤에 지정한 쿼리 조건은 유지합니다. 업무·여가별 목록은 [프로필](PROFILES-AND-RECOVERY.md)로 나누세요.
 
 한 번에 열린 탭 최대 200개를 검사합니다. 미허용 URL의 애니메이션 티켓을 만들고 닫기 직전에 URL을 다시 확인합니다. Chromium 작업자가 중단되면 알람으로 복구하는 데 약 30초 걸릴 수 있습니다. 확장 API가 탭 X 좌표를 제공하지 않아 활성 브라우저에서는 제목 표시줄 아래 TAB 표식, 백그라운드 탭은 바탕화면 위치를 사용합니다. 브라우저 창 X를 깨물지 않습니다. 확장 자신의 옵션 탭은 검사에서 제외합니다. 마지막 미허용 탭을 닫기 전에는 같은 창에 about:blank 탭을 먼저 만들고, 만들기에 실패하면 기존 탭을 닫지 않습니다. 다른 탭은 닫지 않습니다.
 

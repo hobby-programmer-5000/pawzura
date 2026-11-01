@@ -4,6 +4,16 @@
 
 Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
 
+## Rebuilt 0.1.3 profiles, wildcard rules and recovery
+
+**57 Python tests and 18 extension tests passed locally.** New checks cover trailing `/*`, exact host and path boundaries, legacy-list migration, independent profile drafts and persistence, rename/delete, invalid-edit switch rejection, reset without list loss, malformed appearances, whole-character placement, display-change cancellation, actual recovery-window recreation without firing the abandoned close callback, and packaging rejection of profile exports.
+
+Source offscreen rendering passed with all five tabs. English and Korean settings were inspected using disposable defaults; browser input now scrolls instead of compressing into an unreadable line. The isolated real Chromium probe passed automatic pairing, options/allowed-tab protection, blocked-tab removal and preservation of the last-tab browser window. No user settings or browser profile was used. These checks do not reproduce every reported GPU rendering failure.
+
+Instructions: [profiles and recovery](PROFILES-AND-RECOVERY.md), [rebuilt release](RELEASE-v0.1.3.md).
+
+The rebuilt Windows EXE rendered all tabs and exited with code 0. A native Windows probe recreated a distinct companion window, verified that the full window was inside the primary work area, checked visible character pixels and transparent corners across frames, and confirmed that recovery did not execute the pending close callback. It used disposable settings and no real guardian. This is not full GPU/monitor-hotplug coverage.
+
 ## 0.1.3 application protection and automatic connection
 
 **42 Python tests and 18 extension tests passed locally.** Regressions cover Codex/ChatGPT executable aliases in old settings, browser exclusion at the native close boundary, TAB marker placement, last-tab replacement, replacement failure, one-time pairing, origin binding, approval, denial and expiration.

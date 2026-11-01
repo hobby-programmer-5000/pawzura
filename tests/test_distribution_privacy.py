@@ -24,3 +24,10 @@ class DistributionPrivacyTests(unittest.TestCase):
             root = Path(directory)
             (root / "README.md").write_text('https://example.com',encoding="utf-8")
             self.assertTrue(check_distribution(root))
+
+    def test_release_rejects_profile_exports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "export.json").write_text('{"profiles":{"Work":{}}}', encoding="utf-8")
+            with self.assertRaises(ValueError):
+                check_distribution(root)
