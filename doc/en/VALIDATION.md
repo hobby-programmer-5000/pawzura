@@ -4,6 +4,10 @@
 
 Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
 
+## 0.1.2 URL rule checks
+
+The updated local suite passes **33 Python tests and 14 extension tests**. It covers domains, HTTP/HTTPS URLs, path boundaries, query conditions, Unicode, legacy wildcard entries, malformed paths, localized line numbers and the real HTTP bridge's use of scoped rules. All seven example address formats supplied in the bug report pass validation. Documentation checks cover **33 authored Markdown files and 12 topic language pairs**. This does not imply that login redirects or every linked page on those websites is automatically allowed.
+
 ## Baseline 0.1.0 results
 
 - Local Windows 10 22H2 build 19045 x64, standard CPython 3.14.7, PySide/Shiboken 6.12.0 and PyInstaller 6.22.3.

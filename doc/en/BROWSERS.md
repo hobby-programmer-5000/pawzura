@@ -57,10 +57,19 @@ Only built-in new-tab/home pages and explicit blank-page URLs are initially allo
 | Rule | Allows | Does not allow |
 | --- | --- | --- |
 | `https://example.com` | Every path on that HTTPS origin | Subdomains, HTTP, non-default ports |
+| `github.com/my-account` | HTTPS `/my-account` and its child paths | Other accounts or `/my-account-other` |
+| `https://example.com/personal/home` | That path and its child paths | Other sections of the site |
+| `example.com/ko?viewMode=svod` | HTTPS `/ko` and children with `viewMode=svod` | Missing/different `viewMode` values |
 | `*.example.com` | HTTPS subdomains such as `help.example.com` | The root `example.com` |
 | `http://localhost:3000` | That exact HTTP origin | A different port |
 
-Paths, queries and fragments cannot be used in rules. Internationalized hostnames and default ports are normalized. Lookalike suffixes such as `example.com.evil.test` are not allowed by an `example.com` rule.
+You can paste a domain, a URL path, or a URL with query parameters. Without a scheme, HTTPS is assumed; explicit `http://` and `https://` URLs both work and remain separate. **A bare `http://` or `https://` is incomplete and is not a rule that allows every site.**
+
+A domain without a path allows the whole site. A path allows that section and children on slash boundaries: `/home` does not allow `/home-other`. Query values in the rule must match; extra keys such as tracking parameters are allowed, but extra values for a constrained key are rejected. `#fragment` parts are ignored and cannot restrict SPA hash routes. Internationalized names, Unicode paths and default ports are normalized. Dot segments, backslashes and encoded path separators are rejected for path-scoped rules.
+
+`example.com` and `www.example.com` remain different hosts. If a site redirects to another host or a login site, add that address explicitly if you want to allow it. A rule such as `github.com/my-account` does not permit GitHub's login page. Hostnames still match exactly, so `example.com.evil.test` is not allowed.
+
+Before 0.1.2, paths or queries caused the whole edited list to fail validation. Version 0.1.2 accepts them and identifies the line of any remaining error in the selected language. Saving shows the normalized addresses, including the assumed `https://`.
 
 ## Connection messages and troubleshooting
 

@@ -54,3 +54,19 @@ class LanguageTests(unittest.TestCase):
         self.assertEqual(self.app.clipboard().text(), self.settings.snapshot()["bridge_token"])
         self.assertNotIn("{", self.app.clipboard().text())
         self.assertIn("Connect and test", dialog.message.text())
+
+    def test_path_and_query_rules_save_together(self):
+        dialog = self.make_dialog()
+        dialog.sites.setPlainText("example.com\ngithub.com/my-account\nhttps://example.org/ko?viewMode=svod\nhttp://localhost:3000/home")
+        dialog.store_browser()
+        rules = dialog.config["browsers"]["chrome"]["allowed_sites"]
+        self.assertIn("https://github.com/my-account", rules)
+        self.assertIn("https://example.org/ko?viewMode=svod", rules)
+        self.assertIn("http://localhost:3000/home", rules)
+
+    def test_bad_rule_reports_its_line_in_selected_language(self):
+        self.settings.data["language"] = "ko"
+        dialog = self.make_dialog()
+        dialog.sites.setPlainText("example.com\nhttps://")
+        with self.assertRaisesRegex(ValueError, "2번째 줄"):
+            dialog.store_browser()

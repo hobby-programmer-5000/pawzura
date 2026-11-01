@@ -16,7 +16,7 @@ from . import __version__, windows
 from .characters import MODEL, generate_character, random_character
 from .config import BROWSERS
 from .pet import CharacterPreview
-from .policy import normalize_app, site_rule
+from .policy import SiteRuleError, normalize_app, site_rule
 
 TEXT = {
     "ko": {
@@ -28,10 +28,14 @@ TEXT = {
         "intro": "먼저 미리보기로 허용 목록을 확인하세요.\n미리보기를 끄면 미허용 프로그램에 일반 닫기 요청을 보내고 미허용 탭을 닫습니다.",
         "apps_help": "허용할 실행 파일 이름을 한 줄에 하나씩 입력하세요. 경로를 붙여넣으면 파일명만 사용합니다.\nWindows 시스템 창과 이 앱은 항상 보호합니다. 같은 이름의 실행 파일은 모두 허용됩니다.",
         "browse": "실행 파일 추가…", "running": "열려 있는 프로그램 추가…", "startup_scan": "시작프로그램 다시 탐색",
-        "browser_help": "브라우저마다 확장을 설치하고 연결해야 합니다. 기본 허용은 새 탭/기본 홈 화면뿐입니다.\n사용자 지정 시작 URL은 아래에 직접 추가하세요. 주소는 전체 사이트 단위로 허용합니다.",
+        "browser_help": "브라우저마다 확장을 설치하고 연결해야 합니다. 기본 허용은 새 탭/기본 홈 화면뿐입니다.\n도메인은 사이트 전체를, 경로를 넣은 주소는 해당 구역만 허용합니다. http://와 https:// 모두 입력할 수 있습니다.",
         "browser_on": "이 브라우저의 사이트 허용 목록 적용", "pair": "연결 코드 복사", "extension": "확장 폴더 열기",
         "connection_code": "연결 코드", "port": "포트", "startup_list": "시작프로그램",
-        "rules": "허용 사이트 · 한 줄에 하나 (https://example.com 또는 *.example.com)",
+        "rules": "허용 주소 · 한 줄에 하나 (example.com 또는 github.com/my-account)",
+        "site_line": "허용 주소 {line}번째 줄: {message}",
+        "invalid_url": "도메인 또는 호스트가 포함된 완전한 http://·https:// 주소를 넣으세요.",
+        "invalid_port": "포트는 1부터 65535 사이여야 합니다.",
+        "invalid_path": "경로에서 .·.. 구역, 역슬래시와 인코딩된 구분자를 제거하세요.",
         "random": "임의 캐릭터", "generate": "Qwen으로 생성", "restore": "이전 캐릭터로 변경",
         "model_help": "Qwen이 외형 설계값을 만들고 앱이 직접 그립니다. 애니메이션 모델은 필요 없습니다.\n최초 1회 Ollama에서 아래 명령으로 Hugging Face 모델을 내려받으세요.",
         "generating": "로컬 모델로 생성 중…", "generated": "새 캐릭터를 만들었습니다. 설정 저장을 눌러 적용하세요.",
@@ -51,10 +55,14 @@ TEXT = {
         "intro": "Check your allowlist in preview mode first.\nWith preview off, unlisted apps receive a normal close request and unlisted tabs close.",
         "apps_help": "Enter one executable filename per line. Pasted paths are reduced to filenames.\nWindows system windows and this app are always protected. All files with the same name are allowed.",
         "browse": "Add executable…", "running": "Add open application…", "startup_scan": "Rescan startup apps",
-        "browser_help": "Install and pair the extension in each browser. Only built-in new-tab/home pages are allowed initially.\nAdd custom startup URLs below. Each rule allows an entire website origin.",
+        "browser_help": "Install and pair the extension in each browser. Only built-in new-tab/home pages are allowed initially.\nDomains allow whole sites; a URL path limits access to that section. Both http:// and https:// URLs work.",
         "browser_on": "Apply website allowlist to this browser", "pair": "Copy connection code", "extension": "Open extension folder",
         "connection_code": "Connection code", "port": "Port", "startup_list": "Startup applications",
-        "rules": "Allowed sites · one per line (https://example.com or *.example.com)",
+        "rules": "Allowed addresses · one per line (example.com or github.com/my-account)",
+        "site_line": "Allowed address, line {line}: {message}",
+        "invalid_url": "Enter a domain or a complete http:// or https:// URL including its hostname.",
+        "invalid_port": "Enter a port between 1 and 65535.",
+        "invalid_path": "Remove dot segments, backslashes and encoded separators from the path.",
         "random": "Random character", "generate": "Generate with Qwen", "restore": "Use previous character",
         "model_help": "Qwen designs appearance parameters; the app draws and animates them. No motion model is required.\nFirst download the Hugging Face model once using this Ollama command.",
         "generating": "Generating with local model…", "generated": "Character created. Save settings to apply it.",
@@ -229,7 +237,7 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.browser_on)
         layout.addWidget(self.label(self.t["rules"]))
         self.sites = QPlainTextEdit()
-        self.sites.setPlaceholderText("https://example.com\n*.example.org")
+        self.sites.setPlaceholderText("example.com\ngithub.com/my-account\nhttps://example.org/courses?view=video\nhttp://localhost:3000")
         layout.addWidget(self.sites, 1)
         self.current_browser = BROWSERS[0]
         self.load_browser()
@@ -252,8 +260,16 @@ class SettingsDialog(QDialog):
         layout.addLayout(connection)
 
     def store_browser(self):
-        rules = [site_rule(line) for line in self.sites.toPlainText().splitlines() if line.strip()]
+        rules = []
+        for number, line in enumerate(self.sites.toPlainText().splitlines(), 1):
+            if not line.strip():
+                continue
+            try:
+                rules.append(site_rule(line))
+            except SiteRuleError as error:
+                raise ValueError(self.t["site_line"].format(line=number, message=self.t[error.code])) from error
         self.config["browsers"][self.current_browser] = {"enabled": self.browser_on.isChecked(), "allowed_sites": sorted(set(rules))}
+        self.sites.setPlainText("\n".join(sorted(set(rules))))
 
     def load_browser(self):
         entry = self.config["browsers"][self.current_browser]

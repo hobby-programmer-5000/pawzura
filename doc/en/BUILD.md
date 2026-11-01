@@ -24,7 +24,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-Output: `dist/Pawzura/Pawzura.exe` and `dist/Pawzura-0.1.1-windows-x64.zip`. The executable is a portable folder with replaceable Qt DLLs; distribute the whole folder. Ollama and model weights are not bundled.
+Output: `dist/Pawzura/Pawzura.exe` and `dist/Pawzura-0.1.2-windows-x64.zip`. The executable is a portable folder with replaceable Qt DLLs; distribute the whole folder. Ollama and model weights are not bundled.
 
 The build copies both documentation languages and original third-party licenses. `BUILD-INFO.json` records Python and dependency versions. `BINARY-MANIFEST.json` records SHA-256 of each executable/DLL/PYD. MSVC redistributable copies are unified to the newest unmodified shipped version to avoid loader-order conflicts.
 

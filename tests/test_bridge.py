@@ -80,6 +80,16 @@ class BridgeTests(unittest.TestCase):
         self.assertTrue(result["allowed"])
         self.assertFalse(result["close"])
 
+    def test_scoped_url_rule_is_used_by_http_bridge(self):
+        self.enable()
+        self.settings.data["browsers"]["chrome"]["allowed_sites"] = ["https://example.com/library?view=video"]
+        permitted = self.send(url="https://example.com/library/lesson?view=video&utm=test")["decisions"][0]
+        self.assertTrue(permitted["allowed"])
+        self.assertTrue(self.bridge.events.empty())
+        denied = self.send(url="https://example.com/other?view=video")["decisions"][0]
+        self.assertFalse(denied["allowed"])
+        self.assertFalse(denied["close"])
+
 
 if __name__ == "__main__":
     unittest.main()
