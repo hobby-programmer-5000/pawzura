@@ -4,6 +4,16 @@
 
 Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
 
+## 0.1.6 overlay filtering and preview lifetime
+
+**77 Python tests and 19 extension tests passed locally.** Regressions cover ordinary system-menu windows versus overlay/tool/no-activate/click-through/child surfaces, protected graphics/rendering helpers at selection and final close boundaries, one-shot native previews, preview callbacks after mode changes, cached effect windows, stale return heights and cancellation during a hit.
+
+A read-only live-window check found graphics-overlay and embedded-renderer surfaces eligible under the previous inspection rules. Running the previous scheduler against current metadata with all visual/close actions replaced by test functions selected those upper-right targets; preview issued zero close calls. The new live inspection rejected both surfaces. Native checks verified that normal test-owned windows still support normal close requests, and that two safe previews reuse the same effect HWNDs with TOOLWINDOW/NOACTIVATE and without APPWINDOW. The graphics/Explorer process set remained unchanged during that bounded test. Current monitor work-area and shell-taskbar coordinates agreed at inspection.
+
+The reported full flashing/restart sequence was **not** reproduced under a running old guardian: no running Pawzura process was found at inspection. A stable process snapshot and absence of matching recent crash events cannot prove the entire earlier sequence. No driver/Explorer process was terminated or restarted for diagnosis. Raw identities, titles, machine paths and process inventories are not shipped. See [overlay troubleshooting](OVERLAYS-AND-PREVIEW.md).
+
+The 0.1.6 Windows EXE passed offscreen rendering/normal exit and its ten embedded application modules matched final source.
+
 ## 0.1.5 guided installation and website switch
 
 **70 Python tests and 19 extension tests passed locally.** Tests cover fixed-file staging without preferences, stable folder updates, token-free setup links, missing-browser feedback, immediate website OFF despite invalid unsaved rule text, retained application monitoring, migration, authenticated status without URL payloads, URL-query preflight while disabled and safe installation pages.

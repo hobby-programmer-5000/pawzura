@@ -51,6 +51,42 @@ class MotionTests(unittest.TestCase):
         self.pet.home()
         self.assertTrue(area.contains(self.pet.geometry()))
 
+    def test_jump_returns_to_floor_instead_of_stale_overlay_height(self):
+        self.pet.py=10.0
+        with patch("pawzura.pet.time.monotonic",return_value=100):
+            self.pet.bite(QPointF(500,20),lambda:None)
+        with patch("pawzura.pet.time.monotonic",return_value=102):
+            self.pet.tick()
+        area=self.app.primaryScreen().availableGeometry()
+        self.assertEqual(self.pet.py,area.bottom()-self.pet.height()+1)
+        self.assertIsNone(self.pet.action)
+
+    def test_cancel_during_hit_keeps_recovered_floor_coordinates(self):
+        with patch("pawzura.pet.time.monotonic",return_value=100):
+            self.pet.bite(QPointF(500,20),self.pet.cancel_bite)
+        with patch("pawzura.pet.time.monotonic",return_value=100.8):
+            self.pet.tick()
+        area=self.app.primaryScreen().availableGeometry()
+        self.assertIsNone(self.pet.action)
+        self.assertEqual(self.pet.py,area.bottom()-self.pet.height()+1)
+        self.assertTrue(area.contains(self.pet.geometry()))
+
+    def test_effect_windows_are_reused_and_disposed_with_pet(self):
+        self.pet.show()
+        point=self.pet.tab_target_point()
+        ids=[]
+        for start in (100,110):
+            with patch("pawzura.pet.time.monotonic",return_value=start):
+                self.pet.bite(point,lambda:None,label="Tab preview",tab=True)
+            marker=self.pet.action["marker"]
+            with patch("pawzura.pet.time.monotonic",return_value=start+.8):
+                self.pet.tick()
+            ids.append((id(marker),id(self.pet.cracks[0])))
+            self.pet.cracks[0].timer.stop()
+            self.pet.cancel_bite()
+        self.assertEqual(ids[0],ids[1])
+        self.assertEqual(len(self.pet.cracks),1)
+
     def test_tab_marker_stays_near_taskbar_and_disappears_on_cancel(self):
         self.pet.show()
         point = self.pet.tab_target_point()

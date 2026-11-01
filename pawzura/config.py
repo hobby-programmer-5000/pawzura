@@ -27,6 +27,13 @@ BROWSER_EXECUTABLES = {
 }
 # Display/product names may differ from the actual executable in packaged apps.
 APP_ALIASES = ({"codex.exe", "chatgpt.exe"},)
+# Rendering/driver/session helpers are never application-guardian targets.
+PROTECTED_HELPERS = frozenset({
+    "nvidia overlay.exe", "nvidia share.exe", "nvidia app.exe", "nvcontainer.exe", "nvdisplay.container.exe",
+    "amdow.exe", "radeonsoftware.exe", "amdrsserv.exe", "amdrssrcext.exe",
+    "igfxem.exe", "igfxcuiservice.exe", "rtss.exe", "rtsshooksloader.exe", "rtsshooksloader64.exe",
+    "gamebar.exe", "gamebarftserver.exe", "gamebarpresencewriter.exe", "msedgewebview2.exe",
+})
 
 
 def expand_app_aliases(apps: list[str]) -> list[str]:

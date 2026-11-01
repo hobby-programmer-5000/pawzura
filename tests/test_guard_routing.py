@@ -17,7 +17,7 @@ class RoutingTests(unittest.TestCase):
         fake = SimpleNamespace(settings=SimpleNamespace(snapshot=lambda: config),
                                pet=SimpleNamespace(action=None,bite=Mock(),tab_target_point=Mock(return_value=QPointF(480,650))),
                                bridge=SimpleNamespace(events=Queue(),pairing_events=Queue(),complete=Mock()),
-                               pairing_dialog_open=False,observed={},cooldown={})
+                               pairing_dialog_open=False,observed={},cooldown={},previewed=set())
         return fake,config
 
     def window(self, exe):
@@ -34,6 +34,38 @@ class RoutingTests(unittest.TestCase):
         with patch("pawzura.windows.inspect_window") as inspect:
             self.assertFalse(close_window(self.window("chrome.exe")))
             inspect.assert_not_called()
+
+    def test_graphics_and_renderer_helpers_are_protected_even_without_allowlist_entries(self):
+        fake,config = self.harness()
+        config.update(allowed_apps=[],startup_apps=[])
+        targets=[self.window(name) for name in ("NVIDIA Overlay.exe","nvcontainer.exe","AMDOW.exe","RTSS.exe","msedgewebview2.exe")]
+        with patch("pawzura.app.windows.list_windows",return_value=targets):
+            Companion.tick(fake)
+        fake.pet.bite.assert_not_called()
+        with patch("pawzura.windows.inspect_window") as inspect:
+            for target in targets:
+                self.assertFalse(close_window(target))
+            inspect.assert_not_called()
+
+    def test_native_preview_occurs_once_and_callback_can_never_close(self):
+        fake,config = self.harness()
+        config["preview_only"] = True
+        window=self.window("unlisted.exe")
+        key=(window.hwnd,window.pid,window.executable,window.title)
+        fake.observed[key]=90
+        with patch("pawzura.app.time.monotonic",return_value=100), \
+             patch("pawzura.app.windows.list_windows",return_value=[window]), \
+             patch("pawzura.app.windows.physical_to_logical",return_value=(975,115)), \
+             patch("pawzura.app.QApplication.screens",return_value=[]), \
+             patch("pawzura.app.windows.close_window") as close:
+            Companion.tick(fake)
+            callback=fake.pet.bite.call_args.args[1]
+            with patch("pawzura.app.time.monotonic",return_value=160):
+                Companion.tick(fake)
+            self.assertEqual(fake.pet.bite.call_count,1)
+            config["preview_only"] = False
+            callback()
+            close.assert_not_called()
 
     def test_program_guardian_still_operates_with_website_control_off(self):
         fake,config = self.harness()

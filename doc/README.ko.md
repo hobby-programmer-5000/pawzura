@@ -18,6 +18,8 @@
 - [0.1.3 재빌드 프리뷰](ko/RELEASE-v0.1.3.md)
 - [0.1.4 탭 표시 수정](ko/RELEASE-v0.1.4.md)
 - [0.1.5 브라우저 설치 도우미](ko/RELEASE-v0.1.5.md)
+- [오버레이와 반복 미리보기](ko/OVERLAYS-AND-PREVIEW.md)
+- [0.1.6 오버레이 보호](ko/RELEASE-v0.1.6.md)
 - [0.1.1 이전 버전 기록](ko/RELEASE-v0.1.1.md)
 - [0.1.0 이전 버전 기록](ko/RELEASE-v0.1.0.md)
 - [제3자 라이선스와 고지](ko/THIRD-PARTY-NOTICES.md)

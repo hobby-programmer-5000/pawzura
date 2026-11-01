@@ -34,6 +34,7 @@ class Companion:
         except OSError as error:
             self.bridge_error = str(error)
         self.observed = {}
+        self.previewed = set()
         self.cooldown = {}
         self.tray = QSystemTrayIcon(self.make_icon(), app)
         self.tray.setToolTip("Pawzura")
@@ -120,6 +121,7 @@ class Companion:
         self.tray.setToolTip("Pawzura · " + ("Preview" if config["guard_enabled"] and config["preview_only"] else "Guardian on" if config["guard_enabled"] else "Guardian off"))
         self.refresh_menu()
         self.observed.clear()
+        self.previewed.clear()
         if self.dialog:
             self.dialog.website_control.blockSignals(True)
             self.dialog.website_control.setChecked(config["browser_control_enabled"])
@@ -197,21 +199,27 @@ class Companion:
         candidates = windows.list_windows()
         live = {(w.hwnd, w.pid, w.executable, w.title) for w in candidates}
         self.observed = {key: value for key, value in self.observed.items() if key in live}
+        self.previewed.intersection_update(live)
         self.cooldown = {key: value for key, value in self.cooldown.items() if now - value < 30}
         for window in candidates:
             if is_browser(window.executable) or allowed_app(window.executable, config):
                 continue
             key = (window.hwnd, window.pid, window.executable, window.title)
+            if config["preview_only"] and key in self.previewed:
+                continue
             first = self.observed.setdefault(key, now)
             if now - first < 4 or now - self.cooldown.get(key, -100) < 15:
                 continue
             self.cooldown[key] = now
             x, y = windows.physical_to_logical(*window.close_point, QApplication.screens())
-            def complete(target=window):
+            def complete(target=window, was_preview=config["preview_only"]):
+                if was_preview:
+                    return  # A preview callback can never become a live close request.
                 current = self.settings.snapshot()
                 if current["guard_enabled"] and not current["preview_only"] and not is_browser(target.executable) and not allowed_app(target.executable, current):
                     windows.close_window(target)
-            self.pet.bite(QPointF(x, y), complete)
+            if self.pet.bite(QPointF(x, y), complete) and config["preview_only"]:
+                self.previewed.add(key)
             break
 
     def shutdown(self):

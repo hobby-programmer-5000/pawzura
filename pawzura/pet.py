@@ -151,8 +151,8 @@ class CharacterPreview(QWidget):
 
 
 class Crack(QWidget):
-    def __init__(self, point: QPointF, label=""):
-        super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool | Qt.WindowType.WindowTransparentForInput | Qt.WindowType.WindowDoesNotAcceptFocus)
+    def __init__(self, point: QPointF, label="", parent=None):
+        super().__init__(parent, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool | Qt.WindowType.WindowTransparentForInput | Qt.WindowType.WindowDoesNotAcceptFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.resize(150, 150)
@@ -161,19 +161,28 @@ class Crack(QWidget):
         self.label = label
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
+        self.show_at(point, label)
+
+    def show_at(self, point, label):
+        self.move(round(point.x()) - 75, round(point.y()) - 75)
+        self.label = label
+        self.born = time.monotonic()
         self.timer.start(30)
         self.show()
 
     def tick(self):
         if time.monotonic() - self.born > 1.8:
             self.timer.stop()
-            self.close()
+            self.hide()
         else:
             self.update()
 
     def paintEvent(self, _):
         age = time.monotonic() - self.born
         p = QPainter(self)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        p.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setOpacity(max(0, 1 - age / 1.8))
         if self.label:
@@ -194,14 +203,20 @@ class Crack(QWidget):
 
 class TabTarget(QWidget):
     """A synthetic tab X, kept separate from every browser/window caption."""
-    def __init__(self, point, label):
-        super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool | Qt.WindowType.WindowTransparentForInput | Qt.WindowType.WindowDoesNotAcceptFocus)
+    def __init__(self, point, label, parent=None):
+        super().__init__(parent, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool | Qt.WindowType.WindowTransparentForInput | Qt.WindowType.WindowDoesNotAcceptFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.resize(180, 44)
         self.move(round(point.x()) - 158, round(point.y()) - 22)
         self.label = label
         self.show()
+
+    def show_at(self, point, label):
+        self.move(round(point.x()) - 158, round(point.y()) - 22)
+        self.label = label
+        self.show()
+        self.update()
 
     def paintEvent(self, _):
         p = QPainter(self)
@@ -230,6 +245,7 @@ class Pet(QWidget):
         self.last_tick = time.monotonic()
         self.action = None
         self.cracks = []
+        self.tab_marker = None
         self.home()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
@@ -269,9 +285,16 @@ class Pet(QWidget):
     def bite(self, point: QPointF, callback, label="", tab=False):
         if self.action:
             return False
+        marker = None
+        if tab and self.isVisible():
+            if self.tab_marker is None:
+                self.tab_marker = TabTarget(point, label, self)
+            else:
+                self.tab_marker.show_at(point, label)
+            marker = self.tab_marker
         self.action = {"start": time.monotonic(), "from": QPointF(self.px, self.py),
                        "to": point - QPointF(77, 82), "point": point, "callback": callback, "hit": False, "label": label,
-                       "marker": TabTarget(point, label) if tab and self.isVisible() else None}
+                       "marker": marker}
         # Even when the pet is hidden, preserve the timing for browser close acknowledgements.
         return True
 
@@ -283,8 +306,7 @@ class Pet(QWidget):
     def clear_marker(self):
         marker = self.action.get("marker") if self.action else None
         if marker:
-            marker.close()
-            marker.deleteLater()
+            marker.hide()
             self.action["marker"] = None
 
     def dispose(self):
@@ -303,6 +325,10 @@ class Pet(QWidget):
             crack.close()
             crack.deleteLater()
         self.cracks.clear()
+        if self.tab_marker:
+            self.tab_marker.close()
+            self.tab_marker.deleteLater()
+            self.tab_marker = None
         self.close()
         self.deleteLater()
 
@@ -323,10 +349,17 @@ class Pet(QWidget):
                 if not action["hit"]:
                     action["hit"] = True
                     if self.isVisible():
-                        crack = Crack(action["point"], action["label"])
-                        self.cracks.append(crack)
-                        self.cracks = [c for c in self.cracks if c.isVisible()]
+                        if not self.cracks:
+                            self.cracks.append(Crack(action["point"], action["label"], self))
+                        else:
+                            self.cracks[0].show_at(action["point"], action["label"])
+                    if self.action is not action:
+                        self.update()
+                        return
                     action["callback"]()
+                    if self.action is not action:
+                        self.update()
+                        return  # Cancellation/recovery must not restore the stale jump coordinates.
             elif elapsed < 1.75:
                 t = (elapsed - 1.0) / 0.75
                 pos = action["to"] * (1 - t) + action["from"] * t
@@ -335,6 +368,13 @@ class Pet(QWidget):
                 pos = action["from"]
                 self.clear_marker()
                 self.action = None
+                # Return to the current desktop floor, even if the saved launch
+                # point was stale after a display/overlay geometry transition.
+                screen = QApplication.screenAt((pos + QPointF(72,72)).toPoint()) or QApplication.primaryScreen()
+                if screen:
+                    area = screen.availableGeometry()
+                    pos.setX(max(area.left(), min(pos.x(), area.right() - self.width() + 1)))
+                    pos.setY(max(area.top(), area.bottom() - self.height() + 1))
             self.px, self.py = pos.x(), pos.y()
         elif self.isVisible():
             screens = self.screens()

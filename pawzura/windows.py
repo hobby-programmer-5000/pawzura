@@ -45,12 +45,24 @@ if IS_WINDOWS:
     CALLBACK = C.WINFUNCTYPE(W.BOOL, W.HWND, W.LPARAM)
     user.EnumWindows.argtypes = [CALLBACK, W.LPARAM]
     user.IsIconic.argtypes = [W.HWND]
+    user.GetWindowLongPtrW.argtypes = [W.HWND, C.c_int]
+    user.GetWindowLongPtrW.restype = C.c_ssize_t
+
+
+def ordinary_app_window(style: int, extended_style: int) -> bool:
+    """Fail open for utilities, child surfaces and windows without a system menu."""
+    child = 0x40000000
+    system_menu = 0x00080000
+    tool_or_passive = 0x00000080 | 0x08000000 | 0x00000020  # TOOLWINDOW, NOACTIVATE, TRANSPARENT
+    return bool(style & system_menu) and not bool(style & child or extended_style & tool_or_passive)
 
 
 def inspect_window(hwnd: int) -> Window | None:
     if not IS_WINDOWS or not user.IsWindow(hwnd) or not user.IsWindowVisible(hwnd) or user.IsIconic(hwnd):
         return None
     if user.GetWindow(hwnd, 4):  # GW_OWNER: never act on modal or owned tool windows
+        return None
+    if not ordinary_app_window(user.GetWindowLongPtrW(hwnd, -16), user.GetWindowLongPtrW(hwnd, -20)):
         return None
     pid = W.DWORD()
     user.GetWindowThreadProcessId(hwnd, C.byref(pid))
@@ -109,9 +121,9 @@ def foreground_window() -> Window | None:
 
 
 def close_window(target: Window) -> bool:
-    from .policy import is_browser
+    from .policy import is_browser, protected_helper
     # Final boundary guard, including callers that bypass the normal candidate filter.
-    if is_browser(target.executable):
+    if is_browser(target.executable) or protected_helper(target.executable):
         return False
     current = inspect_window(target.hwnd)
     if not current or (current.pid, current.executable, current.title) != (target.pid, target.executable, target.title):

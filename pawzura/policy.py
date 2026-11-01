@@ -3,7 +3,7 @@ from collections import Counter
 from pathlib import PureWindowsPath
 import re
 from urllib.parse import parse_qsl, quote, unquote, urlencode, urlsplit, urlunsplit
-from .config import BROWSER_EXECUTABLES, expand_app_aliases
+from .config import BROWSER_EXECUTABLES, PROTECTED_HELPERS, expand_app_aliases
 
 INTERNAL_PAGES = {
     "about:blank", "about:newtab", "about:home", "about:privatebrowsing",
@@ -22,7 +22,11 @@ def normalize_app(value: str) -> str:
 def allowed_app(executable: str, config: dict) -> bool:
     allowed = config["allowed_apps"] + config.get("startup_apps", [])
     # Browser windows are NEVER controlled by the native app guardian.
-    return is_browser(executable) or normalize_app(executable) in expand_app_aliases(allowed)
+    return is_browser(executable) or protected_helper(executable) or normalize_app(executable) in expand_app_aliases(allowed)
+
+
+def protected_helper(executable: str) -> bool:
+    return normalize_app(executable) in PROTECTED_HELPERS
 
 
 def is_browser(executable: str) -> bool:
