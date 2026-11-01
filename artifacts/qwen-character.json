@@ -1,0 +1,10 @@
+{
+  "seed": 1680740660,
+  "body": "#e5ffeb",
+  "accent": "#e5ffeb",
+  "ears": "rabbit",
+  "accessory": "star",
+  "source": "qwen",
+  "model": "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M",
+  "model_card": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M",
+  "digest": "002f8862bb2b9364beab69423d6f56bec772c4fd34ec92ff521b8c530e5fc695",
+  "size": 491413571,
+  "details": {
+    "parent_model": "",
+    "format": "gguf",
+    "family": "qwen2",
+    "families": [
+      "qwen2"
+    ],
+    "parameter_size": "630M",
+    "quantization_level": "Q4_K_M",
+    "context_length": 32768,
+    "embedding_length": 896
+  }
+}

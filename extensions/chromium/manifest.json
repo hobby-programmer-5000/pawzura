@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Pawzura Focus Bridge",
+  "version": "0.1.0",
+  "description": "Pair with your local Pawzura companion to close unlisted website tabs.",
+  "permissions": ["tabs", "storage", "alarms"],
+  "host_permissions": ["http://127.0.0.1/*"],
+  "background": {"service_worker": "background.js"},
+  "options_page": "options.html",
+  "action": {"default_title": "Pawzura · Open pairing settings"}
+}

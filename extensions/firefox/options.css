@@ -1,0 +1,7 @@
+:root { color-scheme: dark; font: 15px/1.7 system-ui, sans-serif; background: #171b2a; color: #e9e8f2; }
+main { max-width: 660px; margin: 7vh auto; padding: 36px; background: #22263b; border-radius: 24px; }
+h1 { font-size: 40px; color: #d2c1ff; margin: 0 0 18px; }
+.eyebrow { font-size: 11px; letter-spacing: 2px; color: #a9afc5; }
+textarea { box-sizing: border-box; display: block; width: 100%; margin-top: 8px; border: 1px solid #53556f; border-radius: 12px; padding: 15px; background: #131725; color: #e9e8f2; resize: vertical; }
+button { border: 0; border-radius: 9px; padding: 11px 18px; background: #c5b0f4; color: #211b32; cursor: pointer; font-weight: 600; }
+#disconnect { background: #39405a; color: #eee; } .note { font-size: 12px; color: #a9afc5; } #status { color: #a8dace; }

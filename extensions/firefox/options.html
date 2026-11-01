@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Pawzura · Pairing</title>
+<link rel="stylesheet" href="options.css"></head>
+<body><main><p class="eyebrow">LOCAL DESKTOP COMPANION</p><h1>Pawzura</h1>
+<p>데스크톱 앱의 브라우저 설정에서 연결 정보를 복사해 붙여넣으세요.<br>Paste the pairing information copied from the desktop app's Browser settings.</p>
+<label for="pairing">연결 정보 / Pairing JSON</label><textarea id="pairing" rows="5" spellcheck="false" placeholder='{"token":"…","port":47831,"browser":"chrome"}'></textarea>
+<p class="note">브라우저별 설정을 복사하세요. 기본 허용은 새 탭/기본 홈 화면뿐입니다.<br>Use pairing for this browser. Custom startup sites must be added in the app.</p>
+<button id="save">연결 / Pair</button> <button id="disconnect">연결 해제 / Disconnect</button><p id="status" role="status"></p>
+<p class="note">Only the local app receives open tab URLs. URLs are not logged or sent to a cloud service.<br>앱 종료·감시 중지·연결 오류 시 확장은 탭을 닫지 않습니다.</p>
+</main><script src="options.js"></script></body></html>

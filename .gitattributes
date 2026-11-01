@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+# Preserve upstream legal documents byte for byte, including original whitespace.
+licenses/upstream/** -text -whitespace

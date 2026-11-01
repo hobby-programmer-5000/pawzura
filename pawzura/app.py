@@ -1,0 +1,262 @@
+from __future__ import annotations
+
+import argparse
+import ctypes
+import json
+import logging
+from pathlib import Path
+from queue import Empty
+import sys
+import time
+from PySide6.QtCore import QCoreApplication, QEvent, QLockFile, QPointF, QTimer, Qt
+from PySide6.QtGui import QFontDatabase, QIcon, QPainter, QPixmap
+from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
+
+from .bridge import Bridge
+from .config import Settings, data_dir
+from .pet import Pet, draw_character
+from .policy import allowed_app
+from .ui import SettingsDialog
+from . import windows
+
+
+class Companion:
+    def __init__(self, app, settings):
+        self.app, self.settings = app, settings
+        self.pet = Pet(settings.snapshot()["character"])
+        self.pet.settings_requested.connect(self.show_settings)
+        self.dialog = None
+        self.bridge = Bridge(settings)
+        self.bridge_error = None
+        try:
+            self.bridge.start()
+        except OSError as error:
+            self.bridge_error = str(error)
+        self.observed = {}
+        self.cooldown = {}
+        self.tray = QSystemTrayIcon(self.make_icon(), app)
+        self.tray.setToolTip("Pawzura")
+        self.tray.activated.connect(self.tray_activated)
+        self.menu = QMenu()
+        self.tray.setContextMenu(self.menu)
+        self.refresh_menu()
+        self.tray.show()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.tick)
+        self.timer.start(800)
+        self.apply()
+        self.app.aboutToQuit.connect(self.shutdown)
+
+    def make_icon(self):
+        pixmap = QPixmap(144, 146)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        draw_character(painter, self.settings.snapshot()["character"])
+        painter.end()
+        return QIcon(pixmap)
+
+    def refresh_menu(self):
+        self.menu.clear()
+        config = self.settings.snapshot()
+        ko = config["language"] == "ko"
+        items = [
+            ("설정 열기" if ko else "Open settings", self.show_settings),
+            (("집중 지킴이 끄기" if config["guard_enabled"] else "집중 지킴이 켜기") if ko else ("Pause guardian" if config["guard_enabled"] else "Enable guardian"), self.toggle_guard),
+            (("캐릭터 숨기기" if config["pet_visible"] else "캐릭터 보이기") if ko else ("Hide companion" if config["pet_visible"] else "Show companion"), self.toggle_pet),
+        ]
+        for title, callback in items:
+            action = self.menu.addAction(title)
+            action.triggered.connect(callback)
+        self.menu.addSeparator()
+        self.menu.addAction("종료" if ko else "Quit").triggered.connect(self.request_quit)
+
+    def request_quit(self):
+        if self.dialog and self.dialog.worker and self.dialog.worker.isRunning():
+            self.dialog.message.setText("캐릭터 생성이 끝난 뒤 종료하세요. / Wait for character generation to finish.")
+            self.dialog.show()
+            return
+        self.app.quit()
+
+    def tray_activated(self, reason):
+        if reason in (QSystemTrayIcon.ActivationReason.Trigger, QSystemTrayIcon.ActivationReason.DoubleClick):
+            self.show_settings()
+
+    def toggle_guard(self):
+        self.settings.save({"guard_enabled": not self.settings.snapshot()["guard_enabled"]})
+        self.apply()
+
+    def toggle_pet(self):
+        self.settings.save({"pet_visible": not self.settings.snapshot()["pet_visible"]})
+        self.apply()
+
+    def apply(self):
+        config = self.settings.snapshot()
+        self.pet.cancel_bite()
+        self.pet.spec = config["character"]
+        self.pet.setVisible(config["pet_visible"])
+        self.tray.setIcon(self.make_icon())
+        self.tray.setToolTip("Pawzura · " + ("Preview" if config["guard_enabled"] and config["preview_only"] else "Guardian on" if config["guard_enabled"] else "Guardian off"))
+        self.refresh_menu()
+        self.observed.clear()
+
+    def show_settings(self):
+        language = self.settings.snapshot()["language"]
+        if self.dialog and self.dialog.config["language"] != language and not (self.dialog.worker and self.dialog.worker.isRunning()):
+            self.dialog.deleteLater()
+            self.dialog = None
+        if not self.dialog:
+            self.dialog = SettingsDialog(self.settings)
+            self.dialog.applied.connect(self.apply)
+            self.dialog.demo_requested.connect(self.demo)
+        # Synchronize quick tray toggles without overwriting unsaved allowlist edits.
+        config = self.settings.snapshot()
+        self.dialog.guard.setChecked(config["guard_enabled"])
+        self.dialog.visible.setChecked(config["pet_visible"])
+        if self.bridge_error:
+            self.dialog.message.setText("Browser bridge unavailable: " + self.bridge_error)
+        self.dialog.show()
+        self.dialog.raise_()
+        self.dialog.activateWindow()
+
+    def demo(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        point = QPointF(screen.center().x(), screen.top() + 120)
+        if self.dialog and self.dialog.isVisible():
+            frame = self.dialog.frameGeometry()
+            point = QPointF(frame.right() - 25, frame.top() + 16)
+        self.pet.setVisible(True)
+        self.pet.bite(point, lambda: None)
+
+    def tick(self):
+        if self.pet.action:
+            return
+        config = self.settings.snapshot()
+        # Browser tickets receive the same animation acknowledgement as native windows.
+        try:
+            event = self.bridge.events.get_nowait()
+            if config["guard_enabled"] and config["browsers"][event["browser"]]["enabled"]:
+                target = windows.foreground_window()
+                # Background tabs cannot be located reliably in browser chrome; use a visible desktop point.
+                if target and event["active"] and normalize_browser(target.executable) == event["browser"]:
+                    x, y = windows.physical_to_logical(*target.close_point, QApplication.screens())
+                else:
+                    area = QApplication.primaryScreen().availableGeometry()
+                    x, y = area.right() - 90, area.top() + 75
+                self.pet.bite(QPointF(x, y), lambda: self.bridge.complete(event["ticket"]))
+            return
+        except Empty:
+            pass
+        if not config["guard_enabled"]:
+            return
+        now = time.monotonic()
+        candidates = windows.list_windows()
+        live = {(w.hwnd, w.pid, w.executable, w.title) for w in candidates}
+        self.observed = {key: value for key, value in self.observed.items() if key in live}
+        self.cooldown = {key: value for key, value in self.cooldown.items() if now - value < 30}
+        for window in candidates:
+            if allowed_app(window.executable, config):
+                continue
+            key = (window.hwnd, window.pid, window.executable, window.title)
+            first = self.observed.setdefault(key, now)
+            if now - first < 4 or now - self.cooldown.get(key, -100) < 15:
+                continue
+            self.cooldown[key] = now
+            x, y = windows.physical_to_logical(*window.close_point, QApplication.screens())
+            def complete(target=window):
+                current = self.settings.snapshot()
+                if current["guard_enabled"] and not current["preview_only"] and not allowed_app(target.executable, current):
+                    windows.close_window(target)
+            self.pet.bite(QPointF(x, y), complete)
+            break
+
+    def shutdown(self):
+        self.timer.stop()
+        self.pet.timer.stop()
+        self.pet.close()
+        self.tray.hide()
+        self.bridge.stop()
+
+
+def normalize_browser(executable):
+    from .policy import normalize_app
+    return {"msedge.exe": "edge"}.get(normalize_app(executable), normalize_app(executable).removesuffix(".exe"))
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Pawzura · Windows SD desktop companion")
+    parser.add_argument("--settings", action="store_true", help="Open settings on launch")
+    parser.add_argument("--tray", action="store_true", help="Start quietly in the system tray (Windows sign-in)")
+    parser.add_argument("--smoke-check", action="store_true", help="Render offscreen and exit; no monitoring or settings writes")
+    parser.add_argument("--capture", type=Path, help="Capture settings PNG during --smoke-check")
+    args = parser.parse_args(argv)
+    if not windows.IS_WINDOWS and not args.smoke_check:
+        parser.error("Desktop integration requires Windows 10/11")
+    if windows.IS_WINDOWS:
+        try:
+            ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+        except (AttributeError, OSError):
+            pass
+    if args.smoke_check:
+        import os
+        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+    app = QApplication([sys.argv[0]])
+    if args.smoke_check and windows.IS_WINDOWS:
+        # The offscreen Qt plugin has no Windows font database integration.
+        import os
+        for font in ("segoeui.ttf", "malgun.ttf"):
+            QFontDatabase.addApplicationFont(str(Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts" / font))
+    app.setApplicationName("Pawzura")
+    app.setOrganizationName("Pawzura")
+    app.setQuitOnLastWindowClosed(False)
+    if args.smoke_check:
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as temporary:
+            settings = Settings(Path(temporary) / "settings.json")
+            dialog = SettingsDialog(settings)
+            dialog.show()
+            app.processEvents()
+            if args.capture:
+                args.capture.parent.mkdir(parents=True, exist_ok=True)
+                dialog.grab().save(str(args.capture))
+                for index in range(dialog.tabs.count()):
+                    dialog.tabs.setCurrentIndex(index)
+                    app.processEvents()
+                    dialog.grab().save(str(args.capture.with_stem(args.capture.stem + f"-{index}")))
+            pet = Pet(settings.snapshot()["character"])
+            pet.show()
+            app.processEvents()
+            pet.grab()
+            pet.timer.stop()
+            dialog.character_preview.timer.stop()
+            dialog.hide()
+            pet.hide()
+            tab_count = dialog.tabs.count()
+            pet.deleteLater()
+            dialog.deleteLater()
+            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            app.processEvents()
+            print(json.dumps({"smoke_check": "passed", "qt": "6.12.0", "tabs": tab_count}))
+            return 0
+    try:
+        directory = data_dir()
+        directory.mkdir(parents=True, exist_ok=True)
+        lock = QLockFile(str(directory / "instance.lock"))
+        lock.setStaleLockTime(0)
+        if not lock.tryLock(50):
+            QMessageBox.information(None, "Pawzura", "이미 실행 중입니다. 트레이 아이콘을 확인하세요. / Already running; check the system tray.")
+            return 0
+        settings = Settings()
+        first_run = not settings.path.exists()
+        if first_run:
+            settings.save({"startup_apps": windows.startup_apps()})
+        companion = Companion(app, settings)
+        if first_run or args.settings or not args.tray:
+            companion.show_settings()
+        return app.exec()
+    except Exception as error:
+        QMessageBox.critical(None, "Pawzura", str(error))
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
