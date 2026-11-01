@@ -47,6 +47,8 @@ ollama pull hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M
 
 ## 권리 및 버전 관리
 
+기본 캐릭터는 AI 지원으로 작성한 자체 벡터 도형 코드이며 외부 마스코트를 라이선스 받아 가져온 것이 아닙니다. 정식 상표·이미지 유사성 조사를 완료하지 않았으므로 독립적으로 그렸다는 사실만으로 기존 권리와의 충돌이 없다고 보장하지 않습니다. 저작권과 상표권은 별개이며 AI 관여 산출물의 독점적 저작권은 적용 법과 인간의 창작적 기여에 대한 검토가 필요합니다. 브랜드·상업 배포 전에 제작 기록을 보존하고 권리 검토를 받는 편이 좋습니다. [공식 AI 저작권 안내](https://www.kipo.go.kr/ko/kpoBultnDetail.do?aprchId=BUT0000029&menuCd=SCD0200618&ntatcSeq=21075&sysCd=SCD02), [상표권 범위](https://www.kipo.go.kr/ko/kpoContentView.do?menuCd=SCD0200242).
+
 오픈 모델의 Apache-2.0은 가중치의 사용 조건입니다. 생성물의 독창성, 저작권 성립 또는 비침해를 보증하지 않습니다. 고유 도형과 제한된 프롬프트로 알려진 캐릭터를 의도적으로 복제하는 흐름을 피합니다. 외부 이미지나 사용자 제공 IP는 현재 지원하지 않습니다.
 
 모델 태그는 upstream 변경 가능성이 있으므로 재현성이 필요한 배포는 `ollama show --modelfile` 및 `ollama list`의 digest도 별도 기록해야 합니다. 모델은 제품 소스 라이선스인 MIT로 재라이선스하지 않습니다. 원문은 `licenses/upstream/Qwen-LICENSE.txt`에 보관합니다.

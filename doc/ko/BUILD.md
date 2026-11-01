@@ -24,7 +24,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-결과는 `dist/Pawzura/Pawzura.exe`, `dist/Pawzura-0.1.3-windows-x64.zip`입니다. Qt DLL을 교체할 수 있는 포터블 폴더이므로 **전체 폴더**를 배포하세요. Ollama와 모델 가중치는 포함하지 않습니다.
+결과는 `dist/Pawzura/Pawzura.exe`, `dist/Pawzura-<version>-windows-x64.zip`입니다. 개발 빌드는 게시된 릴리스가 아닙니다. Qt DLL을 교체할 수 있는 포터블 폴더이므로 **전체 폴더**를 배포하세요. Ollama와 모델 가중치는 포함하지 않습니다. ZIP 생성 전에 [개인정보 배포 검사](PRIVACY.md)를 수행합니다.
 
 빌드는 양쪽 언어의 문서와 제3자 라이선스 원문을 복사합니다. `BUILD-INFO.json`에 Python·의존성 버전, `BINARY-MANIFEST.json`에 EXE/DLL/PYD의 SHA-256을 기록합니다. DLL 탐색 순서에 따른 충돌을 피하도록 동봉된 Microsoft 런타임 중 가장 최신인 원본 파일을 일관되게 사용합니다.
 

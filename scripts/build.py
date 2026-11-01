@@ -86,6 +86,8 @@ def main():
                 for p in output.rglob("*") if p.suffix.lower() in (".exe", ".dll", ".pyd")}
     (output / "BINARY-MANIFEST.json").write_text(json.dumps(binaries, indent=2) + "\n", encoding="utf-8")
     from pawzura import __version__
+    from check_distribution import check_distribution
+    check_distribution(output)
     archive = shutil.make_archive(str(ROOT / f"dist/Pawzura-{__version__}-windows-x64"), "zip", output.parent, output.name)
     print(f"Built: {output / 'Pawzura.exe'}\nArchive: {archive}")
 

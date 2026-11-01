@@ -8,5 +8,8 @@ dist/
 .cache/
 *.log
 pairing.json
+settings.json
+settings.tmp
+instance.lock
 artifacts/settings-general.png
 artifacts/exe-*.png

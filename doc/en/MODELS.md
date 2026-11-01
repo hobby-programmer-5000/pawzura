@@ -33,6 +33,8 @@ Downloads are explicit, not automatic. No weights or Ollama executable are bundl
 
 ## Rights and reproducibility
 
+The default character is original vector-drawing code produced with AI assistance; it is not a licensed third-party mascot. No formal trademark/image clearance has been completed. Independent drawing does not by itself guarantee that no existing protected design or similar trademark conflicts with it. Copyright and trademark rights are distinct, and exclusive copyright in AI-assisted output depends on the applicable rules and human creative contribution. Keep design provenance and obtain suitable rights checks before branding or commercialization. [Official Korean AI copyright guidance](https://www.kipo.go.kr/ko/kpoBultnDetail.do?aprchId=BUT0000029&menuCd=SCD0200618&ntatcSeq=21075&sysCd=SCD02), [trademark scope](https://www.kipo.go.kr/ko/kpoContentView.do?menuCd=SCD0200242).
+
 Apache-2.0 covers the model's terms and does not guarantee originality or non-infringement of generated output. Restricted prompts and original drawing primitives avoid intentionally copying known characters. External reference images and arbitrary user prompts are not supported.
 
 Tags can change upstream. The tested digest is recorded in [model provenance](../../artifacts/model-provenance.json), and [the sample appearance](../../artifacts/qwen-character.json) came from actual local inference. Retain the model's original license in [licenses](../../licenses/upstream/Qwen-LICENSE.txt); do not relicense its weights as the app's MIT code. Any future motion model must have its identity, license, download size and usage documented before adding it.
