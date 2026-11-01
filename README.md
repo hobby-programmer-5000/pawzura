@@ -18,7 +18,7 @@ The app starts in English. Switch with **General → Language → 한국어 → 
 
 **Website control requires the Pawzura browser extension.** For applications only, leave **Browsers → Website control OFF**; no extension is needed.
 
-For websites, choose your browser and click **Install/connect extension…**. The app opens the install page, copies the correct folder and guides you through loading it, then opens the connection page. You approve installation and pairing. [Short walkthrough and missing-button help](doc/en/BROWSERS.md).
+For websites, choose your browser and click **Install/connect extension…**. On the extensions page it opens, enable **Developer mode** (Chrome: upper-right switch on `chrome://extensions`), then **Load unpacked** using the copied folder. **Ctrl+Shift+I opens Developer Tools, not this switch.** Finish loading before opening the connection page. [Steps and button locations](doc/en/BROWSERS.md).
 
 ## What it does
 

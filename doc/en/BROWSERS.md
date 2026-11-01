@@ -8,8 +8,9 @@
 
 1. In Pawzura 0.1.5+, open **Browsers**, choose **chrome** or **edge**, and click **Install/connect extension…**.
 2. Click **Open install page + copy folder**. The app opens the browser's extension manager and puts the correct folder on the clipboard.
-3. **In the browser:** turn on **Developer mode**, then click **Load unpacked**. In the folder picker, press **Alt+D → Ctrl+V → Enter → Select Folder**. No manual folder search is needed.
-4. Return to the helper → **I loaded the extension → Next → Open connection and request pairing**. Choose **Yes** in Pawzura's confirmation. The helper detects a recent authenticated connection and shows completion.
+3. **On the extensions manager page just opened**, turn on the **Developer mode switch**: in Chrome, **`chrome://extensions` → upper right**; in Edge, **`edge://extensions` → left sidebar**. **Ctrl+Shift+I opens Developer Tools; it does not turn on this switch.** Close Developer Tools if you opened it.
+4. On that same extensions page, click **Load unpacked**, which appears after enabling the switch. In the folder picker, press **Alt+D → Ctrl+V → Enter → Select Folder**. No manual folder search is needed.
+5. Confirm that **Pawzura Focus Bridge** appears on the extensions page and is enabled. Then return to the helper → **I loaded the extension → Next → Open connection and request pairing**. Choose **Yes** in Pawzura's confirmation. The helper detects a recent authenticated connection and shows completion.
 
 The browser and port are filled automatically. Do not open `options.html` from Explorer; that is only a file preview. Installation requires the browser's own controls and cannot be silently approved by this helper. It does not change enterprise policies or browser profiles. [Chrome's local-load steps](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked), [Edge's local-load steps](https://learn.microsoft.com/en-us/microsoft-edge/extensions/getting-started/extension-sideloading).
 
@@ -21,7 +22,7 @@ The actual folder is filled and copied on your PC when you click Open install pa
 
 | What you see | Do this |
 | --- | --- |
-| No Load unpacked button | Turn on Developer mode on the extension-manager page first. Chrome puts it at the upper right; Edge's layout can differ. |
+| No Load unpacked button / I pressed Ctrl+Shift+I | Close Developer Tools. Open `chrome://extensions` in Chrome and enable the upper-right Developer mode switch. In Edge, open `edge://extensions` and use the left sidebar switch. |
 | Browser not found | In the helper, use Choose browser executable, select the chosen browser's EXE, then retry Open install page. |
 | A folder picker with unrelated folders | Alt+D focuses its address bar. Ctrl+V pastes the path copied by the helper. Enter opens that folder; then Select Folder. |
 | Cannot find manifest / failed to load | Select the folder prepared by the helper, not the entire Pawzura folder, a ZIP, or options.html. Extract the complete app ZIP first. |
