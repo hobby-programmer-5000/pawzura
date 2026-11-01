@@ -25,7 +25,7 @@ For websites, choose your browser and click **Install/connect extension…**. On
 - Walks across connected monitors with an original, changeable character.
 - Jumps, bites and shows a fading crack before requesting an unlisted window to close.
 - Protects browser windows; its extension closes blocked tabs and connects with desktop approval, without code entry.
-- Offers optional local Hugging Face Qwen character design through Ollama.
+- Designs characters from descriptions with local Qwen; customize colors, ears, expressions, markings, accessories, tails and wings. [Examples and options](doc/en/MODELS.md).
 
 ## Guides
 

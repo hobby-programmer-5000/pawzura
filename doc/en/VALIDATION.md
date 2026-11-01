@@ -4,6 +4,14 @@
 
 Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
 
+## 0.1.7 prompted and manual character design
+
+**87 Python tests and 19 extension tests passed locally.** New checks cover loopback-only prompt delivery without proxies, all nine schema fields, explicit choices overriding model output, rejection before network access for invalid input, incomplete output failures, legacy appearance migration, custom-trait/model persistence, no saved prompt, visible changes for every supported trait, worker input snapshots and failure recovery. One earlier run hit a loopback connection abort in an existing bridge-authentication test; the subsequent complete suite passed.
+
+Actual local inference used the official Qwen2.5 0.5B and 1.5B Q4_K_M weights. Two generic English/Korean examples with 1.5B matched most requested fields but missed eye color and tail type. The smaller model missed more details, particularly in Korean. This is a sample check, not an accuracy benchmark. Explicit options are enforced after inference. A real 1.5B GUI-worker run verified preview/save, the requested eye color/tail, retained model identity, restored controls and absence of the description from disposable saved settings. The 1.5B digest and 1,117,334,278-byte download size are [recorded](../../artifacts/model-provenance-1.5B.json).
+
+English/Korean character screens and synthetic combinations were rendered and reviewed using disposable settings. The Windows EXE passed offscreen rendering/normal exit; all ten embedded app modules match source. Exact illustration generation, arbitrary hair/clothing, reference images and exhaustive GPU/display validation are outside this implementation. See [supported options](MODELS.md).
+
 ## 0.1.6 overlay filtering and preview lifetime
 
 **77 Python tests and 19 extension tests passed locally.** Regressions cover ordinary system-menu windows versus overlay/tool/no-activate/click-through/child surfaces, protected graphics/rendering helpers at selection and final close boundaries, one-shot native previews, preview callbacks after mode changes, cached effect windows, stale return heights and cancellation during a hit.

@@ -5,16 +5,16 @@ import json
 from pathlib import Path
 import sys
 from PySide6.QtCore import QThread, Signal, Qt, QTimer
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QColor, QDesktopServices
 from PySide6.QtCore import QUrl
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout,
     QHBoxLayout, QLabel, QLineEdit, QListWidget, QMessageBox, QPushButton,
-    QPlainTextEdit, QTabWidget, QVBoxLayout, QWidget, QInputDialog, QGridLayout, QScrollArea, QFrame,
+    QPlainTextEdit, QTabWidget, QVBoxLayout, QWidget, QInputDialog, QGridLayout, QScrollArea, QFrame, QColorDialog,
 )
 from . import __version__, windows
-from .characters import MODEL, generate_character, random_character
-from .config import BROWSERS, default_character, profile_lists
+from .characters import COLORS, DETAIL_MODEL, FEATURES, MAX_PROMPT, MODEL, custom_options, generate_character, random_character
+from .config import BROWSERS, default_character, profile_lists, safe_character
 from .pet import CharacterPreview
 from .browser_setup import BrowserSetupDialog
 from .policy import SiteRuleError, normalize_app, site_rule
@@ -52,6 +52,15 @@ TEXT = {
         "random": "임의 캐릭터", "generate": "Qwen으로 생성", "restore": "이전 캐릭터로 변경",
         "model_help": "Qwen이 외형 설계값을 만들고 앱이 직접 그립니다. 애니메이션 모델은 필요 없습니다.\n최초 1회 Ollama에서 아래 명령으로 Hugging Face 모델을 내려받으세요.",
         "generating": "로컬 모델로 생성 중…", "generated": "새 캐릭터를 만들었습니다. 설정 저장을 눌러 적용하세요.",
+        "description": "원하는 캐릭터 설명 (최대 2,000자 · 선택 입력)",
+        "description_help": "색·귀·눈 표정·장식·얼굴 무늬·꼬리·날개를 자세히 적으세요. Qwen이 지원되는 도형 중 가까운 특징을 고릅니다. 임의의 그림·의상·머리카락 생성은 지원하지 않습니다. 설명은 로컬 Ollama로만 보내며 설정에 저장하지 않습니다.",
+        "description_example": "민트색 몸, 보라색 포인트, 여우 귀와 꼬리, 파란 눈, 행복한 표정, 주근깨, 리본, 요정 날개가 있는 독창적인 숲속 친구",
+        "example": "예시 넣기", "clear_description": "설명 지우기", "custom_options": "직접 고르는 외형 옵션",
+        "custom_help": "‘자동’ 또는 빈 색상은 Qwen이 정합니다. 직접 고른 값은 설명과 Qwen 결과보다 우선합니다. ‘옵션 적용’은 모델 없이 현재 외형에 선택값만 반영합니다. 미리보기 확인 후 ‘설정 저장’을 누르세요.",
+        "auto": "자동", "apply_custom": "옵션 적용 (모델 불필요)", "choose_color": "색 선택…",
+        "custom_error": "옵션을 확인하세요: 색상은 #RRGGBB, 설명은 최대 2,000자입니다.",
+        "designer_model": "외형 설계 모델", "model_detail": "Qwen2.5 1.5B · 상세 설명 권장",
+        "model_fast": "Qwen2.5 0.5B · 가벼움, 특징을 놓칠 수 있음",
         "credit": "기획·요구사항·관리: hobby-programmer-5000\n구현·문서·검증 지원: ChatGPT (Codex, OpenAI)\n\n앱 코드: MIT · Qt/Python/모델: 각각의 라이선스 적용",
         "status": "감시가 꺼져 있습니다. 캐릭터와 설정만 동작합니다.",
         "demo": "깨물기 애니메이션 미리보기", "pair_help": "코드를 복사했습니다. 확장 설정에서 같은 브라우저와 포트를 선택하고 ‘연결 코드’에 붙여넣은 뒤 ‘연결하고 확인’을 누르세요.",
@@ -93,6 +102,15 @@ TEXT = {
         "random": "Random character", "generate": "Generate with Qwen", "restore": "Use previous character",
         "model_help": "Qwen designs appearance parameters; the app draws and animates them. No motion model is required.\nFirst download the Hugging Face model once using this Ollama command.",
         "generating": "Generating with local model…", "generated": "Character created. Save settings to apply it.",
+        "description": "Describe your character (optional · up to 2,000 characters)",
+        "description_help": "Describe colors, ears, eye expression, accessory, face markings, tail and wings. Qwen picks the closest supported shapes. Arbitrary artwork, clothing and hairstyles are not supported. The description goes only to local Ollama and is not saved in settings.",
+        "description_example": "An original woodland friend with a mint body, purple accents, fox ears and tail, blue eyes, a happy expression, freckles, a bow and fairy wings",
+        "example": "Insert example", "clear_description": "Clear description", "custom_options": "Choose appearance options",
+        "custom_help": "Auto or blank colors let Qwen choose. Explicit choices override the description and model output. Apply options changes only the selected traits of the current appearance, without a model. Check the preview, then Save settings.",
+        "auto": "Auto", "apply_custom": "Apply options (no model needed)", "choose_color": "Choose color…",
+        "custom_error": "Check options: colors must be #RRGGBB and the description at most 2,000 characters.",
+        "designer_model": "Appearance model", "model_detail": "Qwen2.5 1.5B · recommended for descriptions",
+        "model_fast": "Qwen2.5 0.5B · lighter, may miss requested traits",
         "credit": "Product direction, requirements, maintenance: hobby-programmer-5000\nImplementation, documentation, validation assistance: ChatGPT (Codex, OpenAI)\n\nApp code: MIT · Qt, Python and model retain their own licenses",
         "status": "Guardian is off. Only the companion and settings are active.",
         "demo": "Preview bite animation", "pair_help": "Code copied. In extension settings, choose this browser and port, paste into Connection code, then click Connect and test.",
@@ -129,15 +147,43 @@ QToolTip { background: #303650; color: #fff; border: 0; }
 """
 
 
+CHARACTER_LABELS = {
+    "en": {
+        "body": "Body color", "accent": "Accent color", "eye_color": "Eye color", "ears": "Ears",
+        "accessory": "Accessory", "eyes": "Eye expression", "markings": "Face markings", "tail": "Tail", "wings": "Wings",
+        "rabbit": "Rabbit", "cat": "Cat", "bear": "Bear", "fox": "Fox", "none": "None", "scarf": "Scarf",
+        "star": "Star", "leaf": "Leaf", "bow": "Bow", "bell": "Bell", "round": "Round", "sleepy": "Sleepy",
+        "happy": "Happy", "freckles": "Freckles", "stripes": "Stripes", "spots": "Spots", "puff": "Puff",
+        "fairy": "Fairy", "bat": "Bat",
+    },
+    "ko": {
+        "body": "몸 색상", "accent": "포인트 색상", "eye_color": "눈 색상", "ears": "귀",
+        "accessory": "장식", "eyes": "눈 표정", "markings": "얼굴 무늬", "tail": "꼬리", "wings": "날개",
+        "rabbit": "토끼", "cat": "고양이", "bear": "곰", "fox": "여우", "none": "없음", "scarf": "목도리",
+        "star": "별", "leaf": "나뭇잎", "bow": "리본", "bell": "방울", "round": "동그란 눈", "sleepy": "졸린 눈",
+        "happy": "웃는 눈", "freckles": "주근깨", "stripes": "줄무늬", "spots": "반점", "puff": "방울 꼬리",
+        "fairy": "요정", "bat": "박쥐",
+    },
+}
+
+
 class GenerationWorker(QThread):
     succeeded = Signal(dict)
     failed = Signal(str)
 
+    def __init__(self, description="", overrides=None, model=MODEL, parent=None):
+        super().__init__(parent)
+        self.description = description
+        self.overrides = dict(overrides or {})
+        self.model = model
+
     def run(self):
         try:
-            self.succeeded.emit(generate_character())
+            self.succeeded.emit(generate_character(self.description, self.overrides, self.model))
         except Exception as error:
             self.failed.emit(str(error))
+        finally:
+            self.description = ""
 
 
 class SettingsDialog(QDialog):
@@ -472,37 +518,121 @@ class SettingsDialog(QDialog):
 
     def build_character(self):
         layout = self.page("character")
-        row = QHBoxLayout()
+        designer = QHBoxLayout()
         self.character_preview = CharacterPreview(self.config["character"])
-        row.addWidget(self.character_preview, 1)
-        controls = QGridLayout()
-        self.random_button = QPushButton(self.t["random"])
-        self.random_button.clicked.connect(lambda: self.apply_character(random_character()))
+        self.character_preview.setFixedSize(200, 220)
+        designer.addWidget(self.character_preview, 0, Qt.AlignmentFlag.AlignTop)
+        prompt = QVBoxLayout()
+        designer.addLayout(prompt, 1)
+        layout.addLayout(designer)
+        model_row = QHBoxLayout()
+        model_row.addWidget(QLabel(self.t["designer_model"]))
+        self.character_model = QComboBox()
+        self.character_model.addItem(self.t["model_detail"], DETAIL_MODEL)
+        self.character_model.addItem(self.t["model_fast"], MODEL)
+        selected = self.config["character"].get("model", DETAIL_MODEL)
+        self.character_model.setCurrentIndex(max(0, self.character_model.findData(selected)))
+        model_row.addWidget(self.character_model, 1)
+        prompt.addLayout(model_row)
+        prompt.addWidget(self.label(self.t["description"]))
+        self.character_description = QPlainTextEdit()
+        self.character_description.setPlaceholderText(self.t["description_example"])
+        self.character_description.setFixedHeight(85)
+        prompt.addWidget(self.character_description)
+        prompt_actions = QHBoxLayout()
+        example = QPushButton(self.t["example"])
+        example.clicked.connect(lambda: self.character_description.setPlainText(self.t["description_example"]))
+        clear = QPushButton(self.t["clear_description"])
+        clear.clicked.connect(self.character_description.clear)
+        self.description_count = QLabel(f"0 / {MAX_PROMPT}")
+        self.character_description.textChanged.connect(lambda: self.description_count.setText(
+            f"{len(self.character_description.toPlainText())} / {MAX_PROMPT}"))
+        prompt_actions.addWidget(example)
+        prompt_actions.addWidget(clear)
         self.generate_button = QPushButton(self.t["generate"])
         self.generate_button.setObjectName("primary")
         self.generate_button.clicked.connect(self.generate)
+        prompt_actions.addWidget(self.generate_button)
+        prompt_actions.addWidget(self.description_count)
+        prompt.addLayout(prompt_actions)
+        layout.addWidget(self.label(self.t["description_help"]))
+        row = QHBoxLayout()
+        controls = QGridLayout()
+        self.random_button = QPushButton(self.t["random"])
+        self.random_button.clicked.connect(lambda: self.apply_character(random_character()))
         previous = QPushButton(self.t["restore"])
+        self.previous_button = previous
         previous.clicked.connect(self.restore_character)
         controls.addWidget(self.random_button, 0, 0)
-        controls.addWidget(self.generate_button, 0, 1)
-        controls.addWidget(previous, 1, 0)
+        controls.addWidget(previous, 0, 1)
         recover = QPushButton(self.t["recover"])
         recover.clicked.connect(self.recovery_requested.emit)
-        controls.addWidget(recover, 1, 1)
+        controls.addWidget(recover, 1, 0)
         self.reset_button = QPushButton(self.t["reset_default"])
         self.reset_button.clicked.connect(lambda: self.apply_character(default_character()))
-        controls.addWidget(self.reset_button, 2, 0, 1, 2)
+        controls.addWidget(self.reset_button, 1, 1)
         for button in (self.random_button, self.generate_button, previous, recover, self.reset_button):
             button.setMinimumHeight(38)
         row.addLayout(controls, 2)
         layout.addLayout(row, 1)
+        layout.addWidget(self.label(self.t["custom_options"]))
+        layout.addWidget(self.label(self.t["custom_help"]))
+        self.custom_panel = QWidget()
+        custom = QGridLayout(self.custom_panel)
+        custom.setContentsMargins(0, 0, 0, 0)
+        labels = CHARACTER_LABELS[self.config["language"] if self.config["language"] == "ko" else "en"]
+        self.character_colors, self.character_choices = {}, {}
+        for row_number, key in enumerate(COLORS):
+            field = QLineEdit()
+            field.setPlaceholderText("#RRGGBB · " + self.t["auto"])
+            self.character_colors[key] = field
+            choose = QPushButton(self.t["choose_color"])
+            choose.clicked.connect(lambda _, key=key: self.choose_character_color(key))
+            custom.addWidget(QLabel(labels[key]), row_number, 0)
+            custom.addWidget(field, row_number, 1)
+            custom.addWidget(choose, row_number, 2)
+        for number, (key, values) in enumerate(FEATURES.items()):
+            field = QComboBox()
+            field.addItem(self.t["auto"], None)
+            for value in values:
+                field.addItem(labels[value], value)
+            self.character_choices[key] = field
+            row_number, column = len(COLORS) + number // 2, (number % 2) * 2
+            custom.addWidget(QLabel(labels[key]), row_number, column)
+            custom.addWidget(field, row_number, column + 1)
+        layout.addWidget(self.custom_panel)
+        self.custom_button = QPushButton(self.t["apply_custom"])
+        self.custom_button.clicked.connect(self.apply_custom_options)
+        layout.addWidget(self.custom_button)
         layout.addWidget(self.label(self.t["recover_help"]))
         layout.addWidget(self.label(self.t["model_help"]))
-        command = QLineEdit("ollama pull " + MODEL)
+        command = QLineEdit("ollama pull " + self.character_model.currentData())
         command.setReadOnly(True)
+        self.character_model.currentIndexChanged.connect(lambda: command.setText("ollama pull " + self.character_model.currentData()))
         layout.addWidget(command)
 
+    def choose_character_color(self, key):
+        field = self.character_colors[key]
+        initial = QColor(field.text().strip() or self.config["character"].get(key, "#34304a"))
+        color = QColorDialog.getColor(initial, self, self.t["choose_color"])
+        if color.isValid():
+            field.setText(color.name())
+
+    def selected_character_options(self):
+        options = {key: field.text().strip() for key, field in self.character_colors.items() if field.text().strip()}
+        options.update({key: field.currentData() for key, field in self.character_choices.items() if field.currentData() is not None})
+        return custom_options(options)
+
+    def apply_custom_options(self):
+        try:
+            options = self.selected_character_options()
+            if options:
+                self.apply_character({**self.config["character"], **options, "source": "custom"})
+        except ValueError:
+            self.message.setText(self.t["custom_error"])
+
     def apply_character(self, spec):
+        spec = safe_character(spec)
         old = self.config["character"]
         self.config["character_history"] = (self.config["character_history"] + [old])[-20:]
         self.config["character"] = spec
@@ -520,23 +650,32 @@ class SettingsDialog(QDialog):
     def generate(self):
         if self.worker and self.worker.isRunning():
             return
-        self.generate_button.setEnabled(False)
-        self.reset_button.setEnabled(False)
-        self.language.setEnabled(False)
+        description = self.character_description.toPlainText()
+        try:
+            if len(description) > MAX_PROMPT:
+                raise ValueError("Description too long")
+            options = self.selected_character_options()
+        except ValueError:
+            self.message.setText(self.t["custom_error"])
+            return
+        self.generation_controls = (self.generate_button, self.reset_button, self.language, self.random_button,
+                                    self.previous_button, self.custom_button, self.custom_panel, self.character_model)
+        for control in self.generation_controls:
+            control.setEnabled(False)
         self.message.setText(self.t["generating"])
-        self.worker = GenerationWorker(self)
+        self.worker = GenerationWorker(description, options, self.character_model.currentData(), self)
         self.worker.succeeded.connect(self.apply_character)
         self.worker.failed.connect(lambda error: self.message.setText("Ollama: " + error))
-        self.worker.finished.connect(lambda: self.generate_button.setEnabled(True))
-        self.worker.finished.connect(lambda: self.reset_button.setEnabled(True))
-        self.worker.finished.connect(lambda: self.language.setEnabled(True))
+        self.worker.finished.connect(lambda: [control.setEnabled(True) for control in self.generation_controls])
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.worker.finished.connect(lambda: setattr(self, "worker", None))
         self.worker.start()
 
     def build_about(self):
         layout = self.page("about")
         layout.addWidget(self.label(self.t["credit"]))
         language = "ko" if self.config["language"] == "ko" else "en"
-        layout.addWidget(self.label(f"Qwen2.5-0.5B-Instruct-GGUF · Apache-2.0\nhttps://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF\n\nREADME.md · doc/{language}/MODELS.md\nTHIRD-PARTY-NOTICES.md · CONTRIBUTORS.md"))
+        layout.addWidget(self.label(f"Qwen2.5-0.5B / 1.5B-Instruct-GGUF · Apache-2.0\nhttps://huggingface.co/Qwen\n\nREADME.md · doc/{language}/MODELS.md\nTHIRD-PARTY-NOTICES.md · CONTRIBUTORS.md"))
         layout.addWidget(self.label("https://github.com/hobby-programmer-5000/pawzura"))
         layout.addStretch()
 

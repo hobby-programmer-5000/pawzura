@@ -23,9 +23,43 @@ def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=Fa
     p.setPen(QPen(outline, 2.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
     bounce = abs(math.sin(phase)) * 3
     p.translate(0, -bounce)
+    wings = spec.get("wings", "none")
+    if wings != "none":
+        p.setBrush(accent.lighter(115))
+        for mirrored in (False, True):
+            p.save()
+            if mirrored:
+                p.translate(144, 0)
+                p.scale(-1, 1)
+            p.translate(0, math.sin(phase * 1.5) * 3)
+            if wings == "fairy":
+                p.drawEllipse(QRectF(8, 69, 39, 25))
+                p.drawEllipse(QRectF(14, 92, 30, 20))
+            else:
+                path = QPainterPath(QPointF(46, 103))
+                path.cubicTo(28, 81, 18, 68, 7, 65)
+                path.lineTo(10, 103)
+                path.quadTo(23, 94, 25, 113)
+                path.quadTo(34, 101, 46, 111)
+                path.closeSubpath()
+                p.drawPath(path)
+            p.restore()
     # Tail and articulated feet.
     p.setBrush(body.lighter(110))
-    p.drawEllipse(QRectF(28, 99 + math.sin(phase) * 2, 24, 20))
+    tail = spec.get("tail", "puff")
+    if tail == "puff":
+        p.drawEllipse(QRectF(28, 99 + math.sin(phase) * 2, 24, 20))
+    elif tail == "cat":
+        path = QPainterPath(QPointF(48, 120))
+        path.cubicTo(15, 126, 12, 100 + math.sin(phase) * 5, 24, 91)
+        p.setPen(QPen(body.darker(110), 10, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        p.drawPath(path)
+        p.setPen(QPen(outline, 2.5))
+    elif tail == "fox":
+        p.drawPolygon(QPolygonF([QPointF(52, 113), QPointF(21, 91 + math.sin(phase) * 3),
+                                QPointF(13, 116), QPointF(31, 132), QPointF(54, 123)]))
+        p.setBrush(accent)
+        p.drawPolygon(QPolygonF([QPointF(21, 91 + math.sin(phase) * 3), QPointF(13, 116), QPointF(29, 111)]))
     for side, offset in ((0, 0), (1, math.pi)):
         x = 51 + side * 29 + math.sin(phase + offset) * 6
         y = 126 - max(0, math.cos(phase + offset)) * 6
@@ -57,10 +91,15 @@ def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=Fa
         p.setBrush(accent)
         p.drawRoundedRect(QRectF(-3, -30, 8, 30), 4, 4)
         p.restore()
-    elif ear == "cat":
-        p.drawPolygon(QPolygonF([QPointF(32, 49), QPointF(32, 18), QPointF(58, 34)]))
-        p.drawPolygon(QPolygonF([QPointF(86, 34), QPointF(110, 18), QPointF(112, 51)]))
-    else:
+    elif ear in ("cat", "fox"):
+        tip = 7 if ear == "fox" else 18
+        p.drawPolygon(QPolygonF([QPointF(32, 49), QPointF(32, tip), QPointF(58, 34)]))
+        p.drawPolygon(QPolygonF([QPointF(86, 34), QPointF(110, tip), QPointF(112, 51)]))
+        if ear == "fox":
+            p.setBrush(accent)
+            p.drawPolygon(QPolygonF([QPointF(36, 38), QPointF(36, 18), QPointF(49, 34)]))
+            p.drawPolygon(QPolygonF([QPointF(95, 34), QPointF(106, 18), QPointF(108, 40)]))
+    elif ear == "bear":
         p.drawEllipse(QRectF(27, 23, 30, 30))
         p.drawEllipse(QRectF(88, 23, 30, 30))
         p.setBrush(accent)
@@ -75,16 +114,34 @@ def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=Fa
     p.setBrush(body.darker(108))
     p.drawPolygon(QPolygonF([QPointF(56, 37), QPointF(77, 38), QPointF(69, 52)]))
     blink = math.sin(phase / 9) > 0.995
+    eyes = spec.get("eyes", "round")
+    eye_color = QColor(spec.get("eye_color", "#34304a"))
     for x in (53, 94):
-        p.setBrush(outline)
-        if blink:
-            p.setPen(QPen(outline, 3, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        p.setBrush(eye_color)
+        if blink or eyes == "sleepy":
+            p.setPen(QPen(eye_color, 3, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
             p.drawLine(QPointF(x - 5, 67), QPointF(x + 5, 67))
+            p.setPen(Qt.PenStyle.NoPen)
+        elif eyes == "happy":
+            p.setPen(QPen(eye_color, 3, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+            p.drawArc(QRectF(x - 6, 61, 12, 14), 15 * 16, 150 * 16)
             p.setPen(Qt.PenStyle.NoPen)
         else:
             p.drawEllipse(QRectF(x - 5, 57, 11, 17))
             p.setBrush(QColor("#fffdf7"))
             p.drawEllipse(QRectF(x - 2, 59, 4, 5))
+    markings = spec.get("markings", "none")
+    p.setBrush(accent)
+    if markings in ("freckles", "spots"):
+        radius = 1.6 if markings == "freckles" else 3.2
+        for x in (40, 46, 100, 106):
+            p.drawEllipse(QPointF(x, 78 + (x % 4)), radius, radius)
+    elif markings == "stripes":
+        p.setPen(QPen(accent, 3, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        for x in (40, 103):
+            p.drawLine(QPointF(x, 72), QPointF(x + 7, 76))
+            p.drawLine(QPointF(x, 81), QPointF(x + 7, 83))
+        p.setPen(Qt.PenStyle.NoPen)
     p.setBrush(QColor("#ee92aa"))
     p.setOpacity(0.6)
     p.drawEllipse(QRectF(38, 74, 15, 7))
@@ -112,9 +169,17 @@ def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=Fa
             radius = 10 if i % 2 == 0 else 4.5
             points.append(QPointF(75 + radius * math.cos(angle), 109 + radius * math.sin(angle)))
         p.drawPolygon(QPolygonF(points))
-    else:
+    elif accessory == "leaf":
         p.drawEllipse(QRectF(66, 101, 20, 12))
         p.drawLine(QPointF(67, 112), QPointF(84, 103))
+    elif accessory == "bow":
+        p.drawPolygon(QPolygonF([QPointF(75, 103), QPointF(56, 96), QPointF(56, 116)]))
+        p.drawPolygon(QPolygonF([QPointF(75, 103), QPointF(94, 96), QPointF(94, 116)]))
+        p.drawEllipse(QRectF(70, 100, 10, 10))
+    elif accessory == "bell":
+        p.drawRoundedRect(QRectF(43, 93, 61, 8), 4, 4)
+        p.drawEllipse(QRectF(66, 100, 20, 20))
+        p.drawLine(QPointF(70, 114), QPointF(82, 114))
     p.setBrush(body)
     p.drawEllipse(QRectF(38, 103 + math.sin(phase) * 4, 16, 19))
     p.drawEllipse(QRectF(98, 103 - math.sin(phase) * 4, 16, 19))

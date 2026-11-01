@@ -48,6 +48,7 @@ def main():
     for name, source in {
         "Apache-2.0.txt": "https://www.apache.org/licenses/LICENSE-2.0.txt",
         "Qwen-LICENSE.txt": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/LICENSE",
+        "Qwen-1.5B-LICENSE.txt": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/LICENSE",
         "OpenSSL-LICENSE.txt": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.8/LICENSE.txt",
         "libffi-LICENSE.txt": "https://raw.githubusercontent.com/libffi/libffi/v3.4.8/LICENSE",
         "zlib-LICENSE.txt": "https://raw.githubusercontent.com/madler/zlib/v1.3.2/LICENSE",

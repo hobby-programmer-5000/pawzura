@@ -50,7 +50,8 @@ def data_dir() -> Path:
 
 
 def default_character() -> dict:
-    return {"seed": 0, "body": "#b8a4ed", "accent": "#f9ce80", "ears": "rabbit", "accessory": "scarf", "source": "random"}
+    from .characters import LEGACY_DETAILS
+    return {"seed": 0, "body": "#b8a4ed", "accent": "#f9ce80", "ears": "rabbit", "accessory": "scarf", "source": "random", **LEGACY_DETAILS}
 
 
 def safe_character(raw) -> dict:
@@ -60,10 +61,12 @@ def safe_character(raw) -> dict:
     seed = raw.get("seed", 0)
     seed = seed if isinstance(seed, int) and 0 <= seed < 2**31 else 0
     result = validate_character({**default_character(), **raw}, seed)
-    result["source"] = "qwen" if raw.get("source") == "qwen" else "random"
-    if result["source"] == "qwen":
-        from .characters import MODEL, MODEL_URL
-        result.update(model=MODEL, model_card=MODEL_URL)
+    result["source"] = raw.get("source") if raw.get("source") in ("qwen", "custom") else "random"
+    if result["source"] == "qwen" or (result["source"] == "custom" and raw.get("model")):
+        from .characters import MODEL, MODELS
+        model = raw.get("model")
+        model = model if isinstance(model, str) and model in MODELS else MODEL
+        result.update(model=model, model_card=MODELS[model])
     return result
 
 

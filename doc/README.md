@@ -10,6 +10,7 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [Work/leisure profiles and character recovery](en/PROFILES-AND-RECOVERY.md)
 - [Source setup and EXE builds](en/BUILD.md)
 - [Models and character generation](en/MODELS.md)
+- [0.1.7 custom character preview](en/RELEASE-v0.1.7.md)
 - [Character rights and provenance](en/CHARACTER-RIGHTS.md)
 - [Contributors and roles](en/CONTRIBUTORS.md)
 - [Validation and known limits](en/VALIDATION.md)

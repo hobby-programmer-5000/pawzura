@@ -6,6 +6,8 @@ Pawzura stores the user's allowlists and connection code in `%LOCALAPPDATA%/Pawz
 
 The repository's examples use generic domains. User allowlists, browser profiles and pairing credentials must not be added to source files, screenshots, tests, logs or release archives. Screenshot checks use disposable settings and isolated browser profiles.
 
+From 0.1.7, character descriptions are held in the current settings window and sent only to the separately installed loopback Ollama service. Pawzura does not store descriptions in settings, appearance history or logs. Clear description empties the input; closing settings to the tray retains that window until it is recreated or the app exits. Only validated visual traits and the selected supported model identifier are saved. Review Ollama's own behavior separately.
+
 The 0.1.5 installer helper prepares only six public extension files under `%LOCALAPPDATA%/Pawzura/extensions/`; it does not copy preferences or read/modify browser profiles. Its connection link contains no token. With website control OFF, the new extension checks authenticated status without querying tab URLs. Application monitoring remains independent. Existing connections to older extensions still receive disabled decisions from the desktop app; update both parts for the URL-query preflight.
 
 The build checks the output folder before creating a ZIP and rejects local settings, pairing files, browser profile files and renamed settings exports. Run `python scripts/check_distribution.py PATH_TO_EXTRACTED_RELEASE` to perform the same check. This structural check does not replace reviewing screenshots and other manually added content.

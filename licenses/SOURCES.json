@@ -643,5 +643,9 @@
     "path": "licenses/upstream/mpdecimal-LICENSE.txt",
     "source": "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-4.0.0.tar.gz",
     "member": "mpdecimal-4.0.0/COPYRIGHT.txt"
+  },
+  {
+    "path": "licenses/upstream/Qwen-1.5B-LICENSE.txt",
+    "source": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/LICENSE"
   }
 ]

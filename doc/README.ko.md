@@ -10,6 +10,7 @@
 - [업무·여가 프로필과 캐릭터 복구](ko/PROFILES-AND-RECOVERY.md)
 - [소스 실행과 EXE 빌드](ko/BUILD.md)
 - [모델과 캐릭터 생성](ko/MODELS.md)
+- [0.1.7 캐릭터 커스텀 프리뷰](ko/RELEASE-v0.1.7.md)
 - [캐릭터 권리와 제작 이력](ko/CHARACTER-RIGHTS.md)
 - [기여자와 역할](ko/CONTRIBUTORS.md)
 - [검증 범위와 알려진 제한](ko/VALIDATION.md)

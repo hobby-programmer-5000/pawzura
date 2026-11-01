@@ -25,6 +25,7 @@ Pawzura 자체 앱·확장·지원 스크립트 코드는 [MIT](../../LICENSE)�
 | pywin32-ctypes | 기준 0.2.3 | BSD-3-Clause | 빌드 의존성 |
 | setuptools | 기준 84.2.1 | MIT와 vendored 의존성 조건 | 빌드 도구 및 원문 고지 수집 |
 | Qwen2.5-0.5B-Instruct / 공식 GGUF | Q4_K_M, Qwen Team / Alibaba Cloud | Apache-2.0 | 선택 다운로드. EXE·저장소에 가중치 없음 |
+| Qwen2.5-1.5B-Instruct / 공식 GGUF | Q4_K_M, Qwen Team / Alibaba Cloud; [공식 출처](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF) | Apache-2.0 | 상세 설명용 선택 모델. EXE·저장소에 가중치 없음. 원문은 `licenses/upstream/Qwen-1.5B-LICENSE.txt` |
 | Ollama | 사용자 별도 설치 | 본체 MIT, 포함 구성요소는 개별 조건 | 앱에서 재배포하지 않음 |
 
 CPython 표준 바이너리 확장의 구성은 버전과 import 그래프에 따라 다릅니다. OpenSSL·zlib·bzip2·liblzma·libffi·mpdecimal·Zstandard·Unicode 등이 포함될 수 있으며, 실제 바이너리와 해시는 배포의 BINARY-MANIFEST.json으로 확인하세요. 해당 빌드의 Python Windows 라이선스 원문을 변경 없이 보존합니다. Windows 시스템 DLL은 운영체제의 구성요소입니다.
