@@ -152,6 +152,15 @@ class BridgeTests(unittest.TestCase):
         self.assertFalse(denied["allowed"])
         self.assertFalse(denied["close"])
 
+    def test_subdomain_address_rules_flow_through_bridge(self):
+        from pawzura.policy import address_rules
+        self.enable()
+        self.settings.data["browsers"]["chrome"]["allowed_sites"] = address_rules("example.com/team/*", True)
+        for host in ("example.com", "console.example.com", "a.console.example.com"):
+            self.assertTrue(self.send(url=f"https://{host}/team/project")["decisions"][0]["allowed"])
+        self.assertTrue(self.bridge.events.empty())
+        self.assertFalse(self.send(url="https://example.com.evil.test/team")["decisions"][0]["allowed"])
+
     def pair_post(self, path, data, origin="chrome-extension://testextension"):
         request = Request(self.url.removesuffix("/evaluate") + path, json.dumps(data).encode(),
                           {"Content-Type":"application/json", "Origin":origin})

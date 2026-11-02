@@ -83,6 +83,18 @@ Firefox·Zen은 도우미에서 **임시 부가 기능 로드 → manifest.json*
 
 ## 허용 사이트를 추가하고 감시 켜기
 
+0.1.8부터 **주소 추가** 입력란에 `https://console.example.com` 같은 주소를 넣을 수 있습니다. **이 주소의 하위 도메인도 포함**을 끄면 해당 호스트만, 켜면 입력한 호스트와 그 아래 `*.` 규칙을 함께 추가합니다. 마지막에 **설정 저장**을 누르세요. 주소 추가만으로 감시를 켜지는 않습니다.
+
+![일반 예시 규칙을 사용한 주소 추가 도우미](../../artifacts/subdomain-rules-ko.png)
+
+| 입력 | 하위 도메인 포함 | 결과 |
+| --- | --- | --- |
+| `https://console.example.com` | OFF | console.example.com만 허용, example.com·login.example.com 제외 |
+| `example.com` | ON | example.com과 *.example.com 추가, console·login 및 더 깊은 하위 도메인 포함 |
+| `console.example.com` | ON | console.example.com과 *.console.example.com 추가, 부모·형제 호스트 제외 |
+
+생성한 두 규칙의 경로·쿼리·프로토콜·포트 조건은 동일하게 유지합니다. 예를 들어 `example.com/team/*?view=work`는 호스트·하위 도메인의 해당 구역만 허용합니다. IP 주소·localhost는 체크를 끄고 개별 추가하세요. 기존 목록은 자동 확장하지 않습니다. 직접 입력한 `*.example.com`은 계속 하위 도메인만 허용하므로 루트도 원하면 `example.com`과 함께 등록하세요.
+
 1. 데스크톱 앱의 **브라우저**에서 연결한 브라우저를 선택하세요. `https://example.com`처럼 허용할 주소를 한 줄에 하나씩 입력하세요.
 2. **이 브라우저의 사이트 허용 목록 적용 → 설정 저장**을 누른 뒤 전체 **사이트 제어** 스위치를 켜세요.
 3. **일반**에서 **집중 지킴이 켜기**를 선택하고 미리보기는 켜 둔 채 저장하세요. 동작을 확인한 다음 미리보기를 해제하세요.
@@ -92,6 +104,7 @@ Firefox·Zen은 도우미에서 **임시 부가 기능 로드 → manifest.json*
 | 규칙 | 허용 | 허용하지 않음 |
 | --- | --- | --- |
 | `https://example.com` | 같은 HTTPS 사이트의 모든 경로 | 하위 도메인, HTTP, 다른 포트 |
+| `https://console.example.com` | 해당 하위 도메인의 모든 HTTPS 경로 | 부모·형제·더 깊은 하위 도메인 |
 | `example.com/*` | `/`를 포함한 같은 HTTPS 호스트의 모든 경로·쿼리·fragment | 하위 도메인, HTTP, 위장 호스트 |
 | `example.com/section/*` | `/section`과 하위 경로 | `/section-other`와 다른 구역 |
 | `github.com/my-account` | HTTPS의 `/my-account`와 하위 경로 | 다른 계정이나 `/my-account-other` |

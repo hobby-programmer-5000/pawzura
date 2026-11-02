@@ -17,7 +17,7 @@ from .characters import COLORS, DETAIL_MODEL, FEATURES, MAX_PROMPT, MODEL, custo
 from .config import BROWSERS, default_character, profile_lists, safe_character
 from .pet import CharacterPreview
 from .browser_setup import BrowserSetupDialog
-from .policy import SiteRuleError, normalize_app, site_rule
+from .policy import SiteRuleError, address_rules, normalize_app, site_rule
 
 TEXT = {
     "ko": {
@@ -42,6 +42,10 @@ TEXT = {
         "invalid_port": "포트는 1부터 65535 사이여야 합니다.",
         "invalid_path": "경로에서 .·.. 구역, 역슬래시와 인코딩된 구분자를 제거하세요.",
         "invalid_wildcard": "*는 하위 도메인 앞의 *. 또는 경로 끝의 /*로만 사용하세요.",
+        "invalid_subdomain": "하위 도메인을 포함하려면 example.com 같은 도메인을 입력하세요. IP 주소·localhost는 개별 주소로 추가하세요.",
+        "add_site": "주소 추가", "include_subdomains": "이 주소의 하위 도메인도 포함",
+        "subdomain_help": "console.example.com도 그대로 등록할 수 있습니다. 체크하면 입력한 호스트와 그 아래 하위 도메인을 함께 추가합니다. 예: example.com + *.example.com. 경로·쿼리·HTTP(S)·포트 조건은 유지합니다.",
+        "site_added": "목록에 반영했습니다. ‘설정 저장’을 눌러 적용하세요.",
         "profile": "허용 목록 프로필", "profile_new": "다른 이름으로 저장…", "profile_rename": "이름 변경…", "profile_delete": "삭제",
         "profile_name": "프로필 이름 (1–64자)", "profile_error": "중복되지 않는 이름을 입력하세요. 프로필은 최대 32개이며 마지막 프로필은 삭제할 수 없습니다.",
         "profile_help": "프로그램과 브라우저별 사이트 목록을 함께 보관합니다. 선택·편집 후 ‘설정 저장’을 눌러 적용하세요. 감시·미리보기·시작프로그램은 공통 설정입니다.",
@@ -92,6 +96,10 @@ TEXT = {
         "invalid_port": "Enter a port between 1 and 65535.",
         "invalid_path": "Remove dot segments, backslashes and encoded separators from the path.",
         "invalid_wildcard": "Use * only as a subdomain prefix (*.host) or a final /* path suffix.",
+        "invalid_subdomain": "Use a domain such as example.com to include subdomains. Add IP addresses and localhost individually.",
+        "add_site": "Add address", "include_subdomains": "Include subdomains of this address",
+        "subdomain_help": "You can enter console.example.com directly. Check to add the entered host and its subdomains together: example.com + *.example.com. Path, query, HTTP(S) and port constraints are retained.",
+        "site_added": "Updated the list. Save settings to apply it.",
         "profile": "Allowlist profile", "profile_new": "Save as…", "profile_rename": "Rename…", "profile_delete": "Delete",
         "profile_name": "Profile name (1–64 characters)", "profile_error": "Use a unique name. Keep 1–32 profiles; the last profile cannot be deleted.",
         "profile_help": "Stores applications and per-browser sites together. Select or edit a profile, then Save settings to apply. Guardian, preview and startup apps are shared.",
@@ -414,20 +422,35 @@ class SettingsDialog(QDialog):
         row = QHBoxLayout()
         self.browser_select = QComboBox()
         self.browser_select.addItems(BROWSERS)
+        self.browser_select.setMaximumWidth(150)
         row.addWidget(self.browser_select)
         self.setup_button = QPushButton(self.t["setup"])
         self.setup_button.setObjectName("primary")
         self.setup_button.clicked.connect(self.open_setup)
         row.addWidget(self.setup_button)
-        layout.addLayout(row)
         self.connection_status = self.label(self.t["not_connected"])
-        layout.addWidget(self.connection_status)
+        row.addWidget(self.connection_status, 1)
+        layout.addLayout(row)
         self.browser_on = QCheckBox(self.t["browser_on"])
         layout.addWidget(self.browser_on)
+        add_row = QHBoxLayout()
+        self.site_entry = QLineEdit()
+        self.site_entry.setPlaceholderText("https://console.example.com")
+        self.site_entry.setAccessibleName(self.t["add_site"])
+        self.site_entry.returnPressed.connect(self.add_site)
+        add_row.addWidget(self.site_entry, 1)
+        add = QPushButton(self.t["add_site"])
+        add.clicked.connect(self.add_site)
+        add_row.addWidget(add)
+        layout.addLayout(add_row)
+        self.include_subdomains = QCheckBox(self.t["include_subdomains"])
+        self.include_subdomains.setToolTip(self.t["subdomain_help"])
+        self.include_subdomains.setAccessibleDescription(self.t["subdomain_help"])
+        layout.addWidget(self.include_subdomains)
         layout.addWidget(self.label(self.t["rules"]))
         self.sites = QPlainTextEdit()
         self.sites.setMinimumHeight(130)
-        self.sites.setPlaceholderText("example.com/*\nexample.org/courses/*\nhttps://example.org/courses?view=video\nhttp://localhost:3000")
+        self.sites.setPlaceholderText("https://console.example.com\nexample.com/*\n*.example.com\nexample.org/courses/*\nhttp://localhost:3000")
         layout.addWidget(self.sites, 1)
         self.current_browser = BROWSERS[0]
         self.load_browser()
@@ -487,10 +510,32 @@ class SettingsDialog(QDialog):
         self.config["browsers"][self.current_browser] = {"enabled": self.browser_on.isChecked(), "allowed_sites": sorted(set(rules))}
         self.sites.setPlainText("\n".join(sorted(set(rules))))
 
+    def add_site(self):
+        try:
+            additions = address_rules(self.site_entry.text(), self.include_subdomains.isChecked())
+        except SiteRuleError as error:
+            self.message.setText(self.t[error.code])
+            return
+        known = set()
+        for line in self.sites.toPlainText().splitlines():
+            if line.strip():
+                try:
+                    known.add(site_rule(line))
+                except SiteRuleError:
+                    pass  # Preserve an invalid unsaved draft for the user's correction.
+        for rule in additions:
+            if rule not in known:
+                self.sites.appendPlainText(rule)
+                known.add(rule)
+        self.site_entry.clear()
+        self.message.setText(self.t["site_added"])
+
     def load_browser(self):
         entry = self.config["browsers"][self.current_browser]
         self.browser_on.setChecked(entry["enabled"])
         self.sites.setPlainText("\n".join(entry["allowed_sites"]))
+        self.site_entry.clear()
+        self.include_subdomains.setChecked(False)
 
     def switch_browser(self, name):
         try:

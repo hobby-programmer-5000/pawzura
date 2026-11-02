@@ -83,6 +83,18 @@ Expand **See an example / import old JSON**. Paste the complete copied text into
 
 ## Add allowed sites and enable monitoring
 
+In 0.1.8+, use **Add address** for entries such as `https://console.example.com`. Leave **Include subdomains of this address** unchecked to allow that host only. Check it to add the entered host and `*.` beneath that same host together, then click **Save settings**. Adding an address does not turn monitoring on.
+
+![Address helper with generic example rules](../../artifacts/subdomain-rules-en.png)
+
+| Enter | Include subdomains | Result |
+| --- | --- | --- |
+| `https://console.example.com` | OFF | Allows console.example.com; not example.com or login.example.com |
+| `example.com` | ON | Adds example.com and *.example.com, including console/login and deeper subdomains |
+| `console.example.com` | ON | Adds console.example.com and *.console.example.com; not its parent or siblings |
+
+Paths, query constraints, scheme and port stay the same on both generated entries. For example, `example.com/team/*?view=work` with the checkbox permits that section on the host/subdomains, not every section. IP addresses and localhost are added individually with the checkbox off. Existing lists are not broadened automatically. Manual `*.example.com` entries still allow subdomains only; pair them with `example.com` for both.
+
 1. In desktop **Browsers**, select the connected browser. Enter sites, one per line, for example `https://example.com`.
 2. Check **Apply website allowlist to this browser** and click **Save settings**, then turn on the global **Website control** switch.
 3. In **General**, check **Enable focus guardian**, leave preview on, and save. Verify the behavior before turning preview off.
@@ -92,6 +104,7 @@ Built-in new-tab/home pages, blank pages and the narrow extension-installation p
 | Rule | Allows | Does not allow |
 | --- | --- | --- |
 | `https://example.com` | Every path on that HTTPS origin | Subdomains, HTTP, non-default ports |
+| `https://console.example.com` | Every HTTPS path on that specific subdomain | Parent, sibling or deeper subdomains |
 | `example.com/*` | Every HTTPS path, query and fragment on that host, including `/` | Subdomains, HTTP, lookalike hosts |
 | `example.com/section/*` | `/section` and its children | `/section-other` or other sections |
 | `github.com/my-account` | HTTPS `/my-account` and its child paths | Other accounts or `/my-account-other` |

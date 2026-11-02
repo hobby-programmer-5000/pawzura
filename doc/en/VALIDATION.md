@@ -4,6 +4,12 @@
 
 Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
 
+## 0.1.8 subdomain address helper
+
+**92 Python tests and 19 extension tests passed locally.** New checks cover exact console-host rules, explicit host-plus-children expansion, nested subdomains, sibling/parent/lookalike exclusion, retained path/query/scheme/port constraints, IDN normalization, IP/localhost feedback, deduplication, save-before-apply behavior and browser selection reset. An actual test-only HTTP bridge accepted the expanded host/subdomain section rules and rejected a lookalike. Existing saved-rule matching semantics were not widened.
+
+English/Korean settings were rendered and reviewed with disposable generic example rules; the affected UI suite passed after compacting the layout. The frozen 0.1.8 EXE passed rendering/normal exit, and all ten embedded app modules matched final source. No real user lists, tabs or monitoring settings were modified. This does not add user-profile browser E2E coverage or another Windows 11 device test beyond the report below.
+
 ## Windows 11 maintainer manual report
 
 During the 0.1.7 discussion, the maintainer reported having informally checked the app on Windows 11 and reported no further issue. This records a hands-on user report. The exact app/Windows build, hardware, browser versions and an itemized checklist were not supplied, so no particular feature or browser flow is marked as individually passed on that basis. No identifying device information or personal settings are included.

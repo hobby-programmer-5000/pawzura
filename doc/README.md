@@ -7,6 +7,7 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [Getting started](en/GETTING_STARTED.md)
 - [Local settings and privacy](en/PRIVACY.md)
 - [Browser connection and examples](en/BROWSERS.md)
+- [0.1.8 subdomain address helper](en/RELEASE-v0.1.8.md)
 - [Work/leisure profiles and character recovery](en/PROFILES-AND-RECOVERY.md)
 - [Source setup and EXE builds](en/BUILD.md)
 - [Models and character generation](en/MODELS.md)

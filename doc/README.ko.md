@@ -7,6 +7,7 @@
 - [처음 사용하기](ko/GETTING_STARTED.md)
 - [로컬 설정과 개인정보](ko/PRIVACY.md)
 - [브라우저 연결과 예시](ko/BROWSERS.md)
+- [0.1.8 하위 도메인 주소 추가](ko/RELEASE-v0.1.8.md)
 - [업무·여가 프로필과 캐릭터 복구](ko/PROFILES-AND-RECOVERY.md)
 - [소스 실행과 EXE 빌드](ko/BUILD.md)
 - [모델과 캐릭터 생성](ko/MODELS.md)

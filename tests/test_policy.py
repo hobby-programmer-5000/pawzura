@@ -1,6 +1,6 @@
 import unittest
 from pawzura.config import defaults
-from pawzura.policy import allowed_app, allowed_url, site_rule
+from pawzura.policy import SiteRuleError, address_rules, allowed_app, allowed_url, site_rule
 
 
 class PolicyTests(unittest.TestCase):
@@ -58,6 +58,34 @@ class PolicyTests(unittest.TestCase):
         self.assertTrue(allowed_url("https://하위.예시.한국/page", [site_rule("*.예시.한국")]))
         self.assertFalse(allowed_url("https://example.com", rules))
         self.assertFalse(allowed_url("http://a.example.com", rules))
+
+    def test_exact_console_and_optional_parent_subdomains(self):
+        rules = address_rules("https://console.example.com")
+        self.assertEqual(rules, ["https://console.example.com"])
+        self.assertTrue(allowed_url("https://console.example.com/dashboard", rules))
+        for url in ("https://example.com", "https://login.example.com", "https://a.console.example.com"):
+            self.assertFalse(allowed_url(url, rules))
+        rules = address_rules("example.com/*", True)
+        self.assertEqual(rules, ["https://example.com", "https://*.example.com"])
+        for host in ("example.com", "console.example.com", "login.example.com", "a.b.example.com"):
+            self.assertTrue(allowed_url(f"https://{host}/dashboard?q=1", rules))
+        for url in ("https://example.com.evil.test", "https://notexample.com", "http://console.example.com", "https://console.example.com:8443"):
+            self.assertFalse(allowed_url(url, rules))
+
+    def test_subdomain_expansion_preserves_scope_and_never_guesses_parent(self):
+        rules = address_rules("https://console.example.com:8443/team/*?view=work#top", True)
+        for host in ("console.example.com", "a.console.example.com"):
+            self.assertTrue(allowed_url(f"https://{host}:8443/team/project?view=work", rules))
+        for url in ("https://login.example.com:8443/team?view=work", "https://example.com:8443/team?view=work", "https://console.example.com:8443/other?view=work", "https://console.example.com:8443/team?view=play", "https://a.console.example.com/team?view=work"):
+            self.assertFalse(allowed_url(url, rules))
+        self.assertEqual(address_rules("*.example.com", False), ["https://*.example.com"])
+        self.assertEqual(address_rules("*.example.com", True), ["https://example.com", "https://*.example.com"])
+        self.assertTrue(allowed_url("https://하위.예시.한국/구역/다음", address_rules("예시.한국/구역/*", True)))
+        for host in ("127.0.0.1", "[::1]", "localhost"):
+            with self.assertRaises(SiteRuleError) as caught:
+                address_rules("http://" + host, True)
+            self.assertEqual(caught.exception.code, "invalid_subdomain")
+            self.assertEqual(len(address_rules("http://" + host)), 1)
 
     def test_internal_defaults_are_narrow(self):
         for url in ("chrome://newtab/", "edge://newtab", "about:blank", "about:newtab", "about:home"):

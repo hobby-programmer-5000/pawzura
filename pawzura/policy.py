@@ -1,5 +1,6 @@
 """Exact hosts with optional path sections and query constraints."""
 from collections import Counter
+from ipaddress import ip_address
 from pathlib import PureWindowsPath
 import re
 from urllib.parse import parse_qsl, quote, unquote, urlencode, urlsplit, urlunsplit
@@ -41,6 +42,7 @@ class SiteRuleError(ValueError):
             "invalid_port": "Enter a valid port between 1 and 65535.",
             "invalid_path": "Use a path without dot segments, backslashes or encoded separators.",
             "invalid_wildcard": "Use * only as a subdomain prefix or a final /* path suffix.",
+            "invalid_subdomain": "Use a domain such as example.com to include subdomains; enter IP addresses and localhost individually.",
         }[code])
 
 
@@ -138,3 +140,21 @@ def allowed_url(url: str, rules: list[str]) -> bool:
     except (ValueError, UnicodeError, TypeError):
         return False
     return False
+
+
+def address_rules(value: str, include_subdomains: bool = False) -> list[str]:
+    """Expand an explicit UI choice without changing saved-rule matching semantics."""
+    normalized = site_rule(value)
+    if not include_subdomains:
+        return [normalized]
+    parsed, host, port, _ = _split(normalized, allow_wildcard=True)
+    try:
+        ip_address(host)
+        is_ip = True
+    except ValueError:
+        is_ip = False
+    if is_ip or "." not in host:
+        raise SiteRuleError("invalid_subdomain")
+    authority = host + (f":{port}" if port is not None else "")
+    return [urlunsplit((parsed.scheme, prefix + authority, parsed.path, parsed.query, ""))
+            for prefix in ("", "*.")]
