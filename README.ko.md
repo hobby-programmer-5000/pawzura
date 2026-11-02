@@ -16,7 +16,7 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 
 **실행 전 확인:** 서명되지 않은 빌드라 **Windows SmartScreen**이 표시될 수 있습니다. 공식 배포 파일과 체크섬을 확인한 뒤, 제공되는 경우에만 **추가 정보 → 실행**을 선택하세요. [실행 안내](doc/ko/GETTING_STARTED.md).
 
-**AI 캐릭터 설계에는 실행 중인 Ollama, 선택한 모델 다운로드, 충분한 가용 RAM·VRAM이 필요합니다.** 기본·임의 캐릭터에는 모델이 필요 없습니다. [메모리 기준과 준비](doc/ko/MODELS.md).
+**AI 설계에는 실행 중인 Ollama, 정확히 선택한 모델 다운로드, 충분한 가용 RAM·VRAM이 필요합니다.** 캐릭터 → **명령 복사** → PowerShell에 붙여넣기 → `success`까지 대기 → 생성. 기본·임의 캐릭터에는 모델이 필요 없습니다. [모든 VRAM별 명령과 준비](doc/ko/ADVANCED-MODELS.md).
 
 ## 브라우저 제어는 선택 기능입니다
 

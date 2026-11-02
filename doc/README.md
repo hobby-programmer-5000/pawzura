@@ -9,6 +9,7 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [Browser connection and examples](en/BROWSERS.md)
 - [0.1.8 subdomain address helper](en/RELEASE-v0.1.8.md)
 - [0.1.9 light theme and advanced models](en/RELEASE-v0.1.9.md)
+- [0.1.10 model setup and exact commands](en/RELEASE-v0.1.10.md)
 - [Work/leisure profiles and character recovery](en/PROFILES-AND-RECOVERY.md)
 - [Source setup and EXE builds](en/BUILD.md)
 - [Models and character generation](en/MODELS.md)

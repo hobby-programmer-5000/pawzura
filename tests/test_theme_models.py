@@ -9,10 +9,10 @@ from unittest.mock import Mock, patch
 from urllib.error import HTTPError, URLError
 
 from PySide6.QtCore import QCoreApplication, QEvent
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLabel
 from pawzura.characters import GPU_MODELS, DETAIL_MODEL, MODEL, GenerationError, generate_character, models_for_vram
 from pawzura.config import Settings, default_character
-from pawzura.ui import SettingsDialog
+from pawzura.ui import ModelSetupDialog, SettingsDialog
 
 
 class ThemeModelTests(unittest.TestCase):
@@ -129,3 +129,76 @@ class ThemeModelTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.settings.save(updates)
             self.assertEqual(self.path.read_bytes(), before)
+
+    def test_each_model_command_is_visible_copyable_and_does_not_install_or_save(self):
+        dialog = self.dialog()
+        before = self.settings.snapshot()
+        dialog.advanced_models.setChecked(True)
+        dialog.vram_tier.setCurrentIndex(dialog.vram_tier.findData(8))
+        with patch("pawzura.ui.generate_character") as generate:
+            for index in range(dialog.character_model.count()):
+                dialog.character_model.setCurrentIndex(index)
+                model = dialog.character_model.currentData()
+                dialog.copy_model_button.click()
+                self.assertEqual(QApplication.clipboard().text(), "ollama pull " + model)
+                self.assertIn("PowerShell", dialog.message.text())
+                self.assertIn("GB", dialog.model_memory.text())
+            generate.assert_not_called()
+        self.assertEqual(self.settings.snapshot(), before)
+
+    def test_guide_has_exact_commands_for_all_tiers_in_both_languages(self):
+        expected = {MODEL, DETAIL_MODEL, *GPU_MODELS}
+        before = self.settings.snapshot()
+        for language in ("en", "ko"):
+            guide = ModelSetupDialog(DETAIL_MODEL, language)
+            try:
+                guide.resize(650, 520)
+                guide.show()
+                self.app.processEvents()
+                limits = guide.findChild(QLabel, "modelSetupLimits")
+                self.assertGreater(limits.geometry().top(), max(field.geometry().bottom() for field in guide.command_fields.values()))
+                self.assertEqual(set(guide.command_fields), expected)
+                for model in expected:
+                    guide.copy_buttons[model].click()
+                    self.assertEqual(QApplication.clipboard().text(), "ollama pull " + model)
+                    self.assertTrue(guide.command_fields[model].isReadOnly())
+            finally:
+                guide.hide()
+                guide.deleteLater()
+        self.assertEqual(self.settings.snapshot(), before)
+
+    def test_missing_model_feedback_names_requested_model_and_recovery_command(self):
+        from types import SimpleNamespace
+        requested = next(model for model, info in GPU_MODELS.items() if info[0] == 6)
+        dialog = self.dialog()
+        before = dict(dialog.config["character"])
+        for language in ("en", "ko"):
+            from pawzura.ui import TEXT
+            dialog.t = TEXT[language]
+            dialog.worker = SimpleNamespace(model=requested)
+            dialog.generation_failed("model_missing")
+            self.assertIn(requested, dialog.message.text())
+            self.assertIn("ollama pull " + requested, dialog.message.text())
+            self.assertIn("success", dialog.message.text())
+            self.assertEqual(dialog.config["character"], before)
+        dialog.worker = None
+
+    def test_async_missing_model_keeps_appearance_and_restores_controls(self):
+        import time
+        dialog = self.dialog()
+        dialog.advanced_models.setChecked(True)
+        dialog.vram_tier.setCurrentIndex(dialog.vram_tier.findData(8))
+        requested = next(model for model, info in GPU_MODELS.items() if info[0] == 4)
+        dialog.character_model.setCurrentIndex(dialog.character_model.findData(requested))
+        before = dict(dialog.config["character"])
+        with patch("pawzura.ui.generate_character", side_effect=GenerationError("model_missing")):
+            dialog.generate()
+            deadline = time.monotonic() + 4
+            while dialog.worker is not None and time.monotonic() < deadline:
+                self.app.processEvents()
+                time.sleep(.01)
+        self.assertIsNone(dialog.worker)
+        self.assertEqual(dialog.config["character"], before)
+        self.assertIn("ollama pull " + requested, dialog.message.text())
+        self.assertTrue(dialog.generate_button.isEnabled())
+        self.assertTrue(dialog.vram_tier.isEnabled())

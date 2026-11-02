@@ -11,7 +11,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout,
     QHBoxLayout, QLabel, QLineEdit, QListWidget, QMessageBox, QPushButton,
-    QPlainTextEdit, QTabWidget, QVBoxLayout, QWidget, QInputDialog, QGridLayout, QScrollArea, QFrame, QColorDialog,
+    QPlainTextEdit, QTabWidget, QVBoxLayout, QWidget, QInputDialog, QGridLayout, QScrollArea, QFrame, QColorDialog, QLayout,
 )
 from . import __version__, windows
 from .characters import COLORS, DETAIL_MODEL, FEATURES, GPU_MODELS, MAX_PROMPT, MODEL, custom_options, generate_character, models_for_vram, random_character
@@ -33,6 +33,13 @@ TEXT = {
         "advanced_help": "2·4·6·8 GB는 모델 선택을 돕는 기준이며 GPU 감지나 실행 보장이 아닙니다. 실제 남은 VRAM과 시스템 RAM이 충분해야 합니다. GPU 지원과 CPU 분산은 Ollama가 결정합니다.",
         "advanced_scope": "큰 모델은 설명 해석을 개선할 수 있지만, 캐릭터는 같은 도형으로 그립니다. 새로운 그림·의상 생성 모델은 아닙니다. 고급 설정은 허용 목록 프로필과 별도로 저장됩니다.",
         "model_memory": "모델 파일 약 {size}. 실행에는 추가 메모리가 필요합니다. Ollama를 실행하고 아래 모델을 먼저 내려받으세요.",
+        "model_download": "다운로드 약 {size} · 추가 가용 RAM/VRAM 필요 · Ollama 실행 필수",
+        "model_setup": "모델 준비 안내", "copy_model_command": "명령 복사", "command_copied": "복사됨",
+        "model_command_copied": "다운로드 명령을 복사했습니다. PowerShell에 붙여넣고 Enter → success 표시까지 대기 → 앱에서 다시 생성하세요.",
+        "model_setup_steps": "1. Ollama를 설치하고 실행해 두세요 (ollama.com).\n2. 고급에서 GPU VRAM 기준을 고른 뒤 캐릭터에서 모델을 선택하세요. 시스템 RAM 8GB와 GPU VRAM 8GB는 다릅니다.\n3. 선택 모델의 명령 복사 → Win+X에서 PowerShell/터미널 열기 → 붙여넣기 → Enter.\n4. 다운로드의 success 표시까지 기다리세요. ollama list에 정확한 모델 이름이 있어야 합니다. 다른 이름·양자화는 별도 모델입니다.\n5. 앱에서 Qwen으로 생성 → 미리보기 확인 → 설정 저장. 이미 설치했으면 재다운로드할 필요 없습니다. 앱이 자동 설치하지는 않습니다.",
+        "model_setup_limits": "용량은 파일 크기이며 실행 메모리는 더 필요합니다. VRAM 기준은 실행 보장이 아닙니다. CPU/모름은 0.5B 또는 1.5B로 시작하세요. 부족하면 작은 모델로 변경하세요. 프롬프트나 허용 목록은 이 안내에서 변경하지 않습니다.",
+        "model_missing_detail": "Ollama가 선택 모델을 찾지 못했거나 지원하지 않습니다:\n{model}\nPowerShell에서 {command}\nsuccess 표시 후 다시 생성하세요. 이미 설치했다면 Ollama를 업데이트하고 정확한 이름을 확인하세요.",
+        "model_guide_close": "닫기", "model_selected": "현재 선택: {model}",
         "model_small_memory": "0.5B 약 0.5 GB / 1.5B 약 1.12 GB의 모델 파일과 추가 실행 메모리가 필요합니다. Ollama를 실행해 두세요.",
         "model_missing": "선택한 모델이 없거나 Ollama가 지원하지 않습니다. 표시된 ollama pull 명령을 실행하고 Ollama를 업데이트한 뒤 다시 시도하세요.",
         "model_memory_error": "모델을 실행할 메모리가 부족합니다. 더 작은 모델을 선택하거나 다른 모델·GPU 작업을 종료하고 다시 시도하세요. 기존 캐릭터는 유지됩니다.",
@@ -67,7 +74,7 @@ TEXT = {
         "recover_help": "안 보이거나 깨지면 ‘화면 복구’로 현재 외형을 다시 표시하세요. ‘기본 외형’은 설정 저장 후 적용됩니다.",
         "recovered": "캐릭터를 주 모니터로 복구했습니다. 허용 목록은 유지됩니다.",
         "random": "임의 캐릭터", "generate": "Qwen으로 생성", "restore": "이전 캐릭터로 변경",
-        "model_help": "Qwen이 외형 설계값을 만들고 앱이 직접 그립니다. 애니메이션 모델은 필요 없습니다.\n최초 1회 Ollama에서 아래 명령으로 Hugging Face 모델을 내려받으세요.",
+        "model_help": "Qwen이 외형 설계값을 만들고 앱이 직접 그립니다. 애니메이션 모델은 필요 없습니다.\n모델 선택 옆 ‘명령 복사’와 ‘모델 준비 안내’를 이용하세요. 모델별로 최초 1회 다운로드가 필요합니다.",
         "generating": "로컬 모델로 생성 중…", "generated": "새 캐릭터를 만들었습니다. 설정 저장을 눌러 적용하세요.",
         "description": "원하는 캐릭터 설명 (최대 2,000자 · 선택 입력)",
         "description_help": "색·귀·눈 표정·장식·얼굴 무늬·꼬리·날개를 자세히 적으세요. Qwen이 지원되는 도형 중 가까운 특징을 고릅니다. 임의의 그림·의상·머리카락 생성은 지원하지 않습니다. 설명은 로컬 Ollama로만 보내며 설정에 저장하지 않습니다.",
@@ -99,6 +106,13 @@ TEXT = {
         "advanced_help": "2/4/6/8 GB are model-selection guides, not GPU detection or a guarantee of fit. You need sufficient free VRAM and system RAM. Ollama determines GPU support and CPU offloading.",
         "advanced_scope": "Larger models may interpret descriptions better; the same vector shapes draw the character. They do not generate new artwork or clothing. Advanced preferences are saved separately from allowlist profiles.",
         "model_memory": "About {size} of model files; inference needs extra memory. Keep Ollama running and download the selected model below first.",
+        "model_download": "Download ~{size} · extra free RAM/VRAM needed · keep Ollama running",
+        "model_setup": "Model setup guide", "copy_model_command": "Copy command", "command_copied": "Copied",
+        "model_command_copied": "Download command copied. Paste into PowerShell, press Enter, wait for success, then generate again in the app.",
+        "model_setup_steps": "1. Install and start Ollama (ollama.com).\n2. Choose a GPU VRAM guide in Advanced, then a model in Character. 8 GB system RAM is different from 8 GB GPU VRAM.\n3. Copy that model's command, open PowerShell/Terminal from Win+X, paste and press Enter.\n4. Wait for success. ollama list must show the exact model name. Different names/quantizations are separate models.\n5. Generate with Qwen, inspect the preview and Save settings. Already installed models need no new download. The app does not install automatically.",
+        "model_setup_limits": "Sizes are downloads; inference needs extra memory. VRAM guides do not guarantee fit. Start with 0.5B or 1.5B for CPU/unknown. Choose a smaller model if memory is insufficient. This guide does not change prompts or allowlists.",
+        "model_missing_detail": "Ollama could not find or support the selected model:\n{model}\nRun in PowerShell: {command}\nWait for success, then generate again. If already installed, update Ollama and verify the exact name.",
+        "model_guide_close": "Close", "model_selected": "Selected: {model}",
         "model_small_memory": "Model files: about 0.5 GB for 0.5B / 1.12 GB for 1.5B, plus inference memory. Keep Ollama running.",
         "model_missing": "The selected model is missing or unsupported by Ollama. Run the displayed ollama pull command, update Ollama, then try again.",
         "model_memory_error": "Not enough memory to run this model. Choose a smaller model or close other models/GPU tasks, then retry. Your current character is retained.",
@@ -133,7 +147,7 @@ TEXT = {
         "recover_help": "If missing or broken, recover the current appearance on screen. Resetting the default appearance takes effect after Save settings.",
         "recovered": "Companion recovered on the primary monitor. Allowlists are unchanged.",
         "random": "Random character", "generate": "Generate with Qwen", "restore": "Use previous character",
-        "model_help": "Qwen designs appearance parameters; the app draws and animates them. No motion model is required.\nFirst download the Hugging Face model once using this Ollama command.",
+        "model_help": "Qwen designs appearance parameters; the app draws and animates them. No motion model is required.\nUse Copy command and Model setup guide beside the selector. Each model needs its own first download.",
         "generating": "Generating with local model…", "generated": "Character created. Save settings to apply it.",
         "description": "Describe your character (optional · up to 2,000 characters)",
         "description_help": "Describe colors, ears, eye expression, accessory, face markings, tail and wings. Qwen picks the closest supported shapes. Arbitrary artwork, clothing and hairstyles are not supported. The description goes only to local Ollama and is not saved in settings.",
@@ -237,6 +251,66 @@ class GenerationWorker(QThread):
             self.description = ""
 
 
+def model_setup_rows():
+    return (("CPU", MODEL, "0.49 GB"), ("2 GB / CPU", DETAIL_MODEL, "1.12 GB"),
+            *((f"{info[0]} GB", model, info[2]) for model, info in GPU_MODELS.items()))
+
+
+class ModelSetupDialog(QDialog):
+    """Local help only: no model download, inference, or settings mutation."""
+    def __init__(self, selected_model, language="en", parent=None):
+        super().__init__(parent)
+        self.t = TEXT["ko" if language == "ko" else "en"]
+        self.setWindowTitle(self.t["model_setup"])
+        self.resize(780, 640)
+        self.setMinimumSize(650, 520)
+        outer = QVBoxLayout(self)
+        title = QLabel(self.t["model_setup"])
+        title.setObjectName("setupTitle")
+        outer.addWidget(title)
+        selected = QLabel(self.t["model_selected"].format(model=selected_model))
+        selected.setWordWrap(True)
+        selected.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        outer.addWidget(selected)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        body = QWidget()
+        layout = QVBoxLayout(body)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetMinAndMaxSize)
+        steps = QLabel(self.t["model_setup_steps"])
+        steps.setWordWrap(True)
+        layout.addWidget(steps)
+        self.command_fields = {}
+        self.copy_buttons = {}
+        for tier, model, size in model_setup_rows():
+            heading = QLabel(f"{tier} · {model[6:]} · {size}")
+            heading.setWordWrap(True)
+            layout.addWidget(heading)
+            row = QHBoxLayout()
+            command = QLineEdit("ollama pull " + model)
+            command.setReadOnly(True)
+            self.command_fields[model] = command
+            row.addWidget(command, 1)
+            copy = QPushButton(self.t["copy_model_command"])
+            copy.clicked.connect(lambda _, model=model: self.copy_command(model))
+            self.copy_buttons[model] = copy
+            row.addWidget(copy)
+            layout.addLayout(row)
+        limits = QLabel(self.t["model_setup_limits"])
+        limits.setObjectName("modelSetupLimits")
+        limits.setWordWrap(True)
+        layout.addWidget(limits)
+        scroll.setWidget(body)
+        outer.addWidget(scroll, 1)
+        close = QPushButton(self.t["model_guide_close"])
+        close.clicked.connect(self.accept)
+        outer.addWidget(close)
+
+    def copy_command(self, model):
+        QApplication.clipboard().setText(self.command_fields[model].text())
+        self.copy_buttons[model].setText(self.t["command_copied"])
+
+
 class SettingsDialog(QDialog):
     applied = Signal()
     language_changed = Signal()
@@ -277,6 +351,7 @@ class SettingsDialog(QDialog):
         self.message = QLabel(self.t["status"] if not self.config["guard_enabled"] else self.t["preview"] if self.config["preview_only"] else self.t["guard"])
         self.message.setObjectName("status")
         self.message.setWordWrap(True)
+        self.message.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         outer.addWidget(self.message)
         footer = QHBoxLayout()
         footer.addWidget(QLabel(f"v{__version__}  ·  Windows companion"))
@@ -654,6 +729,21 @@ class SettingsDialog(QDialog):
         self.character_model.setCurrentIndex(max(0, self.character_model.findData(selected)))
         model_row.addWidget(self.character_model, 1)
         prompt.addLayout(model_row)
+        self.model_command = QLineEdit()
+        self.model_command.setReadOnly(True)
+        command_row = QHBoxLayout()
+        command_row.addWidget(self.model_command, 1)
+        self.copy_model_button = QPushButton(self.t["copy_model_command"])
+        self.copy_model_button.clicked.connect(self.copy_model_command)
+        command_row.addWidget(self.copy_model_button)
+        prompt.addLayout(command_row)
+        self.model_memory = self.label("")
+        prompt.addWidget(self.model_memory)
+        setup = QPushButton(self.t["model_setup"])
+        setup.clicked.connect(self.show_model_setup)
+        prompt.addWidget(setup, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.character_model.currentIndexChanged.connect(self.refresh_model_help)
+        self.refresh_model_help()
         prompt.addWidget(self.label(self.t["description"]))
         self.character_description = QPlainTextEdit()
         self.character_description.setPlaceholderText(self.t["description_example"])
@@ -726,18 +816,19 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.custom_button)
         layout.addWidget(self.label(self.t["recover_help"]))
         layout.addWidget(self.label(self.t["model_help"]))
-        self.model_memory = self.label("")
-        layout.addWidget(self.model_memory)
-        self.model_command = QLineEdit()
-        self.model_command.setReadOnly(True)
-        self.character_model.currentIndexChanged.connect(self.refresh_model_help)
-        self.refresh_model_help()
-        layout.addWidget(self.model_command)
 
     def refresh_model_help(self):
         model = self.character_model.currentData()
         self.model_command.setText("ollama pull " + model)
-        self.model_memory.setText(self.t["model_memory"].format(size=GPU_MODELS[model][2]) if model in GPU_MODELS else self.t["model_small_memory"])
+        size = next(size for _, name, size in model_setup_rows() if name == model)
+        self.model_memory.setText(self.t["model_download"].format(size=size))
+
+    def copy_model_command(self):
+        QApplication.clipboard().setText(self.model_command.text())
+        self.message.setText(self.t["model_command_copied"])
+
+    def show_model_setup(self):
+        ModelSetupDialog(self.character_model.currentData(), self.config["language"], self).exec()
 
     def build_advanced(self):
         layout = self.page("advanced")
@@ -753,6 +844,9 @@ class SettingsDialog(QDialog):
         form.addRow(self.t["vram_tier"], self.vram_tier)
         layout.addLayout(form)
         layout.addWidget(self.label(self.t["advanced_help"]))
+        setup = QPushButton(self.t["model_setup"])
+        setup.clicked.connect(self.show_model_setup)
+        layout.addWidget(setup, alignment=Qt.AlignmentFlag.AlignLeft)
         for tier, model in ((2, DETAIL_MODEL), *((info[0], model) for model, info in GPU_MODELS.items())):
             name = "Qwen2.5 1.5B · Q4_K_M" if model == DETAIL_MODEL else GPU_MODELS[model][1]
             layout.addWidget(self.label(f"{tier} GB → {name}"))
@@ -829,11 +923,19 @@ class SettingsDialog(QDialog):
         self.message.setText(self.t["generating"])
         self.worker = GenerationWorker(description, options, self.character_model.currentData(), self)
         self.worker.succeeded.connect(self.apply_character)
-        self.worker.failed.connect(lambda error: self.message.setText("Ollama: " + self.t.get(error, error)))
+        self.worker.failed.connect(self.generation_failed)
         self.worker.finished.connect(self.finish_generation_controls)
         self.worker.finished.connect(self.worker.deleteLater)
         self.worker.finished.connect(lambda: setattr(self, "worker", None))
         self.worker.start()
+
+    def generation_failed(self, error):
+        if error == "model_missing":
+            model = self.worker.model if self.worker is not None else self.character_model.currentData()
+            message = self.t["model_missing_detail"].format(model=model, command="ollama pull " + model)
+        else:
+            message = "Ollama: " + self.t.get(error, error)
+        self.message.setText(message)
 
     def finish_generation_controls(self):
         for control in self.generation_controls:

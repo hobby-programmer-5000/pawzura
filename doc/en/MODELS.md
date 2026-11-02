@@ -20,7 +20,7 @@ Install and start [Ollama](https://ollama.com/), then download once:
 ollama pull hf.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M
 ```
 
-1. Open **Character**, select **Qwen2.5 1.5B** for descriptions (about 1.12 GB of weights), and run the displayed download command once. The smaller **0.5B** option uses about 491 MB of weights, but often misses detailed English/Korean requests. The selected model's command is shown in the app. Existing saved 0.5B designs retain their model identity.
+1. Open **Character**, select **Qwen2.5 1.5B** for descriptions (about 1.12 GB of weights), and click **Copy command** beside the selector. Paste into PowerShell, press Enter and wait for `success`. The smaller **0.5B** option uses about 491 MB of weights, but often misses detailed English/Korean requests. **Model setup guide** lists exact commands and steps for every VRAM tier. Existing saved 0.5B designs retain their model identity.
 2. Enter a description, or use **Insert example**. Up to 2,000 characters are accepted; leaving it blank requests a random design.
 3. Optionally choose colors or traits under **Choose appearance options**. Explicit choices take priority over the prompt and model output. **Auto** / blank colors leave those fields to Qwen.
 4. Click **Generate with Qwen**, inspect the preview, then **Save settings**. An error leaves the current design unchanged.

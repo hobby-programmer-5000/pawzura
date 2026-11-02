@@ -16,7 +16,7 @@ The app starts in English. Switch with **General → Language → 한국어 → 
 
 **Before you start:** unsigned builds may trigger **Windows SmartScreen**. Verify the official download and checksum before choosing **More info → Run anyway**, if offered. [Launch help](doc/en/GETTING_STARTED.md).
 
-**AI character design needs Ollama running, the selected model downloaded, and sufficient free RAM/VRAM.** Default/random characters need no model. [Memory guide and setup](doc/en/MODELS.md).
+**AI design needs Ollama running, the exact selected model downloaded, and enough free RAM/VRAM.** Character → **Copy command** → paste into PowerShell → wait for `success` → Generate. Default/random characters need no model. [All VRAM tiers and commands](doc/en/ADVANCED-MODELS.md).
 
 ## Browser control is optional
 

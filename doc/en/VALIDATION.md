@@ -4,6 +4,14 @@
 
 Date: 2026-11-03, Asia/Seoul. Intended support and actual checks are separate.
 
+## 0.1.10 self-service model setup
+
+**103 Python tests and 19 extension tests passed locally.** New regression checks cover every supported model's exact command and clipboard action, English/Korean all-tier read-only guides, feedback tied to the worker's requested model, and asynchronous missing-model failure retaining the appearance and restoring controls. Opening help/copying does not save settings or trigger generation. The same model list, inference protocol and memory limitations remain in effect.
+
+Synthetic English/Korean character/help/missing-model screens were rendered in light/dark themes at minimum and normal sizes; command visibility, selectable error text, guide scrolling and copy controls were reviewed. The missing-model path was simulated rather than reproduced by changing real user models. No model weights, user settings, allowlists or desktop guardian were changed for validation.
+
+The guide's initial Korean bottom layout overlapped the last command; a scroll-content size constraint and a geometry regression check corrected it. The final 0.1.10 EXE passed smoke rendering/normal exit, embedded version and ten compiled app-module comparisons. Existing GPU inference and browser/device coverage limits remain unchanged.
+
 ## 0.1.9 themes and advanced model guides
 
 **99 Python tests and 19 extension tests passed locally.** New checks cover theme preview versus saved/reopened state, legacy/invalid preference migration, opt-in VRAM tiers, model selection persistence and removal after reducing a tier, separation from allowlist profiles, exact model identifiers/schema/non-thinking/unload requests, and actionable failure codes without backend-data echo. Initial restricted-environment runs hit temporary-directory ACL and Node child-process EPERM errors; normal-permission synthetic tests passed. An initial theme test compared differently ordered equivalent default lists; its baseline now uses the existing save normalization.
