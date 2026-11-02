@@ -42,6 +42,8 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | 라이브러리·모델 라이선스 | [제3자 고지](doc/ko/THIRD-PARTY-NOTICES.md) |
 | 캐릭터 권리와 제작 이력 | [캐릭터 권리](doc/ko/CHARACTER-RIGHTS.md) |
 
-**Preview 제한:** 탐색 후 탭을 닫고, 탭 애니메이션은 작업표시줄 근처의 별도 표식에서 보여줍니다. Windows 11 실기기와 사용자 브라우저 프로필 전체 동작 검증은 남아 있습니다. 상세 범위는 검증 기록을 참고하세요.
+**브라우저 동작:** 탐색 후 탭을 닫고, 탭 애니메이션은 작업표시줄 근처의 별도 표식에서 보여줍니다.
+
+**검증 현황:** 제작자가 Windows 11에서 직접 사용해 확인했다고 보고했습니다. 수동 확인과 자동 검사의 상세 범위는 [검증 기록과 남은 확인 항목](doc/ko/VALIDATION.md)을 참고하세요.
 
 자체 코드 [MIT](LICENSE). 기획: [hobby-programmer-5000](https://github.com/hobby-programmer-5000). 구현 지원: ChatGPT via Codex. [전체 문서](doc/README.ko.md).

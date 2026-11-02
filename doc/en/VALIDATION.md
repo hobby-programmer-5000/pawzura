@@ -4,6 +4,12 @@
 
 Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
 
+## Windows 11 maintainer manual report
+
+During the 0.1.7 discussion, the maintainer reported having informally checked the app on Windows 11 and reported no further issue. This records a hands-on user report. The exact app/Windows build, hardware, browser versions and an itemized checklist were not supplied, so no particular feature or browser flow is marked as individually passed on that basis. No identifying device information or personal settings are included.
+
+Windows 11 is therefore no longer listed as entirely awaiting a first user check. Repeatable Windows 11 coverage across configurations and detailed user-profile browser E2E coverage remain unrecorded. The automated and isolated-browser results below have their own stated scope.
+
 ## 0.1.7 prompted and manual character design
 
 **87 Python tests and 19 extension tests passed locally.** New checks cover loopback-only prompt delivery without proxies, all nine schema fields, explicit choices overriding model output, rejection before network access for invalid input, incomplete output failures, legacy appearance migration, custom-trait/model persistence, no saved prompt, visible changes for every supported trait, worker input snapshots and failure recovery. One earlier run hit a loopback connection abort in an existing bridge-authentication test; the subsequent complete suite passed.
@@ -83,7 +89,7 @@ The Windows automation helper's screenshot capture timed out in baseline testing
 
 ## Remaining limits
 
-- Windows 11 physical devices, Windows 10 1809 minimum version, ARM64 and Remote Desktop need separate validation.
+- Beyond the Windows 11 manual report above, repeatable checks across Windows 11 configurations, Windows 10 1809 minimum version, ARM64 and Remote Desktop need separate validation.
 - Chrome/Edge/Firefox user-profile and packaged-GUI flows, store distribution and permanent signed Firefox packages need separate checks beyond the isolated Chromium probe above.
 - Browser APIs do not provide exact tab X positions. Tab animation uses a separate marker near the taskbar, not the browser's real tab X.
 - Custom title bars, elevated apps that reject close requests, full-screen/virtual-desktop behavior and all monitor arrangements need further testing.
