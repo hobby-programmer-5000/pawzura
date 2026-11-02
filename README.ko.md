@@ -16,7 +16,7 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 
 **실행 전 확인:** 서명되지 않은 빌드라 **Windows SmartScreen**이 표시될 수 있습니다. 공식 배포 파일과 체크섬을 확인한 뒤, 제공되는 경우에만 **추가 정보 → 실행**을 선택하세요. [실행 안내](doc/ko/GETTING_STARTED.md).
 
-**AI 설계에는 실행 중인 Ollama, 정확히 선택한 모델 다운로드, 충분한 가용 RAM·VRAM이 필요합니다.** 캐릭터 → **명령 복사** → PowerShell에 붙여넣기 → `success`까지 대기 → 생성. 기본·임의 캐릭터에는 모델이 필요 없습니다. [모든 VRAM별 명령과 준비](doc/ko/ADVANCED-MODELS.md).
+**AI 설계에는 실행 중인 Ollama와 충분한 가용 RAM·VRAM이 필요합니다.** Qwen 도형: 캐릭터 → **명령 복사** → PowerShell → `success` 대기 → 생성. GPU 그림: **창작 그림 만들기…** → 모델 라이선스 확인 → **실행환경·선택 모델 준비**. [그림 준비](doc/ko/CREATIVE-ART.md) · [Qwen 명령](doc/ko/ADVANCED-MODELS.md). 기본·임의 캐릭터는 모델이 필요 없습니다.
 
 ## 브라우저 제어는 선택 기능입니다
 
@@ -29,7 +29,7 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 - 바꿀 수 있는 고유 캐릭터가 연결된 모니터 사이를 산책합니다.
 - 미허용 창을 닫기 전에 점프·깨물기·사라지는 균열을 표시합니다.
 - 브라우저 창을 보호하고 미허용 탭만 닫습니다. 확장에서 자동 연결 후 앱에서 승인하면 됩니다.
-- 라이트·다크 설정과 VRAM 2·4·6·8GB 기준의 Qwen 설계를 선택합니다. 큰 모델도 같은 도형으로 특징을 표현합니다. [설정과 한계](doc/ko/MODELS.md).
+- 라이트·다크 설정, 가벼운 Qwen 도형 설계와 선택형 GPU [창작 그림 생성](doc/ko/CREATIVE-ART.md)을 제공합니다. 고급 그림 모델은 별도 다운로드와 라이선스 확인이 필요합니다.
 
 ## 필요한 안내 찾기
 
@@ -38,7 +38,7 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | 실행·한국어 변경·트레이 사용 | [처음 사용하기](doc/ko/GETTING_STARTED.md) |
 | Chrome/Edge/Firefox 연결과 입력 예시 | [브라우저 연결](doc/ko/BROWSERS.md) |
 | 업무·여가 목록 분리·캐릭터 복구 | [프로필과 복구](doc/ko/PROFILES-AND-RECOVERY.md) |
-| Qwen 캐릭터 생성 | [모델과 캐릭터](doc/ko/MODELS.md) |
+| GPU 그림 생성과 모델 라이선스 확인 | [창작 그림](doc/ko/CREATIVE-ART.md) |
 | 소스 실행·EXE 빌드 | [설정과 빌드](doc/ko/BUILD.md) |
 | 테스트 결과·현재 제한 | [검증 기록](doc/ko/VALIDATION.md) |
 | 기획자·AI 기여 역할 | [기여자](doc/ko/CONTRIBUTORS.md) |

@@ -4,6 +4,19 @@
 
 Date: 2026-11-03, Asia/Seoul. Intended support and actual checks are separate.
 
+
+## 0.2.0 creative artwork
+
+**116 Python tests and 19 extension tests passed locally.** New checks cover bounded PNG decode/metadata removal/hash validation, invalid assets and vector fallback, settings/history privacy and restart, procedural poses/bite coordinates/cancellation, explicit per-selection license acknowledgement, local review failure/unsafe/replica/uncertain rejection, Ollama structured-answer compatibility, one bounded download retry and exclusion of personal artwork/runtimes/weights from distribution. Existing native/browser close protections are unchanged.
+
+On Windows 10 x64, main CPython 3.14.7/Qt 6.12.0, an isolated Python 3.12.14/PyTorch 2.7.1+cu118 environment and a **single NVIDIA 8 GB device**, SDXL's 8 GB guide generated two synthetic original descriptions through the full request review → drawing → CPU classifier/cutout → Qwen3-VL review → approved PNG storage flow (about 89 and 88 seconds total). SD 1.5's **4 GB configuration ran on that same 8 GB device**, completing the full flow in about 32 seconds. This is not a separate 4 GB device test. No actual 2/4/6 GB device fit, sequential-offload speed, AMD/Intel support or Windows 11 artwork inference is certified. Model throughput and free memory vary; these timings are examples, not benchmarks/guarantees.
+
+Actual approved images were inspected, rendered at four phase/facing/bite combinations each and restored from disposable settings/history. Requested traits were not all followed, and cutouts retained some background or removed small details; the guide records those limits. Vision mouth estimates were inaccurate, so the preview now accepts a bounded manual mouth click. English/Korean, light/dark, minimum/normal synthetic artwork/setup/error screens were rendered and representative views inspected. Real user prompts, pictures, profiles and guardian targets were not used. A new review model was installed additively for the local test; test image weights/runtime/artifacts remained in an ignored workspace cache.
+
+Observed failures were corrected or bounded: contradictory preflight fields became one verdict; Ollama's complete schema answer in `thinking` is accepted only as whole JSON when content is empty; broad resemblance-based review was replaced by a specific identifiable franchise/unsafe/uncertain decision, while invalid/unavailable checks still reject. This has **not** established exhaustive NSFW, adversarial or copyright detection accuracy. Transient large downloads resumed from cache, with one bounded network retry; the official uv checksum/bootstrap script reached READY and preserved a local package/license inventory. An initial package guard correctly stopped a directory-name collision with public license texts; those texts now use a separate directory.
+
+The 0.2.0 EXE passed smoke rendering/normal exit, embedded version and fourteen compiled app-module comparisons. The packaged external-worker path was checked under Windows bootloader-style inherited DLL search state; it saw CUDA. That probe is not a full interactive frozen-generation E2E test. Detailed user-profile browser E2E and repeatable Windows 11 coverage remain as described below.
+
 ## 0.1.10 self-service model setup
 
 **103 Python tests and 19 extension tests passed locally.** New regression checks cover every supported model's exact command and clipboard action, English/Korean all-tier read-only guides, feedback tied to the worker's requested model, and asynchronous missing-model failure retaining the appearance and restoring controls. Opening help/copying does not save settings or trigger generation. The same model list, inference protocol and memory limitations remain in effect.

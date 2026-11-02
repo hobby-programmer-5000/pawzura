@@ -32,6 +32,28 @@ Pawzura's original application, browser extension and support-script code is rel
 
 The executable includes CPython standard-library binary extensions. Their incorporated dependencies can include OpenSSL, zlib, bzip2, liblzma/XZ, libffi, SQLite, mpdecimal, Zstandard and Unicode data depending on Python version and PyInstaller's import graph. The actual binaries are recorded by hash in each build's `BINARY-MANIFEST.json`; Python's complete Windows license file is included unchanged, even where a section does not apply to that artifact. Windows system DLLs loaded from the OS remain part of Windows.
 
+
+## Optional creative artwork runtime and models
+
+The app ZIP contains only trusted setup/worker source and the pinned [catalog](../../art_runtime/catalog.json), **not weights, Python 3.12, uv, PyTorch or CUDA binaries**. The user explicitly requests their installation into a separate local environment. App MIT does not relicense anything downloaded. Read each advanced model's original terms before use; the UI requires a fresh acknowledgement when selecting a guide. Model licenses do not clear generated content's third-party rights.
+
+| Optional component | Terms / source | Role |
+| --- | --- | --- |
+| SD 1.5 maintained weight repository | [CreativeML OpenRAIL-M](../../licenses/upstream/creative-models/SD15-LICENSE.txt); [model card](https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-v1-5) | 2/4 GB image generation; restricted open weights, not OSI-approved open source |
+| SDXL base 1.0 | [CreativeML Open RAIL++-M](../../licenses/upstream/creative-models/SDXL-LICENSE.txt); [model card](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0) | 6/8 GB image generation; separate use restrictions |
+| Qwen3-VL 2B Instruct / Ollama `qwen3-vl:2b` | Apache-2.0; [official model](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct), [Ollama package](https://ollama.com/library/qwen3-vl:2b) | Local image review; Qwen2.5 1.5B above reviews descriptions |
+| Falconsai/nsfw_image_detection | Apache-2.0; [model card](https://huggingface.co/Falconsai/nsfw_image_detection), [Apache text](../../licenses/upstream/Apache-2.0.txt) | CPU ViT classifier; not a perfect safety guarantee |
+| U2NetP ONNX | Apache-2.0; [mirror](https://huggingface.co/edgetools/u2netp), [original U-2-Net license](../../licenses/upstream/creative-models/U2Net-LICENSE.txt) | CPU background removal |
+| uv 0.13.6 | MIT OR Apache-2.0; [MIT](../../licenses/upstream/creative-models/uv-LICENSE-MIT.txt), [Apache](../../licenses/upstream/creative-models/uv-LICENSE-APACHE.txt) | Checksum-verified official runtime bootstrap |
+| Standalone CPython 3.12.14 | PSF and incorporated notices; [python-build-standalone](https://github.com/astral-sh/python-build-standalone) | Isolated image interpreter; upstream distribution's notices remain installed |
+| PyTorch 2.7.1 CUDA 11.8 | BSD-3-Clause and incorporated notices; [PyTorch license](https://github.com/pytorch/pytorch/blob/v2.7.1/LICENSE) | Image inference; downloaded NVIDIA CUDA/cuDNN components retain their own proprietary terms, including [CUDA EULA](https://docs.nvidia.com/cuda/eula/index.html) |
+| Diffusers 0.35.2, Transformers 4.57.1, Accelerate 1.11.0, Safetensors 0.6.2, Hugging Face Hub 0.36.0 | Apache-2.0; individual upstream copyright/notices remain in installed packages | Fixed safetensors-only local pipelines; no remote/custom model code |
+| Pillow 12.0.0 | HPND/Pillow terms and incorporated notices; [license](https://github.com/python-pillow/Pillow/blob/12.0.0/LICENSE) | Pixels and PNG encoding |
+| NumPy 2.2.6 | BSD-3-Clause and incorporated notices; [license](https://github.com/numpy/numpy/blob/v2.2.6/LICENSE.txt) | Mask processing |
+| ONNX Runtime 1.23.2 | MIT and third-party notices; [license](https://github.com/microsoft/onnxruntime/blob/v1.23.2/LICENSE) | CPU cutout inference |
+
+The optional environment also resolves transitive packages (for example requests/urllib3/certifi, tokenizers, filelock, fsspec, Jinja2/MarkupSafe, SymPy/mpmath, networkx, packaging, PyYAML, regex, tqdm, psutil, protobuf, coloredlogs/humanfriendly, flatbuffers, typing-extensions and setuptools). Their individual license files and package metadata remain in the installed environment; they are not relicensed or bundled in the app ZIP. Preparation writes a local `DEPENDENCIES.json` inventory and copies available installed license/notice texts into `art-runtime/licenses/`. Model snapshots and library revisions are separate. Preserve all applicable terms if redistributing a prepared runtime yourself; the app's lightweight EXE notices are not a complete license inventory for such a redistribution.
+
 ## Original notices and attributions
 
 Optional browser testing uses Playwright (Apache-2.0) and a separately installed Chromium with its own notices. These are development/test tools and are not redistributed in Pawzura's EXE ZIP. The `test-browser` extra is optional; keep the tools' installed license files if distributing a test environment.

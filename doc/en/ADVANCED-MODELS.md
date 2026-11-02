@@ -2,11 +2,13 @@
 
 # Advanced models and memory
 
+Want different artwork rather than the same vector shapes? Use **Create original artwork…** in Advanced/Character. [The creative artwork guide](CREATIVE-ART.md) covers SD 1.5/SDXL, 2/4/6/8 GB guides, setup and separate license acknowledgement. This page documents the retained **larger trait interpreters**, not image generation.
+
 **Keep Ollama running, download the selected model first, and leave sufficient free system RAM and GPU VRAM.** Opening Pawzura, using random/manual appearances and animating the pet require no model. These models interpret descriptions into the existing vector traits; they do not create new illustrations, clothing or hairstyles. Larger models or higher precision may help interpretation but do not guarantee a prettier result or perfect prompt adherence.
 
 ## Choose a model
 
-1. Open **Advanced → Enable advanced character models**.
+1. Open **Advanced → Enable larger trait interpreters (same shapes)**.
 2. Choose your GPU's VRAM capacity: **2, 4, 6 or 8 GB**. If unknown, retain **CPU / unknown** and the basic models.
 3. Open **Character → Appearance model** and select an available model. Enabling Advanced does not automatically select a larger model.
 4. Beside the model selector, click **Copy command**. Open **PowerShell** (right-click Start → Windows PowerShell or Terminal), paste and press Enter. Wait for `success`, then return to Pawzura. The read-only command and download size follow your current selection, including unsaved changes. **Model setup guide** is available in Character and Advanced and lists all five commands.

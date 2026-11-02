@@ -51,6 +51,11 @@ def main():
         "Qwen-1.5B-LICENSE.txt": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/LICENSE",
         "Qwen3-4B-LICENSE.txt": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/raw/bc640142c66e1fdd12af0bd68f40445458f3869b/LICENSE",
         "Qwen3-8B-LICENSE.txt": "https://huggingface.co/Qwen/Qwen3-8B-GGUF/raw/7c41481f57cb95916b40956ab2f0b139b296d974/LICENSE",
+        "creative-models/SD15-LICENSE.txt": "https://raw.githubusercontent.com/CompVis/stable-diffusion/69ae4b35e0a0f6ee1af8bb9a5d0016ccb27e36dc/LICENSE",
+        "creative-models/SDXL-LICENSE.txt": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/462165984030d82259a11f4367a4eed129e94a7b/LICENSE.md",
+        "creative-models/U2Net-LICENSE.txt": "https://raw.githubusercontent.com/xuebinqin/U-2-Net/master/LICENSE",
+        "creative-models/uv-LICENSE-MIT.txt": "https://raw.githubusercontent.com/astral-sh/uv/0.13.6/LICENSE-MIT",
+        "creative-models/uv-LICENSE-APACHE.txt": "https://raw.githubusercontent.com/astral-sh/uv/0.13.6/LICENSE-APACHE",
         "OpenSSL-LICENSE.txt": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.8/LICENSE.txt",
         "libffi-LICENSE.txt": "https://raw.githubusercontent.com/libffi/libffi/v3.4.8/LICENSE",
         "zlib-LICENSE.txt": "https://raw.githubusercontent.com/madler/zlib/v1.3.2/LICENSE",
@@ -60,6 +65,7 @@ def main():
     }.items():
         print(f"Collecting {name}", flush=True)
         target = destination / name
+        target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(fetch(source))
         inventory.append({"path": str(target.relative_to(ROOT)).replace("\\", "/"), "source": source})
     source = "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-4.0.0.tar.gz"

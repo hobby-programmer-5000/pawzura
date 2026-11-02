@@ -5,6 +5,16 @@ from scripts.check_distribution import check_distribution
 
 
 class DistributionPrivacyTests(unittest.TestCase):
+    def test_release_rejects_personal_artwork_runtime_and_weights(self):
+        for relative in ("artwork/private.png", "art-runtime/DEPENDENCIES.json", "models/model.safetensors", "weights.gguf", "cutout.onnx"):
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"synthetic")
+                with self.assertRaises(ValueError):
+                    check_distribution(root)
+
     def test_release_rejects_local_settings(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

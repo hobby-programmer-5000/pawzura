@@ -64,6 +64,10 @@ def main(dist_dir: Path | None = None):
         shutil.copy2(ROOT / name, output / name)
     for name in ("doc", "extensions", "licenses"):
         shutil.copytree(ROOT / name, output / name, dirs_exist_ok=True)
+    runtime = output / "art_runtime"
+    runtime.mkdir(exist_ok=True)
+    for name in ("catalog.json", "requirements.txt", "setup.ps1", "runner.py", "inventory.py"):
+        shutil.copy2(ROOT / "art_runtime" / name, runtime / name)
     # Only reviewed model evidence is shipped, never an arbitrary artifact folder.
     (output / "artifacts").mkdir(exist_ok=True)
     for name in ("model-provenance.json", "model-provenance-1.5B.json", "model-catalog.json", "qwen-character.json", "browser-setup-en.png", "browser-setup-ko.png", "character-custom-en.png", "character-custom-ko.png", "subdomain-rules-en.png", "subdomain-rules-ko.png"):

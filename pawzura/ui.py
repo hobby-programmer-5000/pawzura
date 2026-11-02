@@ -28,7 +28,9 @@ TEXT = {
         "visible": "바탕화면에 캐릭터 표시", "startup": "Windows 로그인 시 자동 실행", "language": "언어",
         "theme": "화면 테마", "theme_dark": "다크", "theme_light": "라이트 (화이트)",
         "theme_help": "선택하면 바로 미리 봅니다. 다음 실행에도 유지하려면 설정 저장을 누르세요.",
-        "advanced": "고급", "advanced_models": "고급 캐릭터 모델 사용",
+        "advanced": "고급", "advanced_models": "큰 도형 해석 모델 사용 (외형 틀은 동일)",
+        "creative_art": "창작 그림 만들기… (GPU · 별도 모델)",
+        "art_traits": "현재는 생성된 그림입니다. 아래 도형 옵션은 그림에 적용되지 않습니다. 변경하려면 ‘창작 그림 만들기’를 다시 이용하세요. 임의 캐릭터·기본 외형으로 도형 설계에 돌아갈 수 있습니다.",
         "vram_tier": "GPU VRAM 용량 (직접 선택)", "vram_unknown": "CPU / 모름",
         "advanced_help": "2·4·6·8 GB는 모델 선택을 돕는 기준이며 GPU 감지나 실행 보장이 아닙니다. 실제 남은 VRAM과 시스템 RAM이 충분해야 합니다. GPU 지원과 CPU 분산은 Ollama가 결정합니다.",
         "advanced_scope": "큰 모델은 설명 해석을 개선할 수 있지만, 캐릭터는 같은 도형으로 그립니다. 새로운 그림·의상 생성 모델은 아닙니다. 고급 설정은 허용 목록 프로필과 별도로 저장됩니다.",
@@ -101,7 +103,9 @@ TEXT = {
         "visible": "Show desktop companion", "startup": "Run when I sign in to Windows", "language": "Language",
         "theme": "Theme", "theme_dark": "Dark", "theme_light": "Light (white)",
         "theme_help": "Preview immediately. Save settings to keep your choice for next launch.",
-        "advanced": "Advanced", "advanced_models": "Enable advanced character models",
+        "advanced": "Advanced", "advanced_models": "Enable larger trait interpreters (same shapes)",
+        "creative_art": "Create original artwork… (GPU · separate models)",
+        "art_traits": "This character is generated artwork. Trait options below cannot edit its pixels. Use Create original artwork again to change it. Random/default returns to vector design.",
         "vram_tier": "GPU VRAM capacity (manual)", "vram_unknown": "CPU / unknown",
         "advanced_help": "2/4/6/8 GB are model-selection guides, not GPU detection or a guarantee of fit. You need sufficient free VRAM and system RAM. Ollama determines GPU support and CPU offloading.",
         "advanced_scope": "Larger models may interpret descriptions better; the same vector shapes draw the character. They do not generate new artwork or clothing. Advanced preferences are saved separately from allowlist profiles.",
@@ -711,6 +715,9 @@ class SettingsDialog(QDialog):
 
     def build_character(self):
         layout = self.page("character")
+        self.art_button = QPushButton(self.t["creative_art"])
+        self.art_button.clicked.connect(self.open_artwork)
+        layout.addWidget(self.art_button)
         designer = QHBoxLayout()
         self.character_preview = CharacterPreview(self.config["character"])
         self.character_preview.setFixedSize(200, 220)
@@ -816,6 +823,26 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.custom_button)
         layout.addWidget(self.label(self.t["recover_help"]))
         layout.addWidget(self.label(self.t["model_help"]))
+        self.art_trait_note = self.label(self.t["art_traits"])
+        layout.addWidget(self.art_trait_note)
+        self.refresh_art_traits()
+
+    def open_artwork(self):
+        if self.worker is not None:
+            return
+        from .art_ui import ArtworkDialog
+        dialog = ArtworkDialog(self.config["language"], self.vram_tier.currentData() or 8, self)
+        dialog.preview.theme = self.theme.currentData()
+        dialog.chosen.connect(self.apply_character)
+        dialog.exec()
+        dialog.preview.timer.stop()
+        dialog.deleteLater()
+
+    def refresh_art_traits(self):
+        artwork = self.config["character"].get("kind") == "artwork"
+        self.custom_panel.setEnabled(not artwork)
+        self.custom_button.setEnabled(not artwork)
+        self.art_trait_note.setVisible(artwork)
 
     def refresh_model_help(self):
         model = self.character_model.currentData()
@@ -832,6 +859,9 @@ class SettingsDialog(QDialog):
 
     def build_advanced(self):
         layout = self.page("advanced")
+        artwork = QPushButton(self.t["creative_art"])
+        artwork.clicked.connect(self.open_artwork)
+        layout.addWidget(artwork)
         layout.addWidget(self.label(self.t["advanced_scope"]))
         self.advanced_models = QCheckBox(self.t["advanced_models"])
         self.advanced_models.setChecked(self.config["advanced_models"])
@@ -881,6 +911,9 @@ class SettingsDialog(QDialog):
         return custom_options(options)
 
     def apply_custom_options(self):
+        if self.config["character"].get("kind") == "artwork":
+            self.message.setText(self.t["art_traits"])
+            return
         try:
             options = self.selected_character_options()
             if options:
@@ -895,6 +928,7 @@ class SettingsDialog(QDialog):
         self.config["character"] = spec
         self.character_preview.spec = spec
         self.character_preview.update()
+        self.refresh_art_traits()
         self.message.setText(self.t["generated"])
 
     def restore_character(self):
@@ -903,6 +937,7 @@ class SettingsDialog(QDialog):
             self.config["character"] = spec
             self.character_preview.spec = spec
             self.character_preview.update()
+            self.refresh_art_traits()
 
     def generate(self):
         if self.worker and self.worker.isRunning():
@@ -941,12 +976,13 @@ class SettingsDialog(QDialog):
         for control in self.generation_controls:
             control.setEnabled(True)
         self.vram_tier.setEnabled(self.advanced_models.isChecked())
+        self.refresh_art_traits()
 
     def build_about(self):
         layout = self.page("about")
         layout.addWidget(self.label(self.t["credit"]))
         language = "ko" if self.config["language"] == "ko" else "en"
-        layout.addWidget(self.label(f"Qwen2.5 0.5B / 1.5B · Qwen3 4B / 8B GGUF · Apache-2.0\nhttps://huggingface.co/Qwen\n\nREADME.md · doc/{language}/MODELS.md\nTHIRD-PARTY-NOTICES.md · CONTRIBUTORS.md"))
+        layout.addWidget(self.label(f"Qwen2.5 / Qwen3 / Qwen3-VL · Apache-2.0\nSD 1.5 / SDXL · OpenRAIL (optional)\nhttps://huggingface.co/Qwen\n\nREADME.md · doc/{language}/MODELS.md\nTHIRD-PARTY-NOTICES.md · CONTRIBUTORS.md"))
         layout.addWidget(self.label("https://github.com/hobby-programmer-5000/pawzura"))
         layout.addStretch()
 

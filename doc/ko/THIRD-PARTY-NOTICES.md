@@ -32,6 +32,28 @@ Pawzura 자체 앱·확장·지원 스크립트 코드는 [MIT](../../LICENSE)�
 
 CPython 표준 바이너리 확장의 구성은 버전과 import 그래프에 따라 다릅니다. OpenSSL·zlib·bzip2·liblzma·libffi·mpdecimal·Zstandard·Unicode 등이 포함될 수 있으며, 실제 바이너리와 해시는 배포의 BINARY-MANIFEST.json으로 확인하세요. 해당 빌드의 Python Windows 라이선스 원문을 변경 없이 보존합니다. Windows 시스템 DLL은 운영체제의 구성요소입니다.
 
+
+## 선택형 창작 그림 실행환경과 모델
+
+배포 ZIP은 검토한 설치·작업 스크립트와 고정 [카탈로그](../../art_runtime/catalog.json)만 포함합니다. **가중치·Python 3.12·uv·PyTorch·CUDA 바이너리는 포함하지 않으며** 사용자가 준비를 명시적으로 실행해야 별도 로컬 환경에 설치합니다. 앱의 MIT가 다운로드한 구성요소를 재라이선스하지 않습니다. 고급 모델 사용 전 원본 조건을 확인해야 하며 UI는 기준을 바꿀 때마다 다시 확인받습니다. 모델 라이선스가 생성물의 타인 권리를 검증하는 것은 아닙니다.
+
+| 선택 구성요소 | 조건·출처 | 역할 |
+| --- | --- | --- |
+| SD 1.5 유지보수 가중치 저장소 | [CreativeML OpenRAIL-M](../../licenses/upstream/creative-models/SD15-LICENSE.txt) · [카드](https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-v1-5) | 2/4 GB 그림 생성. 제한된 공개 가중치이며 OSI 승인 오픈소스가 아님 |
+| SDXL base 1.0 | [CreativeML Open RAIL++-M](../../licenses/upstream/creative-models/SDXL-LICENSE.txt) · [카드](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0) | 6/8 GB 그림 생성, 별도 이용 제한 |
+| Qwen3-VL 2B Instruct / Ollama `qwen3-vl:2b` | Apache-2.0 · [공식 모델](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct) · [Ollama 패키지](https://ollama.com/library/qwen3-vl:2b) | 로컬 그림 검사. 위의 Qwen2.5 1.5B는 설명 검사 |
+| Falconsai/nsfw_image_detection | Apache-2.0 · [모델 카드](https://huggingface.co/Falconsai/nsfw_image_detection) · [원문](../../licenses/upstream/Apache-2.0.txt) | CPU ViT 분류기, 완벽한 안전 보장 아님 |
+| U2NetP ONNX | Apache-2.0 · [미러](https://huggingface.co/edgetools/u2netp) · [원본 U-2-Net 라이선스](../../licenses/upstream/creative-models/U2Net-LICENSE.txt) | CPU 배경 제거 |
+| uv 0.13.6 | MIT OR Apache-2.0 · [MIT](../../licenses/upstream/creative-models/uv-LICENSE-MIT.txt) · [Apache](../../licenses/upstream/creative-models/uv-LICENSE-APACHE.txt) | 공식 파일 체크섬 검증 후 환경 준비 |
+| 별도 CPython 3.12.14 | PSF·포함 고지 · [python-build-standalone](https://github.com/astral-sh/python-build-standalone) | 격리된 그림 인터프리터, 원본 배포의 고지 유지 |
+| PyTorch 2.7.1 CUDA 11.8 | BSD-3-Clause·포함 고지 · [원문](https://github.com/pytorch/pytorch/blob/v2.7.1/LICENSE) | 추론. 내려받는 NVIDIA CUDA·cuDNN은 [CUDA EULA](https://docs.nvidia.com/cuda/eula/index.html) 등 자체 독점 조건 적용 |
+| Diffusers 0.35.2, Transformers 4.57.1, Accelerate 1.11.0, Safetensors 0.6.2, Hugging Face Hub 0.36.0 | Apache-2.0, 개별 저작권·고지는 설치 패키지에 유지 | safetensors 전용 로컬 파이프라인, 원격/사용자 정의 모델 코드 실행 없음 |
+| Pillow 12.0.0 | HPND/Pillow 조건·포함 고지 · [원문](https://github.com/python-pillow/Pillow/blob/12.0.0/LICENSE) | 픽셀·PNG |
+| NumPy 2.2.6 | BSD-3-Clause·포함 고지 · [원문](https://github.com/numpy/numpy/blob/v2.2.6/LICENSE.txt) | 마스크 처리 |
+| ONNX Runtime 1.23.2 | MIT·타사 고지 · [원문](https://github.com/microsoft/onnxruntime/blob/v1.23.2/LICENSE) | CPU 배경 제거 |
+
+간접 패키지로 requests/urllib3/certifi, tokenizers, filelock, fsspec, Jinja2/MarkupSafe, SymPy/mpmath, networkx, packaging, PyYAML, regex, tqdm, psutil, protobuf, coloredlogs/humanfriendly, flatbuffers, typing-extensions, setuptools 등이 설치될 수 있습니다. 각 라이선스·메타데이터를 설치 환경에 유지하며 앱 ZIP에 포함하거나 재라이선스하지 않습니다. 준비 과정에서 로컬 `DEPENDENCIES.json` 목록과 사용 가능한 라이선스·NOTICE 원문을 `art-runtime/licenses/`에 보존합니다. 모델 snapshot과 라이브러리 버전은 별개입니다. 준비된 실행환경을 직접 재배포한다면 모든 개별 조건을 유지해야 하며 가벼운 앱 EXE의 고지만으로 충분한 전체 고지 목록이 되지 않습니다.
+
 ## 원문 보관
 
 선택적 브라우저 검사에는 Playwright(Apache-2.0)와 개별 고지가 적용되는 별도 Chromium을 사용합니다. 개발·검사 도구이며 Pawzura EXE ZIP에 재배포하지 않습니다. `test-browser` 추가 의존성은 선택 사항이고 검사 환경 자체를 배포한다면 설치된 도구의 라이선스 원문도 유지해야 합니다.

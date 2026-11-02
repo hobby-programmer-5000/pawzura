@@ -1,0 +1,9 @@
+# Optional isolated Python 3.12 environment, never the main app environment.
+diffusers==0.35.2
+transformers==4.57.1
+accelerate==1.11.0
+safetensors==0.6.2
+huggingface-hub==0.36.0
+Pillow==12.0.0
+numpy==2.2.6
+onnxruntime==1.23.2

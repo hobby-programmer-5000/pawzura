@@ -32,3 +32,7 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [0.1.0 release history](en/RELEASE-v0.1.0.md)
 - [Third-party licenses and notices](en/THIRD-PARTY-NOTICES.md)
 - [MIT licensing](en/LICENSE.md)
+
+- [Original GPU artwork and model licenses](en/CREATIVE-ART.md)
+
+- [0.2.0 original artwork](en/RELEASE-v0.2.0.md)

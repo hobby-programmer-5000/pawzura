@@ -6,6 +6,11 @@ __pycache__/
 build/
 dist/
 .cache/
+artwork/
+art-runtime/
+*.safetensors
+*.gguf
+*.onnx
 *.log
 pairing.json
 settings.json

@@ -2,6 +2,8 @@
 
 # Models and character generation
 
+For actual generated illustrations with original silhouettes, clothing and hairstyles, use **Character → Create original artwork…**. This separate optional GPU path has its own setup, content checks and model license acknowledgement: [Creative artwork](CREATIVE-ART.md). The remaining sections describe the vector trait designer.
+
 **Ollama must be running and the selected model downloaded. Keep enough free system RAM/VRAM for weights plus inference overhead.** Random/manual characters work without it. For **Advanced → 2/4/6/8 GB VRAM guides**, larger Qwen3 options and licenses, see [advanced models and memory](ADVANCED-MODELS.md). These improve the available description-interpreting choices; the vector artwork capabilities remain the same.
 
 | Role | Model/component | License | How it is used |
@@ -10,7 +12,8 @@
 | Actual inference weights | Qwen/Qwen2.5-0.5B-Instruct-GGUF, Q4_K_M | Apache-2.0 | Downloaded from the official Qwen Hugging Face repository through Ollama |
 | Detailed description option | Qwen/Qwen2.5-1.5B-Instruct-GGUF, Q4_K_M | Apache-2.0 | Optional larger local designer; selected in Character, never bundled or automatically downloaded |
 | Inference server | Separately installed Ollama | MIT for its main project; bundled components retain individual terms | Local 127.0.0.1:11434/api/generate |
-| Motion/image/background-removal models | None | Not applicable | Original vector drawing and procedural motion |
+| Vector motion models | None | Not applicable | Original vector drawing and procedural motion |
+| Optional artwork / review / cutout | SD 1.5, SDXL, Qwen3-VL, Falconsai ViT, U2NetP | Individual terms | [Separate catalog and flow](CREATIVE-ART.md) |
 
 ## Use the optional designer
 
@@ -45,7 +48,7 @@ Choose traits and click **Apply options (no model needed)** to update the curren
 | Tail | Puff, cat, fox, none |
 | Wings | None, fairy, bat |
 
-The sLLM maps descriptions to these original SD vector shapes. Arbitrary illustrations, clothing, hairstyles, body proportions and reference-image generation are not supported. Model choices can miss requested details, especially with 0.5B; use explicit options for exact traits/colors. Wings and tails move with the existing procedural animation; walking, blinking, jumps, bites and cracks require no motion model or PyTorch.
+The sLLM maps descriptions to these original SD vector shapes. In the vector designer, arbitrary illustrations, clothing, hairstyles, body proportions and reference-image generation are not supported. Use the separate artwork flow for image generation; reference-image input remains unsupported. Model choices can miss requested details, especially with 0.5B; use explicit options for exact traits/colors. Wings and tails move with the existing procedural animation; walking, blinking, jumps, bites and cracks require no motion model or PyTorch.
 
 ## Processing
 

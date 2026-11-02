@@ -17,6 +17,23 @@ def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=Fa
     if facing < 0:
         p.translate(144, 0)
         p.scale(-1, 1)
+    if spec.get("kind") == "artwork":
+        from .artwork import load_artwork
+        image = load_artwork(spec.get("art_id"))
+        if not image.isNull():
+            p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+            if not biting:
+                p.translate(72, 136)
+                p.rotate(math.sin(phase) * 2)
+                p.translate(-72, -136 - abs(math.sin(phase)) * 3)
+            p.drawImage(QRectF(0, 0, 144, 144), image)
+            if biting:
+                x, y = 144 * spec["mouth_x"], 144 * spec["mouth_y"]
+                p.setPen(QPen(QColor("#34304a"), 1.5))
+                p.setBrush(QColor("#fff4e5"))
+                p.drawEllipse(QRectF(x - 4, y - 2, 8, 5))
+            p.restore()
+            return
     outline = QColor("#34304a")
     body = QColor(spec["body"])
     accent = QColor(spec["accent"])
@@ -358,8 +375,14 @@ class Pet(QWidget):
             else:
                 self.tab_marker.show_at(point, label)
             marker = self.tab_marker
+        anchor = QPointF(77, 82)
+        if self.spec.get("kind") == "artwork":
+            from .artwork import load_artwork
+            if not load_artwork(self.spec.get("art_id")).isNull():
+                x = 144 * self.spec["mouth_x"]
+                anchor = QPointF(x if self.direction >= 0 else 144 - x, 144 * self.spec["mouth_y"])
         self.action = {"start": time.monotonic(), "from": QPointF(self.px, self.py),
-                       "to": point - QPointF(77, 82), "point": point, "callback": callback, "hit": False, "label": label,
+                       "to": point - anchor, "point": point, "callback": callback, "hit": False, "label": label,
                        "marker": marker}
         # Even when the pet is hidden, preserve the timing for browser close acknowledgements.
         return True

@@ -60,6 +60,17 @@ def safe_character(raw) -> dict:
         return default_character()
     seed = raw.get("seed", 0)
     seed = seed if isinstance(seed, int) and 0 <= seed < 2**31 else 0
+    if raw.get("kind") == "artwork":
+        import math
+        from .artwork import valid_art_id
+        if not valid_art_id(raw.get("art_id")) or raw.get("art_model") not in ("sd15", "sdxl"):
+            return default_character()
+        coords = [raw.get(key) for key in ("mouth_x", "mouth_y")]
+        if not all(type(value) in (int, float) and math.isfinite(value) and .05 <= value <= .95 for value in coords):
+            return default_character()
+        return {**default_character(), "kind": "artwork", "source": "artwork", "seed": seed,
+                "art_id": raw["art_id"], "art_model": raw["art_model"],
+                "mouth_x": coords[0], "mouth_y": coords[1]}
     result = validate_character({**default_character(), **raw}, seed)
     result["source"] = raw.get("source") if raw.get("source") in ("qwen", "custom") else "random"
     if result["source"] == "qwen" or (result["source"] == "custom" and raw.get("model")):
@@ -167,6 +178,8 @@ class Settings:
                 raise ValueError("Choose a model available for this VRAM guide")
             candidate["allowed_apps"] = expand_app_aliases(candidate["allowed_apps"])
             candidate["character"] = safe_character(candidate["character"])
+            history = candidate.get("character_history", [])
+            candidate["character_history"] = [safe_character(item) for item in history[-20:]] if isinstance(history, list) else []
             prepare_profiles(candidate)
             self.path.parent.mkdir(parents=True, exist_ok=True)
             temporary = self.path.with_suffix(".tmp")

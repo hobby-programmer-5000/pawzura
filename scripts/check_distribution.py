@@ -5,7 +5,7 @@ import sys
 
 PRIVATE_FILES = {"settings.json", "settings.tmp", "pairing.json", "instance.lock",
                  "preferences", "secure preferences", "local state", "cookies", "history"}
-PRIVATE_DIRS = {".git", ".cache", ".venv", ".venv-standard"}
+PRIVATE_DIRS = {".git", ".cache", ".venv", ".venv-standard", "artwork", "art-runtime"}
 
 
 def check_distribution(folder: Path):
@@ -20,6 +20,9 @@ def check_distribution(folder: Path):
         if not path.is_file():
             continue
         if path.name.casefold() in PRIVATE_FILES:
+            problems.append(str(relative))
+            continue
+        if path.suffix.casefold() in (".safetensors", ".gguf", ".onnx"):
             problems.append(str(relative))
             continue
         if path.suffix.casefold() == ".json":

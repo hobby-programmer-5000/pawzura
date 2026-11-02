@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pawzura"
-version = "0.1.10"
+version = "0.2.0"
 description = "An original SD desktop companion with an opt-in focus guardian for Windows"
 requires-python = ">=3.12"
 license = "MIT"
@@ -19,4 +19,7 @@ test-browser = ["playwright>=1.64,<2"]
 pawzura = "pawzura.app:main"
 
 [tool.setuptools.packages.find]
-include = ["pawzura*"]
+include = ["pawzura*", "art_runtime"]
+
+[tool.setuptools.package-data]
+art_runtime = ["*.json", "*.txt", "*.ps1"]

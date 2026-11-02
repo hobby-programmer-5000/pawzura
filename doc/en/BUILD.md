@@ -50,3 +50,5 @@ The opt-in `python tests/native_probe.py` opens and closes only its own test win
 After changing shared extension files, run `python scripts/sync_extensions.py` to refresh Firefox. GitHub Actions checks Python 3.12, 3.14 and 3.15. The separate Build workflow is manual. See [validation](VALIDATION.md) for actual results.
 
 Optional real-browser probe: install the `test-browser` extra (Playwright), then run `python tests/browser_probe.py --chromium C:\path\to\chrome.exe`. Use a Chromium build that supports unpacked extension loading. The probe uses a new temporary profile and test-only bridge; it acknowledges approval and animation events itself, without altering user settings. Playwright is a test tool and is not bundled with the EXE.
+
+The optional [creative artwork runtime](CREATIVE-ART.md) is installed separately by its own setup flow, using Python 3.12.14 even when the main app uses 3.14. The EXE ships only its trusted scripts/catalog; do not add PyTorch to the main requirements or copy prepared runtime/model/artwork folders into a release.

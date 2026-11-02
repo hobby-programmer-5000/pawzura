@@ -1,0 +1,34 @@
+{
+  "sd15": {
+    "repo": "stable-diffusion-v1-5/stable-diffusion-v1-5",
+    "revision": "451f4fe16113bff5a5d2269ed5ad43b0592e9a14",
+    "license": "CreativeML OpenRAIL-M",
+    "license_url": "https://github.com/CompVis/stable-diffusion/blob/69ae4b35e0a0f6ee1af8bb9a5d0016ccb27e36dc/LICENSE",
+    "download": "~2.3 GB"
+  },
+  "sdxl": {
+    "repo": "stabilityai/stable-diffusion-xl-base-1.0",
+    "revision": "462165984030d82259a11f4367a4eed129e94a7b",
+    "license": "CreativeML Open RAIL++-M",
+    "license_url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/blob/462165984030d82259a11f4367a4eed129e94a7b/LICENSE.md",
+    "download": "~7 GB"
+  },
+  "safety": {
+    "repo": "Falconsai/nsfw_image_detection",
+    "revision": "96cb0d0342c7afb80cab76ecc58b265fa44da256",
+    "license": "Apache-2.0"
+  },
+  "cutout": {
+    "repo": "edgetools/u2netp",
+    "revision": "25dee37ab19c5b6ad64ba6578eba63f1ae07720c",
+    "license": "Apache-2.0"
+  },
+  "vision": {
+    "repo": "Qwen/Qwen3-VL-2B-Instruct",
+    "revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+    "license": "Apache-2.0",
+    "ollama_model": "qwen3-vl:2b",
+    "tested_ollama_digest": "0635d9d857d497aeadba3d7d27485746c50554446f9f6ec01ef39788221adbe8",
+    "note": "Ollama tag is a separately packaged quantization and can change; HF revision records lineage, not byte identity."
+  }
+}

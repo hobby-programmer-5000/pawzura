@@ -32,3 +32,7 @@
 - [0.1.0 이전 버전 기록](ko/RELEASE-v0.1.0.md)
 - [제3자 라이선스와 고지](ko/THIRD-PARTY-NOTICES.md)
 - [MIT 라이선스](ko/LICENSE.md)
+
+- [GPU 창작 그림과 모델 라이선스](ko/CREATIVE-ART.md)
+
+- [0.2.0 창작 그림](ko/RELEASE-v0.2.0.md)

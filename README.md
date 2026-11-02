@@ -16,7 +16,7 @@ The app starts in English. Switch with **General → Language → 한국어 → 
 
 **Before you start:** unsigned builds may trigger **Windows SmartScreen**. Verify the official download and checksum before choosing **More info → Run anyway**, if offered. [Launch help](doc/en/GETTING_STARTED.md).
 
-**AI design needs Ollama running, the exact selected model downloaded, and enough free RAM/VRAM.** Character → **Copy command** → paste into PowerShell → wait for `success` → Generate. Default/random characters need no model. [All VRAM tiers and commands](doc/en/ADVANCED-MODELS.md).
+**AI design needs Ollama running and enough free RAM/VRAM.** For Qwen traits: Character → **Copy command** → PowerShell → wait for `success` → Generate. For new GPU artwork: **Create original artwork…** → review the model license → **Prepare runtime and selected models**. [Artwork setup](doc/en/CREATIVE-ART.md) · [Qwen commands](doc/en/ADVANCED-MODELS.md). Default/random characters need no model.
 
 ## Browser control is optional
 
@@ -29,7 +29,7 @@ For websites, choose your browser and click **Install/connect extension…**. On
 - Walks across connected monitors with an original, changeable character.
 - Jumps, bites and shows a fading crack before requesting an unlisted window to close.
 - Protects browser windows; its extension closes blocked tabs and connects with desktop approval, without code entry.
-- Offers light/dark settings and optional Qwen designers with 2/4/6/8 GB VRAM guides; larger models interpret traits, using the same vector artwork. [Setup and limits](doc/en/MODELS.md).
+- Offers light/dark settings, a lightweight Qwen trait designer and optional GPU [original artwork generation](doc/en/CREATIVE-ART.md). Advanced image models require separate downloads and license review.
 
 ## Guides
 
@@ -38,7 +38,7 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | Run the app, change language, use the tray | [Getting started](doc/en/GETTING_STARTED.md) |
 | Connect Chrome/Edge/Firefox, with examples | [Browser setup](doc/en/BROWSERS.md) |
 | Separate work/leisure lists or recover the companion | [Profiles and recovery](doc/en/PROFILES-AND-RECOVERY.md) |
-| Generate characters with Qwen | [Models and characters](doc/en/MODELS.md) |
+| Create GPU artwork and review model licenses | [Creative artwork](doc/en/CREATIVE-ART.md) |
 | Run source or build an EXE | [Setup and builds](doc/en/BUILD.md) |
 | Check test results and current limits | [Validation](doc/en/VALIDATION.md) |
 | See ownership and AI contribution roles | [Contributors](doc/en/CONTRIBUTORS.md) |
