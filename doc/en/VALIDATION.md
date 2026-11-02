@@ -4,6 +4,8 @@
 
 Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
 
+Version 0.1.8 was promoted to a regular GitHub release on this date using the same validated ZIP, SHA-256 `c23a8cf3908e2c10b640f772cc444c57c374e93498288e16b3c54400d86fd47d`. This is a release-status change, not additional device coverage or formal character-rights clearance. The remaining limits below still apply.
+
 ## 0.1.8 subdomain address helper
 
 **92 Python tests and 19 extension tests passed locally.** New checks cover exact console-host rules, explicit host-plus-children expansion, nested subdomains, sibling/parent/lookalike exclusion, retained path/query/scheme/port constraints, IDN normalization, IP/localhost feedback, deduplication, save-before-apply behavior and browser selection reset. An actual test-only HTTP bridge accepted the expanded host/subdomain section rules and rejected a lookalike. Existing saved-rule matching semantics were not widened.

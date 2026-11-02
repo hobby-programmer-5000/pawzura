@@ -1,6 +1,8 @@
 [English](../en/RELEASE-v0.1.8.md) | [한국어](../ko/RELEASE-v0.1.8.md) · [Documentation](../README.md)
 
-# 0.1.8 preview — easier subdomain rules
+# 0.1.8 — easier subdomain rules
+
+Promoted from prerelease to a regular GitHub release on 2026-11-02. The previously validated ZIP and checksum are unchanged; bundled guides retain their original preview headings. Promotion does not expand the [recorded validation coverage](VALIDATION.md).
 
 Browsers now has an Add address input and an explicit Include subdomains checkbox, off by default. Enter console.example.com to permit that host, or enter example.com with the checkbox on to add both example.com and *.example.com. The generated entries remain visible in the list and require Save settings. Existing rules, monitoring switches and private local settings are retained.
 
