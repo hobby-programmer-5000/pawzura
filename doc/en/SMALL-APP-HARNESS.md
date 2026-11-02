@@ -25,6 +25,9 @@ Deliverables: [source/UI/artifact paths]
 Scope / non-goals: [included and excluded work]
 Acceptance: [criterion A; criterion B; relevant error/recovery behavior]
 External actions authorized: [scope from the user; none if absent]
+Starting state: [base commit and existing dirty paths; do not copy private diffs]
+Expected edit paths / invariants: [initial scope, protected behavior and check mapping]
+Isolation / recovery: [current checkout or justified worktree; agent-owned changes recoverable without erasing user work]
 
 CHECKS.md
 Criterion | Artifact/version/environment | Procedure | Result | Evidence
@@ -40,6 +43,8 @@ Next action: [one concrete continuation step]
 ```
 
 Resume prompt: “Read AGENTS.md and the current BRIEF.md, STATE.md and CHECKS.md under .cache/agent-work/. Compare them with my latest request and the current files. Preserve valid progress, recheck changed behavior, complete the remaining authorized work and update the notes.” Saving a checkpoint does not launch that prompt automatically.
+
+For longer tasks, keep per-snapshot execution receipts alongside the mutable checkpoint. [Evidence, retry and recovery procedure](HARNESS-RECEIPTS.md) includes an optional JSON format and examples of insufficient evidence. Check the current files after a crash; only saved state is recoverable, and unfinished work is not guaranteed to survive.
 
 ## What the sources contribute
 
@@ -66,6 +71,24 @@ The user supplied the text of [Beam's long-task setup](https://x.com/beamnxw/sta
 | Completion and recovery | Openable/runnable output plus evidence and a next action; resume against changed inputs |
 
 Claude-specific `CLAUDE.md`, `/goal`, `/rewind`, `$ARGUMENTS`, permission JSON and agent frontmatter are not installed as Codex features. No subagent, custom skill, automatic continuation, hard time/spending cap or token-savings claim is supplied. Those require supported tools/configuration and, where relevant, measured runs. This is our original MIT project guidance, informed by the sources above; no upstream runtime code is vendored.
+
+## Additional manifest: what was adopted and corrected
+
+The user also supplied “The Harness Is the Machine: The Claude Opus 5.5 Engineering Manifest.” No original URL or reproducible experiment was supplied with that text. We use its engineering themes as a design input, not authority to execute the snippets or proof of its model/completion-rate claims.
+
+| Proposed responsibility | Concrete rule here |
+| --- | --- |
+| Contract | Base revision, initial edit scope, invariant-to-check mapping and a recorded reason for scope expansion |
+| Context | Read relevant symbols/callers/tests first, then widen; no arbitrary universal file/line cap |
+| Tools | Consider worktree isolation when useful; actual host sandbox controls filesystem/network access |
+| State | Preserve receipts for checked snapshots and point STATE.md at the latest applicable result |
+| Sensors | Inspect actual commands, exit statuses, nonempty relevant coverage and tested revision; keep stale/failed evidence distinct |
+| Policy | Preserve existing authorization boundaries, private data and user edits; no automatic destructive rollback |
+| Traces | Optional local machine-readable receipt; model, token/cost data and reviewer identity must be observed or marked unavailable |
+
+The text's success-rate percentages, universal model split and claims of agents that never fail or lossless resumption were not verified. They are not product promises. A Git worktree has separate checkout state but shares repository resources; it is not a security sandbox. [Git worktree reference](https://git-scm.com/docs/git-worktree). The example's blanket restore on a failed check could discard working changes, so our recovery rule scopes rollback to safely separable authorized edits. [Git restore reference](https://git-scm.com/docs/git-restore).
+
+No automatic hooks, new typechecker, worktree, branch protection, external auditor or budget limiter is installed by this documentation change. A check blocks a merge/action only if the actual host/CI/repository policy enforces that boundary; instructions alone do not create that gate. Existing project checks remain the starting point.
 
 ## Review and improve the rules
 

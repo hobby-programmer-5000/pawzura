@@ -15,6 +15,7 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [Contributors and roles](en/CONTRIBUTORS.md)
 - [Small-app agent workflow and source analysis](en/SMALL-APP-HARNESS.md)
 - [Reusable AGENTS.md template](en/SMALL-APP-AGENTS.md)
+- [Harness evidence, receipts and recovery](en/HARNESS-RECEIPTS.md)
 - [Validation and known limits](en/VALIDATION.md)
 - [Original product requirements](en/PRODUCT-BRIEF.md)
 - [0.1.2 release history](en/RELEASE-v0.1.2.md)
