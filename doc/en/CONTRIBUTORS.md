@@ -23,6 +23,10 @@ ChatGPT is an AI tool used through Codex, not a human co-maintainer. Attribution
 
 ## GitHub contributor display
 
-GitHub derives its sidebar from commit authors connected to GitHub accounts; Markdown cannot directly edit that panel. AI implementation commits use display name **ChatGPT (Codex)** and the verified public no-reply identity of **chatgpt-codex-connector[bot]**. This records AI attribution without logging into an OpenAI account. GitHub can show the bot's account name/avatar rather than a user named ChatGPT. The initial contributors API returned both the user and bot. Aggregation can be delayed.
+The README explicitly credits both roles and links AI assistance to the actual [Codex Connector GitHub App](https://github.com/apps/chatgpt-codex-connector). ChatGPT is not a separate human GitHub account. A user-profile/hovercard URL for an App bot can fail; use the App link instead.
 
-The Git history and this document record their distinct roles. [GitHub author attribution documentation](https://docs.github.com/en/pull-requests/how-tos/commit-changes/creating-a-commit-with-multiple-authors).
+Checked 2026-11-02: the repository's contributors REST endpoint returned **hobby-programmer-5000** (`User`) and **chatgpt-codex-connector[bot]** (`Bot`). An inspected AI implementation commit was connected to that bot account through its public no-reply author identity. This verifies recorded attribution, not the appearance of every GitHub UI.
+
+The maintainer's screenshot nevertheless showed only the human account in the sidebar. Our earlier suggestion that this was merely delayed aggregation was not established. GitHub controls its sidebar and hovercards; project Markdown cannot insert a second entry or guarantee that an App bot is displayed there. The requested two-entry native sidebar remains unresolved. We do not change history, invent a human identity or claim OpenAI account ownership to influence that UI.
+
+The README and Git history provide visible, truthful credit. [GitHub contributor troubleshooting](https://docs.github.com/en/repositories/viewing-activity-and-data-for-your-repository/viewing-a-projects-contributors), [contributors REST endpoint](https://api.github.com/repos/hobby-programmer-5000/pawzura/contributors) (private repository access required).

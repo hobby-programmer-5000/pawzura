@@ -41,9 +41,14 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | 기획자·AI 기여 역할 | [기여자](doc/ko/CONTRIBUTORS.md) |
 | 라이브러리·모델 라이선스 | [제3자 고지](doc/ko/THIRD-PARTY-NOTICES.md) |
 | 캐릭터 권리와 제작 이력 | [캐릭터 권리](doc/ko/CHARACTER-RIGHTS.md) |
+| 작은 앱 제작 규칙 재사용 | [에이전트 절차와 템플릿](doc/ko/SMALL-APP-HARNESS.md) |
 
 **브라우저 동작:** 탐색 후 탭을 닫고, 탭 애니메이션은 작업표시줄 근처의 별도 표식에서 보여줍니다.
 
 **검증 현황:** 제작자가 Windows 11에서 직접 사용해 확인했다고 보고했습니다. 수동 확인과 자동 검사의 상세 범위는 [검증 기록과 남은 확인 항목](doc/ko/VALIDATION.md)을 참고하세요.
 
-자체 코드 [MIT](LICENSE). 기획: [hobby-programmer-5000](https://github.com/hobby-programmer-5000). 구현 지원: ChatGPT via Codex. [전체 문서](doc/README.ko.md).
+| 제품 기획·관리 | AI 구현 지원 |
+| --- | --- |
+| [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
+
+자체 코드 [MIT](LICENSE). [역할과 GitHub 표시 제한](doc/ko/CONTRIBUTORS.md) · [전체 문서](doc/README.ko.md).

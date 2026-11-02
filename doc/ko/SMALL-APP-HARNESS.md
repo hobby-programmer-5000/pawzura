@@ -1,0 +1,74 @@
+[English](../en/SMALL-APP-HARNESS.md) | [한국어](../ko/SMALL-APP-HARNESS.md) · [문서 목록](../README.ko.md)
+
+# 작은 앱 제작을 위한 재사용 절차
+
+결과물은 저장소 루트의 Pawzura용 `AGENTS.md`와 다른 프로젝트에 복사할 [작은 앱 규칙](SMALL-APP-AGENTS.md)입니다. 영어가 기본이며 한글판은 같은 내용을 설명합니다. 이 파일을 추가해도 전역 Codex 설정·모델·권한·확장·계정은 바뀌지 않습니다.
+
+## 다른 앱에서 시작하기
+
+1. Codex에서 새 프로젝트 폴더를 엽니다. [템플릿](SMALL-APP-AGENTS.md)의 코드 블록만 루트 `AGENTS.md`에 복사하고 기존 지침은 병합합니다.
+2. 목적·지원 환경·코드 진입점·실제 실행/검증 명령을 채웁니다. 상세 참고 자료는 관련 작업 때 필요한 만큼만 읽습니다.
+3. 큰 작업은 Git에서 제외한 `.cache/agent-work/BRIEF.md`에 작업 정의를 쓰고 그 결과를 구현하도록 요청합니다. `.cache/`가 제외되지 않은 프로젝트는 먼저 제외 설정을 추가합니다. 개인 입력은 별도로 둡니다.
+4. 의미 있는 단계가 끝나면 앱/파일과 `CHECKS.md`를 확인하고 필요할 때 `STATE.md`에서 재개합니다. 간단한 한 파일 수정에는 별도 작업 대장이 필요하지 않습니다.
+5. 실행 권한은 호스트가 지원하는 설정으로 관리합니다. 규칙 파일은 지침이며 별도 보안·실행 엔진이 아닙니다. 파일 설치·수정 뒤 자동 지침 탐색을 확인하려면 새 Codex 세션을 시작합니다. [공식 탐색 규칙](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+
+Pawzura 루트 규칙에는 실제 모듈·검사·필수 동작이 들어 있습니다. Windows/Qt 가정이나 실행 파일 이름을 다른 앱에 그대로 복사하지 마세요. `AGENTS.ko.md`는 참고 번역이며 기본 탐색에서 이 이름을 자동 로드하지 않습니다. 링크된 템플릿도 코드 블록을 `AGENTS.md`로 설치하기 전에는 일반 문서입니다.
+
+## 작업 정의와 확인 가능한 증거
+
+다음은 짧은 메모의 권장 형식이며 강제 스키마나 Codex 내장 명령이 아닙니다. 사용자 프로필·비밀 값·개인 URL·로컬 진단 목록은 기록하지 않습니다.
+
+```text
+BRIEF.md
+Goal: [관찰 가능한 결과 하나]
+Deliverables: [소스/UI/파일 경로]
+Scope / non-goals: [포함·제외 범위]
+Acceptance: [조건 A·조건 B·관련 오류/복구 동작]
+External actions authorized: [사용자 허가 범위; 없으면 없음]
+
+CHECKS.md
+조건 | 파일/버전/환경 | 절차 | 결과 | 증거
+[조건] | [시험 대상] | [실제 명령/수동 단계] | [PASS/FAIL/NOT RUN/USER REPORTED] | [공유 가능한 증거 위치]
+
+STATE.md
+Task / inputs: [현재 요청과 변경 입력]
+Outputs: [현재 결과물과 위치]
+Decisions: [확정한 선택과 이유]
+Checks: [성공·실패·재검사할 항목]
+Open issues: [부족한 증거·입력]
+Next action: [다음 행동 하나]
+```
+
+재개 요청 예시: “AGENTS.md와 .cache/agent-work/의 현재 BRIEF.md, STATE.md, CHECKS.md를 읽어. 최신 요청과 현재 파일을 대조하고 유효한 진행은 보존해. 변경된 동작을 재검사하고 남은 허가된 작업을 완료한 뒤 기록을 갱신해.” 기록을 저장해도 이 요청이 자동 실행되지는 않습니다.
+
+## 참고 자료에서 반영한 내용
+
+OpenAI 저장소는 범용 프롬프트 한 장이 아니라 실행 가능한 에이전트 하네스를 담고 있습니다. 2026-11-02에 커밋 [`a09812981de703f18f38015cd5d500ab373f616c`](https://github.com/openai/codex/tree/a09812981de703f18f38015cd5d500ab373f616c)의 다음 경로를 확인했습니다. 전체 저장소 감사가 아닌 관련 소스 검토입니다.
+
+| 확인한 층 | OpenAI 소스 | 여기서 반영한 규칙 |
+| --- | --- | --- |
+| 모델 문맥과 범위별 프로젝트 지침 | [기본 지침](https://github.com/openai/codex/blob/a09812981de703f18f38015cd5d500ab373f616c/codex-rs/protocol/src/prompts/base_instructions/default.md), [지침 문맥 조각](https://github.com/openai/codex/blob/a09812981de703f18f38015cd5d500ab373f616c/codex-rs/core/src/context/user_instructions.rs) | 작은 루트 규칙과 별도 작업 사실, 참고 자료보다 최신 요청 우선 |
+| 실제 승인·샌드박스·재시도 조정 | [도구 조정 코드](https://github.com/openai/codex/blob/a09812981de703f18f38015cd5d500ab373f616c/codex-rs/core/src/tools/orchestrator.rs), [코어 환경 안내](https://github.com/openai/codex/blob/a09812981de703f18f38015cd5d500ab373f616c/codex-rs/core/README.md) | 호스트 권한을 따르며 Markdown 거절 문구가 임의 셸 코드를 제한한다고 주장하지 않음 |
+| 도구 결과의 통합 검사 | [도구 하네스 테스트](https://github.com/openai/codex/blob/a09812981de703f18f38015cd5d500ab373f616c/codex-rs/core/tests/suite/tool_harness.rs) | 도구 호출 성공만으로 끝내지 않고 대상 식별과 실제 결과 확인 |
+
+OpenAI는 실행 하네스가 문맥·도구·설정된 경계를 관리하고 앱 규칙은 그 위에 놓인다고 설명합니다. 이번 결과물은 이미 제공되는 Codex를 이용하며 Pawzura 제품에 SDK·app-server를 내장하는 작업은 아닙니다. [공식 하네스 설명](https://developers.openai.com/blog/codex-as-a-platform).
+
+[Beam의 장기 작업 글](https://x.com/beamnxw/status/2107522996046905797)은 X의 403과 데스크톱 도구의 URL 식별 실패 뒤 사용자가 본문을 제공해 읽었습니다. Claude Code에 관한 참고 자료로 취급하고 명령 예제를 실행하지 않았습니다. Claude 전용 모델·명령 설명은 별도로 검증하지 않았으며 원문·설정 전체를 재게시하지 않습니다.
+
+| 글의 층 | 작은 앱 제작에 반영한 방식 |
+| --- | --- |
+| 지속적인 작업 공간 사실 | 진입점·검증 명령을 담은 짧은 AGENTS.md |
+| 반복 절차 | 작업 정의 → 작은 구현 → 결과 확인 → 검사 → 상태 저장 |
+| 자료 접근 | 정확한 1차 링크·커밋과 작업에 필요한 연결 도구만 사용 |
+| 실행 경계의 작업 규칙 | 실제 호스트 샌드박스·연결 권한 존중, 결과 불명 쓰기 재시도 주의 |
+| 증거를 반환하는 검토 | 조건·대상·절차·결과·증거 표, 독립 검토자는 요청 시만 사용 |
+| 추론 수준 | 현재 모델·추론 설정 유지, 설정 변경 전 실제 결과를 비교 |
+| 완료와 복구 | 열기/실행 가능한 산출물·증거·다음 행동, 입력 변화와 대조해 재개 |
+
+Claude 전용 `CLAUDE.md`, `/goal`, `/rewind`, `$ARGUMENTS`, 권한 JSON·에이전트 frontmatter를 Codex 기능으로 설치하지 않습니다. 서브에이전트·커스텀 스킬·자동 이어 실행·시간/비용 강제 제한·토큰 절감 보장도 추가하지 않습니다. 이들은 지원되는 도구·설정과 필요한 경우 실측이 있어야 합니다. 이번 규칙은 참고 자료를 바탕으로 새로 작성한 MIT 프로젝트 지침이며 upstream 실행 코드를 복사하지 않았습니다.
+
+## 규칙 검토와 개선
+
+세 상황을 비교합니다. 작은 문구 수정은 관련 문서 검사만, 동작 오류는 회귀 검사와 관찰 결과, 재개 작업은 유효한 기존 진행 보존과 변경에 영향받은 증거 무효화가 나와야 합니다. 반복 실패에서 실제 빈틈을 찾았을 때 규칙 하나를 고칩니다. 품질·비용·사용자 검토 시간의 실측을 절감 추측과 구분합니다.
+
+초기 규칙 묶음은 영문·한글 대응, 링크와 저장소 명령을 확인했습니다. 자율 앱 제작 실행 엔진의 벤치마크를 수행한 것은 아니며 Markdown만으로 준수를 보장할 수 없습니다. 현재 작업의 로컬 진행 기록은 저장소·배포물에 포함하지 않습니다.

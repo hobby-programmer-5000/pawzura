@@ -26,6 +26,10 @@ ChatGPT는 사람인 공동 관리자가 아닌 AI 도구이며 이 작업은 Co
 
 ## GitHub 오른쪽 Contributors 표시
 
-GitHub는 기본 브랜치의 커밋 저자 및 GitHub 계정에 연결된 이메일을 바탕으로 자동 집계합니다. README 표나 이 파일로 오른쪽 패널을 직접 편집할 수 없습니다. AI 작업의 기여 표시에는 확인된 Codex connector bot 계정 `chatgpt-codex-connector[bot]`의 공개 no-reply 주소를 사용하며, 표시 이름은 `ChatGPT (Codex)`로 기록합니다. 이 주소는 AI 기여의 귀속을 위한 것이며 bot 인증 키를 이용하거나 OpenAI 계정에 로그인하지 않습니다. 제품 화면의 실제 계정 표시는 `ChatGPT`라는 사용자 계정 대신 해당 bot 이름/아바타가 될 수 있습니다.
+README에 두 역할을 직접 표시하고 AI 지원은 실제 [Codex Connector GitHub App](https://github.com/apps/chatgpt-codex-connector)으로 연결했습니다. ChatGPT는 별도의 사람 GitHub 계정이 아닙니다. App bot에 일반 사용자 프로필·hovercard 주소를 적용하면 실패할 수 있으므로 App 링크를 사용합니다.
 
-GitHub의 bot 표시 정책, 비동기 재집계, 저장소 설정에 따라 패널 갱신이 늦거나 자동 표시가 제한될 수 있습니다. 기여 기록의 기준은 Git 이력과 이 문서입니다. 관련 문서: https://docs.github.com/en/pull-requests/how-tos/commit-changes/creating-a-commit-with-multiple-authors
+2026-11-02 확인한 저장소 contributors REST 응답에는 **hobby-programmer-5000**(`User`)와 **chatgpt-codex-connector[bot]**(`Bot`)가 모두 있었습니다. 확인한 AI 구현 커밋도 공개 no-reply 저자 신원을 통해 해당 bot 계정에 연결돼 있었습니다. 이는 기여 기록의 확인이며 모든 GitHub 화면에서 같은 방식으로 표시된다는 뜻은 아닙니다.
+
+제작자의 스크린샷에서는 오른쪽 패널에 사람 계정만 보였습니다. 앞서 단순 집계 지연처럼 설명한 것은 입증되지 않았습니다. 사이드바·hovercard는 GitHub가 관리하므로 프로젝트 Markdown으로 두 번째 항목을 넣거나 App bot 표시를 보장할 수 없습니다. 요청한 기본 사이드바의 두 항목 표시는 아직 해결되지 않았습니다. 이를 위해 이력을 재작성하거나 사람 계정을 꾸미거나 OpenAI 계정 소유권을 주장하지 않습니다.
+
+README와 Git 이력으로 두 역할을 사실대로 표시합니다. [GitHub 기여자 표시 안내](https://docs.github.com/en/repositories/viewing-activity-and-data-for-your-repository/viewing-a-projects-contributors), [contributors REST 경로](https://api.github.com/repos/hobby-programmer-5000/pawzura/contributors)(비공개 저장소 권한 필요).

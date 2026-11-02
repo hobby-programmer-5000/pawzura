@@ -13,6 +13,8 @@
 - [0.1.7 캐릭터 커스텀 프리뷰](ko/RELEASE-v0.1.7.md)
 - [캐릭터 권리와 제작 이력](ko/CHARACTER-RIGHTS.md)
 - [기여자와 역할](ko/CONTRIBUTORS.md)
+- [작은 앱 에이전트 절차와 소스 분석](ko/SMALL-APP-HARNESS.md)
+- [재사용 AGENTS.md 템플릿](ko/SMALL-APP-AGENTS.md)
 - [검증 범위와 알려진 제한](ko/VALIDATION.md)
 - [원래 제품 요구사항](ko/PRODUCT-BRIEF.md)
 - [0.1.2 이전 버전 기록](ko/RELEASE-v0.1.2.md)

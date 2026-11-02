@@ -13,6 +13,8 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [0.1.7 custom character preview](en/RELEASE-v0.1.7.md)
 - [Character rights and provenance](en/CHARACTER-RIGHTS.md)
 - [Contributors and roles](en/CONTRIBUTORS.md)
+- [Small-app agent workflow and source analysis](en/SMALL-APP-HARNESS.md)
+- [Reusable AGENTS.md template](en/SMALL-APP-AGENTS.md)
 - [Validation and known limits](en/VALIDATION.md)
 - [Original product requirements](en/PRODUCT-BRIEF.md)
 - [0.1.2 release history](en/RELEASE-v0.1.2.md)

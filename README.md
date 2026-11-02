@@ -41,9 +41,14 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | See ownership and AI contribution roles | [Contributors](doc/en/CONTRIBUTORS.md) |
 | Review library/model licenses | [Third-party notices](doc/en/THIRD-PARTY-NOTICES.md) |
 | Understand character rights and provenance | [Character rights](doc/en/CHARACTER-RIGHTS.md) |
+| Reuse the small-app development rules | [Agent workflow and template](doc/en/SMALL-APP-HARNESS.md) |
 
 **Browser behavior:** monitoring closes tabs after navigation; tab animations use a separate marker near the taskbar.
 
 **Validation:** the maintainer reports a manual usage check on Windows 11. See [test results and remaining coverage](doc/en/VALIDATION.md) for the scope of that report and automated checks.
 
-App code: [MIT](LICENSE). Product direction: [hobby-programmer-5000](https://github.com/hobby-programmer-5000). Implementation assistance: ChatGPT via Codex. [All documentation](doc/README.md).
+| Product direction and maintenance | AI implementation assistance |
+| --- | --- |
+| [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
+
+App code: [MIT](LICENSE). [Roles and GitHub display limits](doc/en/CONTRIBUTORS.md) · [All documentation](doc/README.md).
