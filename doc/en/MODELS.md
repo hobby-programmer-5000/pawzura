@@ -2,6 +2,8 @@
 
 # Models and character generation
 
+**Ollama must be running and the selected model downloaded. Keep enough free system RAM/VRAM for weights plus inference overhead.** Random/manual characters work without it. For **Advanced → 2/4/6/8 GB VRAM guides**, larger Qwen3 options and licenses, see [advanced models and memory](ADVANCED-MODELS.md). These improve the available description-interpreting choices; the vector artwork capabilities remain the same.
+
 | Role | Model/component | License | How it is used |
 | --- | --- | --- | --- |
 | Original text sLLM | Qwen/Qwen2.5-0.5B-Instruct | Apache-2.0 | Model lineage; Transformers is not installed by the app |

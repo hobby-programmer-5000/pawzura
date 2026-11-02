@@ -2,9 +2,17 @@
 
 # Validation and known limits
 
-Date: 2026-11-02, Asia/Seoul. Intended support and actual checks are separate.
+Date: 2026-11-03, Asia/Seoul. Intended support and actual checks are separate.
 
-Version 0.1.8 was promoted to a regular GitHub release on this date using the same validated ZIP, SHA-256 `c23a8cf3908e2c10b640f772cc444c57c374e93498288e16b3c54400d86fd47d`. This is a release-status change, not additional device coverage or formal character-rights clearance. The remaining limits below still apply.
+## 0.1.9 themes and advanced model guides
+
+**99 Python tests and 19 extension tests passed locally.** New checks cover theme preview versus saved/reopened state, legacy/invalid preference migration, opt-in VRAM tiers, model selection persistence and removal after reducing a tier, separation from allowlist profiles, exact model identifiers/schema/non-thinking/unload requests, and actionable failure codes without backend-data echo. Initial restricted-environment runs hit temporary-directory ACL and Node child-process EPERM errors; normal-permission synthetic tests passed. An initial theme test compared differently ordered equivalent default lists; its baseline now uses the existing save normalization.
+
+English/Korean light and dark settings are rendered at 820×640 and 920×720 using synthetic settings. The offscreen renderer first lacked Windows fonts; those captures were invalid and were replaced with font-registered renders. Source model cards, licenses and exact file metadata were checked; original license texts and the public model catalog are included. New Qwen3 weights were not downloaded for device inference: 2/4/6/8 GB tiers are guides, not measured GPU fit, speed or quality claims. Existing 0.5B/1.5B inference evidence and prior device/browser limitations remain unchanged.
+
+The frozen 0.1.9 EXE passed smoke rendering and normal exit; its embedded version and ten app modules matched compiled final source. The first comparison used marshal bytes, which also encode reference/interning layout; code-object comparison confirmed the unmodified bridge matched and was used for all ten modules. No actual user guardian, tabs or settings were used for these checks.
+
+Version 0.1.8 was promoted to a regular GitHub release on 2026-11-02 using the same validated ZIP, SHA-256 `c23a8cf3908e2c10b640f772cc444c57c374e93498288e16b3c54400d86fd47d`. This is a release-status change, not additional device coverage or formal character-rights clearance. The remaining limits below still apply.
 
 ## 0.1.8 subdomain address helper
 

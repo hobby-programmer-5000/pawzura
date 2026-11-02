@@ -647,5 +647,13 @@
   {
     "path": "licenses/upstream/Qwen-1.5B-LICENSE.txt",
     "source": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/LICENSE"
+  },
+  {
+    "path": "licenses/upstream/Qwen3-4B-LICENSE.txt",
+    "source": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/raw/bc640142c66e1fdd12af0bd68f40445458f3869b/LICENSE"
+  },
+  {
+    "path": "licenses/upstream/Qwen3-8B-LICENSE.txt",
+    "source": "https://huggingface.co/Qwen/Qwen3-8B-GGUF/raw/7c41481f57cb95916b40956ab2f0b139b296d974/LICENSE"
   }
 ]

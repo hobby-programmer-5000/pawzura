@@ -2,12 +2,28 @@
 import json
 import random
 import re
+from urllib.error import HTTPError, URLError
 from urllib.request import ProxyHandler, build_opener, Request
 
 MODEL = "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M"
 MODEL_URL = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF"
 DETAIL_MODEL = "hf.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M"
 MODELS = {MODEL: MODEL_URL, DETAIL_MODEL: "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF"}
+GPU_MODELS = {
+    "hf.co/Qwen/Qwen3-4B-GGUF:Q4_K_M": (4, "Qwen3 4B · Q4_K_M", "2.50 GB"),
+    "hf.co/Qwen/Qwen3-4B-GGUF:Q8_0": (6, "Qwen3 4B · Q8_0", "4.28 GB"),
+    "hf.co/Qwen/Qwen3-8B-GGUF:Q4_K_M": (8, "Qwen3 8B · Q4_K_M", "5.03 GB"),
+}
+MODELS.update({model: "https://huggingface.co/" + model[6:].split(":")[0] for model in GPU_MODELS})
+
+
+def models_for_vram(tier=0, advanced=False):
+    """Manual guidance only; GPU compatibility/free memory are managed by Ollama."""
+    return (DETAIL_MODEL, MODEL, *(model for model, info in GPU_MODELS.items() if advanced and info[0] <= tier))
+
+
+class GenerationError(RuntimeError):
+    """A safe, localizable failure code without echoing backend data or prompts."""
 EARS = ("rabbit", "cat", "bear", "fox", "none")
 ACCESSORIES = ("scarf", "star", "leaf", "bow", "bell", "none")
 FEATURES = {"ears": EARS, "accessory": ACCESSORIES, "eyes": ("round", "sleepy", "happy"),
@@ -92,11 +108,24 @@ def generate_character(description: str = "", overrides: dict | None = None, mod
                          "Output JSON only, never code. Explicit choices take priority.",
                "options": {"seed": seed, "temperature": 0.2 if description.strip() else 1.1,
                            "num_predict": 384, "num_ctx": 4096}}
+    if model in GPU_MODELS:
+        # These Qwen3 variants support non-thinking mode for bounded JSON design.
+        payload.update(think=False, keep_alive=0)
+        payload["prompt"] += "\n/no_think"
     request = Request("http://127.0.0.1:11434/api/generate", json.dumps(payload).encode(),
                       {"Content-Type": "application/json"})
     # Explicit loopback only: do not send prompts through environment HTTP proxies.
-    with build_opener(ProxyHandler({})).open(request, timeout=180) as response:
-        output = json.load(response)
+    try:
+        with build_opener(ProxyHandler({})).open(request, timeout=180) as response:
+            output = json.load(response)
+    except HTTPError as error:
+        with error:
+            if error.code == 404:
+                raise GenerationError("model_missing") from None
+            detail = error.read(8192).lower()
+            raise GenerationError("model_memory_error" if b"memory" in detail or b"out of resources" in detail else "model_service_error") from None
+    except (URLError, TimeoutError, ConnectionError):
+        raise GenerationError("ollama_unavailable") from None
     raw = json.loads(output["response"])
     if not isinstance(raw, dict) or not all(key in raw for key in schema["required"]):
         raise ValueError("Model returned incomplete character JSON; try again")

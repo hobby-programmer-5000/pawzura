@@ -14,6 +14,10 @@ Windows 10 (1809+) / Windows 11 · x64 · Python 3.12–3.15 for source use · M
 
 The app starts in English. Switch with **General → Language → 한국어 → Save settings**. Source users can double-click **run.bat** instead of building.
 
+**Before you start:** unsigned builds may trigger **Windows SmartScreen**. Verify the official download and checksum before choosing **More info → Run anyway**, if offered. [Launch help](doc/en/GETTING_STARTED.md).
+
+**AI character design needs Ollama running, the selected model downloaded, and sufficient free RAM/VRAM.** Default/random characters need no model. [Memory guide and setup](doc/en/MODELS.md).
+
 ## Browser control is optional
 
 **Website control requires the Pawzura browser extension.** For applications only, leave **Browsers → Website control OFF**; no extension is needed.
@@ -25,7 +29,7 @@ For websites, choose your browser and click **Install/connect extension…**. On
 - Walks across connected monitors with an original, changeable character.
 - Jumps, bites and shows a fading crack before requesting an unlisted window to close.
 - Protects browser windows; its extension closes blocked tabs and connects with desktop approval, without code entry.
-- Designs characters from descriptions with local Qwen; customize colors, ears, expressions, markings, accessories, tails and wings. [Examples and options](doc/en/MODELS.md).
+- Offers light/dark settings and optional Qwen designers with 2/4/6/8 GB VRAM guides; larger models interpret traits, using the same vector artwork. [Setup and limits](doc/en/MODELS.md).
 
 ## Guides
 
@@ -34,14 +38,11 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | Run the app, change language, use the tray | [Getting started](doc/en/GETTING_STARTED.md) |
 | Connect Chrome/Edge/Firefox, with examples | [Browser setup](doc/en/BROWSERS.md) |
 | Separate work/leisure lists or recover the companion | [Profiles and recovery](doc/en/PROFILES-AND-RECOVERY.md) |
-| Stop overlay targeting or investigate flashing | [Overlays and preview](doc/en/OVERLAYS-AND-PREVIEW.md) |
 | Generate characters with Qwen | [Models and characters](doc/en/MODELS.md) |
 | Run source or build an EXE | [Setup and builds](doc/en/BUILD.md) |
 | Check test results and current limits | [Validation](doc/en/VALIDATION.md) |
 | See ownership and AI contribution roles | [Contributors](doc/en/CONTRIBUTORS.md) |
 | Review library/model licenses | [Third-party notices](doc/en/THIRD-PARTY-NOTICES.md) |
-| Understand character rights and provenance | [Character rights](doc/en/CHARACTER-RIGHTS.md) |
-| Reuse the small-app development rules | [Agent workflow and template](doc/en/SMALL-APP-HARNESS.md) |
 
 **Browser behavior:** monitoring closes tabs after navigation; tab animations use a separate marker near the taskbar.
 

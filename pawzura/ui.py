@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from pathlib import Path
 import sys
 from PySide6.QtCore import QThread, Signal, Qt, QTimer
-from PySide6.QtGui import QColor, QDesktopServices
+from PySide6.QtGui import QColor, QDesktopServices, QPalette
 from PySide6.QtCore import QUrl
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout,
@@ -13,7 +14,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit, QTabWidget, QVBoxLayout, QWidget, QInputDialog, QGridLayout, QScrollArea, QFrame, QColorDialog,
 )
 from . import __version__, windows
-from .characters import COLORS, DETAIL_MODEL, FEATURES, MAX_PROMPT, MODEL, custom_options, generate_character, random_character
+from .characters import COLORS, DETAIL_MODEL, FEATURES, GPU_MODELS, MAX_PROMPT, MODEL, custom_options, generate_character, models_for_vram, random_character
 from .config import BROWSERS, default_character, profile_lists, safe_character
 from .pet import CharacterPreview
 from .browser_setup import BrowserSetupDialog
@@ -25,6 +26,18 @@ TEXT = {
         "general": "일반", "apps": "프로그램", "web": "브라우저", "character": "캐릭터", "about": "정보",
         "guard": "집중 지킴이 켜기", "preview": "미리보기 모드 · 애니메이션만 표시하고 닫지 않기",
         "visible": "바탕화면에 캐릭터 표시", "startup": "Windows 로그인 시 자동 실행", "language": "언어",
+        "theme": "화면 테마", "theme_dark": "다크", "theme_light": "라이트 (화이트)",
+        "theme_help": "선택하면 바로 미리 봅니다. 다음 실행에도 유지하려면 설정 저장을 누르세요.",
+        "advanced": "고급", "advanced_models": "고급 캐릭터 모델 사용",
+        "vram_tier": "GPU VRAM 용량 (직접 선택)", "vram_unknown": "CPU / 모름",
+        "advanced_help": "2·4·6·8 GB는 모델 선택을 돕는 기준이며 GPU 감지나 실행 보장이 아닙니다. 실제 남은 VRAM과 시스템 RAM이 충분해야 합니다. GPU 지원과 CPU 분산은 Ollama가 결정합니다.",
+        "advanced_scope": "큰 모델은 설명 해석을 개선할 수 있지만, 캐릭터는 같은 도형으로 그립니다. 새로운 그림·의상 생성 모델은 아닙니다. 고급 설정은 허용 목록 프로필과 별도로 저장됩니다.",
+        "model_memory": "모델 파일 약 {size}. 실행에는 추가 메모리가 필요합니다. Ollama를 실행하고 아래 모델을 먼저 내려받으세요.",
+        "model_small_memory": "0.5B 약 0.5 GB / 1.5B 약 1.12 GB의 모델 파일과 추가 실행 메모리가 필요합니다. Ollama를 실행해 두세요.",
+        "model_missing": "선택한 모델이 없거나 Ollama가 지원하지 않습니다. 표시된 ollama pull 명령을 실행하고 Ollama를 업데이트한 뒤 다시 시도하세요.",
+        "model_memory_error": "모델을 실행할 메모리가 부족합니다. 더 작은 모델을 선택하거나 다른 모델·GPU 작업을 종료하고 다시 시도하세요. 기존 캐릭터는 유지됩니다.",
+        "model_service_error": "Ollama가 모델 실행에 실패했습니다. Ollama 상태·지원 버전·가용 메모리를 확인하고 다시 시도하세요.",
+        "ollama_unavailable": "Ollama에 연결할 수 없거나 생성 시간이 초과되었습니다. Ollama를 실행하고, 느리면 더 작은 모델로 다시 시도하세요.",
         "save": "설정 저장", "close": "트레이로 돌아가기", "saved": "설정을 저장했습니다.",
         "intro": "먼저 미리보기로 허용 목록을 확인하세요.\n프로그램을 제어하며, 사이트 제어도 켜고 확장을 연결한 경우에만 미허용 탭을 닫습니다.",
         "apps_help": "허용할 실행 파일 이름을 한 줄에 하나씩 입력하세요. 경로를 붙여넣으면 파일명만 사용합니다.\nWindows·그래픽/오버레이 보조 창과 이 앱은 항상 보호합니다. 같은 이름의 실행 파일은 모두 허용됩니다.",
@@ -79,6 +92,18 @@ TEXT = {
         "general": "General", "apps": "Applications", "web": "Browsers", "character": "Character", "about": "About",
         "guard": "Enable focus guardian", "preview": "Preview mode · animate without closing anything",
         "visible": "Show desktop companion", "startup": "Run when I sign in to Windows", "language": "Language",
+        "theme": "Theme", "theme_dark": "Dark", "theme_light": "Light (white)",
+        "theme_help": "Preview immediately. Save settings to keep your choice for next launch.",
+        "advanced": "Advanced", "advanced_models": "Enable advanced character models",
+        "vram_tier": "GPU VRAM capacity (manual)", "vram_unknown": "CPU / unknown",
+        "advanced_help": "2/4/6/8 GB are model-selection guides, not GPU detection or a guarantee of fit. You need sufficient free VRAM and system RAM. Ollama determines GPU support and CPU offloading.",
+        "advanced_scope": "Larger models may interpret descriptions better; the same vector shapes draw the character. They do not generate new artwork or clothing. Advanced preferences are saved separately from allowlist profiles.",
+        "model_memory": "About {size} of model files; inference needs extra memory. Keep Ollama running and download the selected model below first.",
+        "model_small_memory": "Model files: about 0.5 GB for 0.5B / 1.12 GB for 1.5B, plus inference memory. Keep Ollama running.",
+        "model_missing": "The selected model is missing or unsupported by Ollama. Run the displayed ollama pull command, update Ollama, then try again.",
+        "model_memory_error": "Not enough memory to run this model. Choose a smaller model or close other models/GPU tasks, then retry. Your current character is retained.",
+        "model_service_error": "Ollama could not run the model. Check Ollama status, supported version and available memory, then retry.",
+        "ollama_unavailable": "Ollama is unreachable or generation timed out. Start Ollama; if generation is slow, try a smaller model.",
         "save": "Save settings", "close": "Back to tray", "saved": "Settings saved.",
         "intro": "Check your allowlist in preview mode first.\nApps are controlled; tabs close only when website control is also on and the extension is connected.",
         "apps_help": "Enter one executable filename per line. Pasted paths are reduced to filenames.\nWindows, graphics/overlay helpers and this app are always protected. All files with the same name are allowed.",
@@ -145,14 +170,32 @@ QPushButton:hover { background: #3d4563; border-color: #b6a0eb; }
 QPushButton:disabled { color: #6d738d; }
 QPushButton#primary { background: #c5b0f4; color: #211b32; border: 0; font-weight: 600; }
 QPushButton#primary:hover { background: #dac9ff; }
-QPlainTextEdit, QLineEdit, QListWidget { background: #131725; border: 1px solid #3c435b; border-radius: 8px; padding: 8px; selection-background-color: #625182; }
+QPlainTextEdit, QLineEdit, QListWidget { background: #131725; border: 1px solid #3c435b; border-radius: 8px; padding: 8px; selection-background-color: #625182; selection-color: #fff; }
 QComboBox { background: #242b40; border: 1px solid #414962; border-radius: 7px; padding: 7px; min-width: 125px; }
-QComboBox QAbstractItemView { background: #242b40; selection-background-color: #625182; }
+QComboBox QAbstractItemView { background: #242b40; selection-background-color: #625182; selection-color: #fff; }
 QCheckBox { spacing: 10px; padding: 6px 0; }
 QCheckBox::indicator { width: 18px; height: 18px; border: 1px solid #66708b; border-radius: 5px; background: #151929; }
 QCheckBox::indicator:checked { background: #bba2ed; border-color: #d8c6ff; }
 QToolTip { background: #303650; color: #fff; border: 0; }
+QLabel#setupTitle { font-size: 21px; font-weight: 600; color: #d2c1ff; }
 """
+
+LIGHT_COLORS = {
+    "#171b2a": "#fafafe", "#e9e8f2": "#242238", "#d2c1ff": "#634095",
+    "#a9afc5": "#55566d", "#a8dace": "#20594d", "#202d35": "#e4f3ed",
+    "#353b53": "#d2d5e2", "#1d2234": "#ffffff", "#363047": "#e9ddfa",
+    "#e1cfff": "#503477", "#2c334b": "#efedf6", "#414962": "#b9b9cf",
+    "#3d4563": "#e2d7f2", "#b6a0eb": "#8060b0", "#6d738d": "#747386",
+    "#c5b0f4": "#714a9d", "#211b32": "#ffffff", "#dac9ff": "#5f3d88",
+    "#131725": "#ffffff", "#3c435b": "#bfc1d0", "#625182": "#d8c5ef",
+    "#242b40": "#ffffff", "#66708b": "#8c8da3", "#151929": "#ffffff",
+    "#bba2ed": "#7953a7", "#d8c6ff": "#634095", "#303650": "#f0eaf8",
+    "#fff": "#242238",
+}
+
+
+def theme_style(theme):
+    return re.sub(r"#[0-9a-fA-F]{3,6}\b", lambda match: LIGHT_COLORS.get(match[0], match[0]), STYLE) if theme == "light" else STYLE
 
 
 CHARACTER_LABELS = {
@@ -211,7 +254,7 @@ class SettingsDialog(QDialog):
         self.setWindowTitle("Pawzura")
         self.resize(920, 720)
         self.setMinimumSize(820, 640)
-        self.setStyleSheet(STYLE)
+        self.preview_theme(self.config.get("theme", "dark"))
         outer = QVBoxLayout(self)
         outer.setContentsMargins(28, 22, 28, 22)
         outer.setSpacing(13)
@@ -228,7 +271,9 @@ class SettingsDialog(QDialog):
         self.build_apps()
         self.build_browsers()
         self.build_character()
+        self.build_advanced()
         self.build_about()
+        self.preview_theme(self.config.get("theme", "dark"))
         self.message = QLabel(self.t["status"] if not self.config["guard_enabled"] else self.t["preview"] if self.config["preview_only"] else self.t["guard"])
         self.message.setObjectName("status")
         self.message.setWordWrap(True)
@@ -372,11 +417,39 @@ class SettingsDialog(QDialog):
         self.language.addItem("한국어", "ko")
         self.language.setCurrentIndex(self.language.findData(self.config["language"]))
         form.addRow(self.t["language"], self.language)
-        layout.addLayout(form)
+        self.theme = QComboBox()
+        self.theme.addItem(self.t["theme_dark"], "dark")
+        self.theme.addItem(self.t["theme_light"], "light")
+        self.theme.setCurrentIndex(max(0, self.theme.findData(self.config.get("theme", "dark"))))
+        self.theme.currentIndexChanged.connect(lambda: self.preview_theme(self.theme.currentData()))
+        form.addRow(self.t["theme"], self.theme)
+        layout.insertLayout(1, form)
+        self.theme.setToolTip(self.t["theme_help"])
         demo = QPushButton(self.t["demo"])
         demo.clicked.connect(self.demo_requested.emit)
         layout.addWidget(demo, alignment=Qt.AlignmentFlag.AlignLeft)
         layout.addStretch()
+
+    def preview_theme(self, theme):
+        light = theme == "light"
+        palette = QPalette()
+        for role, color in (
+            (QPalette.ColorRole.Window, "#fafafe" if light else "#171b2a"),
+            (QPalette.ColorRole.Base, "#ffffff" if light else "#131725"),
+            (QPalette.ColorRole.Button, "#efedf6" if light else "#2c334b"),
+            (QPalette.ColorRole.Text, "#242238" if light else "#e9e8f2"),
+            (QPalette.ColorRole.WindowText, "#242238" if light else "#e9e8f2"),
+            (QPalette.ColorRole.ButtonText, "#242238" if light else "#e9e8f2"),
+            (QPalette.ColorRole.PlaceholderText, "#68667e" if light else "#a9afc5"),
+            (QPalette.ColorRole.Highlight, "#714a9d" if light else "#625182"),
+            (QPalette.ColorRole.HighlightedText, "#ffffff"),
+        ):
+            palette.setColor(role, QColor(color))
+        self.setPalette(palette)
+        self.setStyleSheet(theme_style(theme))
+        if hasattr(self, "character_preview"):
+            self.character_preview.theme = theme
+            self.character_preview.update()
 
     def build_apps(self):
         layout = self.page("apps")
@@ -575,7 +648,9 @@ class SettingsDialog(QDialog):
         self.character_model = QComboBox()
         self.character_model.addItem(self.t["model_detail"], DETAIL_MODEL)
         self.character_model.addItem(self.t["model_fast"], MODEL)
-        selected = self.config["character"].get("model", DETAIL_MODEL)
+        selected = self.config.get("designer_model", DETAIL_MODEL)
+        for model in models_for_vram(self.config["vram_tier"], self.config["advanced_models"])[2:]:
+            self.character_model.addItem(GPU_MODELS[model][1], model)
         self.character_model.setCurrentIndex(max(0, self.character_model.findData(selected)))
         model_row.addWidget(self.character_model, 1)
         prompt.addLayout(model_row)
@@ -651,10 +726,53 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.custom_button)
         layout.addWidget(self.label(self.t["recover_help"]))
         layout.addWidget(self.label(self.t["model_help"]))
-        command = QLineEdit("ollama pull " + self.character_model.currentData())
-        command.setReadOnly(True)
-        self.character_model.currentIndexChanged.connect(lambda: command.setText("ollama pull " + self.character_model.currentData()))
-        layout.addWidget(command)
+        self.model_memory = self.label("")
+        layout.addWidget(self.model_memory)
+        self.model_command = QLineEdit()
+        self.model_command.setReadOnly(True)
+        self.character_model.currentIndexChanged.connect(self.refresh_model_help)
+        self.refresh_model_help()
+        layout.addWidget(self.model_command)
+
+    def refresh_model_help(self):
+        model = self.character_model.currentData()
+        self.model_command.setText("ollama pull " + model)
+        self.model_memory.setText(self.t["model_memory"].format(size=GPU_MODELS[model][2]) if model in GPU_MODELS else self.t["model_small_memory"])
+
+    def build_advanced(self):
+        layout = self.page("advanced")
+        layout.addWidget(self.label(self.t["advanced_scope"]))
+        self.advanced_models = QCheckBox(self.t["advanced_models"])
+        self.advanced_models.setChecked(self.config["advanced_models"])
+        layout.addWidget(self.advanced_models)
+        form = QFormLayout()
+        self.vram_tier = QComboBox()
+        for value in (0, 2, 4, 6, 8):
+            self.vram_tier.addItem(self.t["vram_unknown"] if value == 0 else f"{value} GB", value)
+        self.vram_tier.setCurrentIndex(self.vram_tier.findData(self.config["vram_tier"]))
+        form.addRow(self.t["vram_tier"], self.vram_tier)
+        layout.addLayout(form)
+        layout.addWidget(self.label(self.t["advanced_help"]))
+        for tier, model in ((2, DETAIL_MODEL), *((info[0], model) for model, info in GPU_MODELS.items())):
+            name = "Qwen2.5 1.5B · Q4_K_M" if model == DETAIL_MODEL else GPU_MODELS[model][1]
+            layout.addWidget(self.label(f"{tier} GB → {name}"))
+        layout.addStretch()
+        self.advanced_models.toggled.connect(self.refresh_model_choices)
+        self.vram_tier.currentIndexChanged.connect(self.refresh_model_choices)
+        self.vram_tier.setEnabled(self.advanced_models.isChecked())
+
+    def refresh_model_choices(self):
+        advanced = self.advanced_models.isChecked()
+        self.vram_tier.setEnabled(advanced)
+        selected = self.character_model.currentData()
+        self.character_model.blockSignals(True)
+        self.character_model.clear()
+        for model in models_for_vram(self.vram_tier.currentData(), advanced):
+            label = self.t["model_detail"] if model == DETAIL_MODEL else self.t["model_fast"] if model == MODEL else GPU_MODELS[model][1]
+            self.character_model.addItem(label, model)
+        self.character_model.setCurrentIndex(max(0, self.character_model.findData(selected)))
+        self.character_model.blockSignals(False)
+        self.refresh_model_help()
 
     def choose_character_color(self, key):
         field = self.character_colors[key]
@@ -704,23 +822,29 @@ class SettingsDialog(QDialog):
             self.message.setText(self.t["custom_error"])
             return
         self.generation_controls = (self.generate_button, self.reset_button, self.language, self.random_button,
-                                    self.previous_button, self.custom_button, self.custom_panel, self.character_model)
+                                    self.previous_button, self.custom_button, self.custom_panel, self.character_model,
+                                    self.advanced_models, self.vram_tier)
         for control in self.generation_controls:
             control.setEnabled(False)
         self.message.setText(self.t["generating"])
         self.worker = GenerationWorker(description, options, self.character_model.currentData(), self)
         self.worker.succeeded.connect(self.apply_character)
-        self.worker.failed.connect(lambda error: self.message.setText("Ollama: " + error))
-        self.worker.finished.connect(lambda: [control.setEnabled(True) for control in self.generation_controls])
+        self.worker.failed.connect(lambda error: self.message.setText("Ollama: " + self.t.get(error, error)))
+        self.worker.finished.connect(self.finish_generation_controls)
         self.worker.finished.connect(self.worker.deleteLater)
         self.worker.finished.connect(lambda: setattr(self, "worker", None))
         self.worker.start()
+
+    def finish_generation_controls(self):
+        for control in self.generation_controls:
+            control.setEnabled(True)
+        self.vram_tier.setEnabled(self.advanced_models.isChecked())
 
     def build_about(self):
         layout = self.page("about")
         layout.addWidget(self.label(self.t["credit"]))
         language = "ko" if self.config["language"] == "ko" else "en"
-        layout.addWidget(self.label(f"Qwen2.5-0.5B / 1.5B-Instruct-GGUF · Apache-2.0\nhttps://huggingface.co/Qwen\n\nREADME.md · doc/{language}/MODELS.md\nTHIRD-PARTY-NOTICES.md · CONTRIBUTORS.md"))
+        layout.addWidget(self.label(f"Qwen2.5 0.5B / 1.5B · Qwen3 4B / 8B GGUF · Apache-2.0\nhttps://huggingface.co/Qwen\n\nREADME.md · doc/{language}/MODELS.md\nTHIRD-PARTY-NOTICES.md · CONTRIBUTORS.md"))
         layout.addWidget(self.label("https://github.com/hobby-programmer-5000/pawzura"))
         layout.addStretch()
 
@@ -731,6 +855,9 @@ class SettingsDialog(QDialog):
                        "browser_control_enabled": self.website_control.isChecked(),
                        "pet_visible": self.visible.isChecked(), "start_at_login": self.startup.isChecked(),
                        "language": self.language.currentData(), "allowed_apps": self.config["allowed_apps"],
+                       "theme": self.theme.currentData(),
+                       "advanced_models": self.advanced_models.isChecked(), "vram_tier": self.vram_tier.currentData(),
+                       "designer_model": self.character_model.currentData(),
                        "profiles": self.config["profiles"], "active_profile": self.config["active_profile"],
                        "startup_apps": self.config["startup_apps"], "browsers": self.config["browsers"],
                        "character": self.config["character"], "character_history": self.config["character_history"]}

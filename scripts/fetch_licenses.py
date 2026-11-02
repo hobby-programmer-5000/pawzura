@@ -49,6 +49,8 @@ def main():
         "Apache-2.0.txt": "https://www.apache.org/licenses/LICENSE-2.0.txt",
         "Qwen-LICENSE.txt": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/LICENSE",
         "Qwen-1.5B-LICENSE.txt": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/LICENSE",
+        "Qwen3-4B-LICENSE.txt": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/raw/bc640142c66e1fdd12af0bd68f40445458f3869b/LICENSE",
+        "Qwen3-8B-LICENSE.txt": "https://huggingface.co/Qwen/Qwen3-8B-GGUF/raw/7c41481f57cb95916b40956ab2f0b139b296d974/LICENSE",
         "OpenSSL-LICENSE.txt": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.8/LICENSE.txt",
         "libffi-LICENSE.txt": "https://raw.githubusercontent.com/libffi/libffi/v3.4.8/LICENSE",
         "zlib-LICENSE.txt": "https://raw.githubusercontent.com/madler/zlib/v1.3.2/LICENSE",

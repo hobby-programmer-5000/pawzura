@@ -8,6 +8,8 @@ Download the Windows ZIP from [Releases](https://github.com/hobby-programmer-500
 
 You do not need Python, Ollama or a model to use the companion. To run the source instead, install standard CPython and double-click `run.bat`; see [source setup](BUILD.md).
 
+**SmartScreen may appear on first launch:** this project distributes unsigned builds. Download from the official Releases page and compare the ZIP's SHA-256 with its `SHA256SUMS` file (`Get-FileHash .\Pawzura-<version>-windows-x64.zip -Algorithm SHA256`). If you trust that verified download and Windows offers **More info → Run anyway**, you may choose it. A reputation warning is not a malware clearance; a malware detection or organization policy needs separate review. Do not disable Windows protection globally. [Microsoft's reputation explanation](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation).
+
 The settings window opens. The character appears above the taskbar. The guardian starts **off**, and preview mode starts **on**.
 
 ## 2. Choose a language
@@ -15,6 +17,8 @@ The settings window opens. The character appears above the taskbar. The guardian
 The default is **English**. Open **General → Language → 한국어 → Save settings** to switch to Korean. The window and tray menu update after saving. To switch back, use **일반 → 언어 → English → 설정 저장**. A previously saved language is preserved during upgrades.
 
 ## 3. Try the companion without closing anything
+
+To choose a white settings window, use **General → Theme → Light (white) → Save settings**. Selection previews immediately; saving persists it. **Dark** remains the default for existing and fresh settings. The browser extension's own page keeps its separate appearance. Advanced model setup is in [models and memory](ADVANCED-MODELS.md).
 
 On **General**, click **Preview bite animation**. This demonstration does not close a window. Use **Character → Random character → Save settings** to change the companion without installing a model. [Qwen generation](MODELS.md) is optional.
 

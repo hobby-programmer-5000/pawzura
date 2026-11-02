@@ -190,6 +190,7 @@ class CharacterPreview(QWidget):
     def __init__(self, spec, parent=None):
         super().__init__(parent)
         self.spec = spec
+        self.theme = "dark"
         self.phase = 0.0
         self.setMinimumSize(200, 220)
         self.timer = QTimer(self)
@@ -205,12 +206,12 @@ class CharacterPreview(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QColor("#22263b"))
+        p.setBrush(QColor("#f0edf7" if self.theme == "light" else "#22263b"))
         p.drawRoundedRect(self.rect(), 22, 22)
         scale = min(self.width() / 180, self.height() / 180)
         p.translate((self.width() - 144 * scale) / 2, (self.height() - 144 * scale) / 2)
         p.scale(scale, scale)
-        p.setBrush(QColor("#171b2b"))
+        p.setBrush(QColor("#ddd5e9" if self.theme == "light" else "#171b2b"))
         p.drawEllipse(QRectF(37, 137, 72, 7))
         draw_character(p, self.spec, self.phase)
 

@@ -8,9 +8,13 @@
 
 캐릭터만 사용하려면 Python·Ollama·모델 설치가 필요 없습니다. 소스로 실행하려면 일반 CPython을 설치하고 `run.bat`를 더블 클릭하세요. 자세한 내용은 [소스 실행 안내](BUILD.md)에 있습니다.
 
+**첫 실행에 SmartScreen이 나타날 수 있습니다:** 현재 빌드는 코드 서명이 없습니다. 공식 Releases에서 받고 `Get-FileHash .\Pawzura-<version>-windows-x64.zip -Algorithm SHA256` 결과를 동봉 `SHA256SUMS`와 비교하세요. 확인한 배포 파일을 신뢰하고 Windows가 **추가 정보 → 실행**을 제공하는 경우 선택할 수 있습니다. 평판 경고가 악성코드 검사 통과를 뜻하지는 않으며, 악성코드 탐지나 조직 정책 차단은 별도로 확인해야 합니다. Windows 보호 기능을 전체적으로 끄지 마세요. [Microsoft의 평판 설명](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation).
+
 설정 창과 작업표시줄 위 캐릭터가 나타납니다. 처음에는 **감시 OFF·미리보기 ON**입니다.
 
 ## 2. 한국어로 변경
+
+흰색 설정 화면은 **General → Theme → Light (white) → Save settings**, 한국어에서는 **일반 → 화면 테마 → 라이트 (화이트) → 설정 저장**으로 고릅니다. 선택 즉시 미리 보이며 저장하면 다음 실행에도 유지합니다. 새 설정·기존 설정의 기본은 다크입니다. 브라우저 확장 자체 페이지의 외형은 별도입니다. 고급 모델 준비는 [모델과 메모리](ADVANCED-MODELS.md)를 참고하세요.
 
 기본 언어는 **영어**입니다. **General → Language → 한국어 → Save settings**를 선택하세요. 저장하면 설정 창과 트레이 메뉴가 한국어로 바뀝니다. 영어로 돌아가려면 **일반 → 언어 → English → 설정 저장**을 선택하세요. 업그레이드할 때 기존에 저장한 언어는 유지합니다.
 

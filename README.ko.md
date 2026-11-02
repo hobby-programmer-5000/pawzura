@@ -14,6 +14,10 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 
 앱 기본 언어는 영어입니다. **General → Language → 한국어 → Save settings**로 바꾸세요. 소스로 쓰려면 빌드 대신 **run.bat**를 더블 클릭하세요.
 
+**실행 전 확인:** 서명되지 않은 빌드라 **Windows SmartScreen**이 표시될 수 있습니다. 공식 배포 파일과 체크섬을 확인한 뒤, 제공되는 경우에만 **추가 정보 → 실행**을 선택하세요. [실행 안내](doc/ko/GETTING_STARTED.md).
+
+**AI 캐릭터 설계에는 실행 중인 Ollama, 선택한 모델 다운로드, 충분한 가용 RAM·VRAM이 필요합니다.** 기본·임의 캐릭터에는 모델이 필요 없습니다. [메모리 기준과 준비](doc/ko/MODELS.md).
+
 ## 브라우저 제어는 선택 기능입니다
 
 **사이트 제어에는 Pawzura 브라우저 확장 설치가 필수입니다.** 프로그램만 제어하려면 **브라우저 → 사이트 제어 OFF**로 두세요. 확장을 설치하지 않아도 됩니다.
@@ -25,7 +29,7 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 - 바꿀 수 있는 고유 캐릭터가 연결된 모니터 사이를 산책합니다.
 - 미허용 창을 닫기 전에 점프·깨물기·사라지는 균열을 표시합니다.
 - 브라우저 창을 보호하고 미허용 탭만 닫습니다. 확장에서 자동 연결 후 앱에서 승인하면 됩니다.
-- 로컬 Qwen에 상세 설명을 입력하거나 색상·귀·표정·무늬·장식·꼬리·날개를 직접 고릅니다. [예시와 옵션](doc/ko/MODELS.md).
+- 라이트·다크 설정과 VRAM 2·4·6·8GB 기준의 Qwen 설계를 선택합니다. 큰 모델도 같은 도형으로 특징을 표현합니다. [설정과 한계](doc/ko/MODELS.md).
 
 ## 필요한 안내 찾기
 
@@ -34,14 +38,11 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | 실행·한국어 변경·트레이 사용 | [처음 사용하기](doc/ko/GETTING_STARTED.md) |
 | Chrome/Edge/Firefox 연결과 입력 예시 | [브라우저 연결](doc/ko/BROWSERS.md) |
 | 업무·여가 목록 분리·캐릭터 복구 | [프로필과 복구](doc/ko/PROFILES-AND-RECOVERY.md) |
-| 오버레이 공격·깜빡임 확인 | [오버레이와 미리보기](doc/ko/OVERLAYS-AND-PREVIEW.md) |
 | Qwen 캐릭터 생성 | [모델과 캐릭터](doc/ko/MODELS.md) |
 | 소스 실행·EXE 빌드 | [설정과 빌드](doc/ko/BUILD.md) |
 | 테스트 결과·현재 제한 | [검증 기록](doc/ko/VALIDATION.md) |
 | 기획자·AI 기여 역할 | [기여자](doc/ko/CONTRIBUTORS.md) |
 | 라이브러리·모델 라이선스 | [제3자 고지](doc/ko/THIRD-PARTY-NOTICES.md) |
-| 캐릭터 권리와 제작 이력 | [캐릭터 권리](doc/ko/CHARACTER-RIGHTS.md) |
-| 작은 앱 제작 규칙 재사용 | [에이전트 절차와 템플릿](doc/ko/SMALL-APP-HARNESS.md) |
 
 **브라우저 동작:** 탐색 후 탭을 닫고, 탭 애니메이션은 작업표시줄 근처의 별도 표식에서 보여줍니다.
 

@@ -143,7 +143,7 @@ class BrowserSetupDialog(QDialog):
         self.resize(760, 610)
         layout = QVBoxLayout(self)
         title = self.label(self.t["title"] + " — " + browser.capitalize())
-        title.setStyleSheet("font-size: 21px; font-weight: 600; color: #d2c1ff;")
+        title.setObjectName("setupTitle")
         layout.addWidget(title)
         layout.addWidget(self.label(self.t["intro"]))
         self.pages = QStackedWidget()

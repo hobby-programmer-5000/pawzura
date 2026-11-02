@@ -101,7 +101,8 @@ def prepare_profiles(data: dict):
 
 def defaults() -> dict:
     return {
-        "version": 1, "language": "en", "start_at_login": False,
+        "version": 1, "language": "en", "theme": "dark", "start_at_login": False,
+        "advanced_models": False, "vram_tier": 0,
         "guard_enabled": False, "preview_only": True, "pet_visible": True,
         "browser_control_enabled": False,
         "allowed_apps": DEFAULT_APPS.copy(), "startup_apps": [],
@@ -134,6 +135,15 @@ class Settings:
             except (ValueError, TypeError, KeyError) as error:
                 # Never silently replace a damaged allowlist and begin closing windows.
                 raise ValueError(f"Cannot load {self.path}: {error}") from error
+        if self.data.get("theme") not in ("dark", "light"):
+            self.data["theme"] = "dark"
+        self.data["advanced_models"] = self.data.get("advanced_models") is True
+        if type(self.data.get("vram_tier")) is not int or self.data["vram_tier"] not in (0, 2, 4, 6, 8):
+            self.data["vram_tier"] = 0
+        from .characters import DETAIL_MODEL, models_for_vram
+        choices = models_for_vram(self.data["vram_tier"], self.data["advanced_models"])
+        selected = self.data.get("designer_model", self.data["character"].get("model") if isinstance(self.data["character"], dict) else None)
+        self.data["designer_model"] = selected if selected in choices else DETAIL_MODEL
         self.data["character"] = safe_character(self.data["character"])
         history = self.data.get("character_history", [])
         self.data["character_history"] = [safe_character(item) for item in history[-20:]] if isinstance(history, list) else []
@@ -148,6 +158,13 @@ class Settings:
             candidate = copy.deepcopy(self.data)
             if updates:
                 candidate.update(updates)
+            if candidate.get("theme") not in ("dark", "light"):
+                raise ValueError("Choose dark or light theme")
+            from .characters import models_for_vram
+            if type(candidate.get("vram_tier")) is not int or candidate["vram_tier"] not in (0, 2, 4, 6, 8) or type(candidate.get("advanced_models")) is not bool:
+                raise ValueError("Choose a supported VRAM guide")
+            if candidate.get("designer_model") not in models_for_vram(candidate["vram_tier"], candidate["advanced_models"]):
+                raise ValueError("Choose a model available for this VRAM guide")
             candidate["allowed_apps"] = expand_app_aliases(candidate["allowed_apps"])
             candidate["character"] = safe_character(candidate["character"])
             prepare_profiles(candidate)
