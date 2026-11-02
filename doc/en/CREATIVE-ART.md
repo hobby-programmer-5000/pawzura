@@ -38,7 +38,7 @@ The image model generates a single illustration. There is no preset list of body
    ```
 
 5. Enter an original description or click **Insert example**. Example: “A tiny glass-and-brass astronomer with a crescent-shaped body, turquoise curly hair, an embroidered navy cape, copper boots and a floating lantern; warm watercolor and ink, friendly expression, full body.” Do not name an existing character, franchise or logo. Do not include restricted content even as a negative instruction.
-6. Click **Generate artwork**. The local stages are description review → image generation → image classifier/background removal → vision review. A laptop may take many minutes, especially with sequential offload. Wait for the current operation before closing the dialog or quitting.
+6. Click **Generate artwork**. The local stages are description verdict → concise English summary when needed → image generation → image classifier/background removal → vision review. A laptop may take many minutes, especially with sequential offload. Wait for the current operation before closing the dialog or quitting.
 7. Inspect the preview. Click **Use this character**, then **Save settings** in the main window. This final save applies the companion. Errors retain the previous design; the old result remains selectable after a failed retry.
 
 No private prompt or image goes to a cloud inference service. Setup contacts official package/model hosts; inference uses fixed local files and `127.0.0.1:11434`. Descriptions remain in the dialog for the session and are not written to settings, command arguments or app logs. Ollama is an external service with its own behavior. Approved PNG pixels are stored locally under `%LOCALAPPDATA%\Pawzura\artwork` by content hash; no arbitrary model-supplied file path is accepted. Metadata is removed. Up to 20 design references remain in history; old PNG files are not automatically deleted.
@@ -68,7 +68,10 @@ NSFW content and identifiable existing character/logo replication requests are p
 | --- | --- |
 | Preparation/generation buttons disabled | Read the license and check the acknowledgement for the selected guide. |
 | Runtime missing/setup failed | Check internet, 25 GB free disk, current NVIDIA driver and Ollama installation. Retry Preparation; downloads reuse the cache. |
-| Local review failed | Start/update Ollama and run Preparation again. Verify both exact review model names in `ollama list`; a similar name is a different model. Qwen3-VL requires an Ollama release supporting that model. |
+| Review model missing | The error names the description/image stage and exact model. Run Preparation or its displayed `ollama pull` command. |
+| Review response cut short | This is a response-limit failure, not a missing-model diagnosis. Update Pawzura to 0.2.2+; it separates verdict from summarization. If it repeats, keep the main visual features and shorten the description. |
+| Ollama unreachable / review timeout | Start Ollama or wait for other local model work/free memory, then retry. Reinstalling the image environment does not fix a disconnected service. |
+| Review memory / service / invalid answer | Follow the specific named-model message. Free memory for a memory error; update Ollama/check its exact model name for service errors. Invalid/incomplete JSON is rejected; users do not need to edit JSON. |
 | CUDA unavailable | Update the NVIDIA driver. This mode does not support AMD/Intel/CPU. Continue with the vector designer if incompatible. |
 | Out of memory | Close other GPU workloads; switch from 8/6 GB to 4/2 GB and prepare SD 1.5. Free system RAM too. Do not assume an 8 GB RAM laptop has 8 GB VRAM. |
 | Cutout failed/parts missing | Request one full-body character, a clear silhouette and plain white background; simplify floating accessories and retry. |
@@ -80,3 +83,5 @@ NSFW content and identifiable existing character/logo replication requests are p
 ```
 
 Pinned model revisions are recorded in [the catalog](../../art_runtime/catalog.json). The optional runtime keeps package license files in its environment. See [validation](VALIDATION.md) for tested environments and remaining GPU coverage; do not infer 2/4/6 GB device testing from an 8 GB result.
+
+Description review now returns only a small verdict over the full input. Approved non-ASCII/long input is summarized separately into bounded English (at most 512 characters, compacted to 55 words); short usable ASCII descriptions remain unchanged. Common Korean color translations are hints, not appearance restrictions. Small-model summaries can still omit/alter details; concise English is useful when exact wording matters. The 8,192-token text-review context and 1,024-token summary budget need inference memory. Any failed verdict/summary/image review retains the old character rather than bypassing checks.

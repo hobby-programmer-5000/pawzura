@@ -6,6 +6,13 @@ Date: 2026-11-03, Asia/Seoul. Intended support and actual checks are separate.
 
 
 
+
+## 0.2.2 local review failures
+
+**132 Python tests passed locally.** Synthetic long Korean input reproduced the old combined request stopping at its 600-token limit with incomplete JSON. A bounded single-call attempt completed but could copy system phrases; the final design separates a small full-input verdict from independent bounded summarization and retains approved short ASCII input unchanged. Tests cover full-input delivery, rejection before translation, malformed/incomplete answers, missing model, connection/timeout/memory/service taxonomy, safe error codes without backend text, bounded translations and image-coordinate rejection. An initial test expected trailing whitespace that the existing input validator trims; its expectation was corrected.
+
+An actual 2,000-character synthetic Korean description completed verdict, summary, SDXL 8 GB image generation, CPU safety/cutout, vision review and approved local storage on the existing NVIDIA 8 GB device. Retained synthetic-image review also passed. No user prompt was read or saved. Read-only executable hashing identified the user's running build as 0.2.0; model presence alone did not prove review success. The small summary model can still omit/alter details; no exact Korean translation or prompt-fidelity guarantee is made. New English/Korean, light/dark incomplete-response and missing-image-model screens were rendered at minimum/normal sizes; representative geometry/views were inspected. Existing device/browser/animation coverage limits remain unchanged.
+
 ## 0.2.1 progress reporting
 
 **125 Python tests and 19 extension tests passed locally.** New regressions verify allowlisted/bounded progress events, discarded backend text and extra fields, delivery before final output, bounded result size, safe child error codes, timeout cleanup (including a child that never reads stdin), complete stdin transfer, actual scheduler-length callbacks, English/Korean elapsed and last-report timing, the 60-second notice, indeterminate review stages and terminal timer state. Closing a busy dialog preserves the current stage.

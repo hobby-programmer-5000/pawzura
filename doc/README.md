@@ -38,3 +38,5 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [0.2.0 original artwork](en/RELEASE-v0.2.0.md)
 
 - [0.2.1 Artwork progress](en/RELEASE-v0.2.1.md)
+
+- [0.2.2 Local review fixes](en/RELEASE-v0.2.2.md)

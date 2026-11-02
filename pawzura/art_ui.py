@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabe
                                QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget, QLayout, QProgressBar)
 from .art_client import TIERS, catalog, generate_artwork, prepare_artwork, source_dir
 from .characters import GenerationError, MAX_PROMPT
+from .art_policy import review_error_info
 from .config import default_character, safe_character
 from .pet import CharacterPreview
 
@@ -30,6 +31,7 @@ TEXT = {
         "art_downloading": "Downloading selected image, safety and cutout models… keep this window open.",
         "art_review_models": "Downloading local Ollama review models… keep Ollama running.",
         "art_reviewing": "Reviewing your description locally…",
+        "art_summarizing": "Summarizing the approved visual description in English…",
         "art_drawing": "Drawing artwork locally… keep this window open. CPU offload may be slow.",
         "art_loading": "Loading image libraries and model weights…",
         "art_sampling": "Drawing image · step {completed}/{total}",
@@ -52,6 +54,14 @@ TEXT = {
         "art_description_required": "Enter a description of 1–2,000 characters.",
         "art_prompt_blocked": "The description was rejected by the originality/content check. Use a generic original design without existing characters, logos or sexual/violent details. Avoid restricted terms even in negative instructions.",
         "art_policy_unavailable": "The local review failed or returned invalid data. Keep Ollama running and run Preparation to install both review models. No unchecked artwork was applied.",
+        "review_prompt": "Description review", "review_image": "Image review",
+        "review_missing": "This exact review model is missing. Run Preparation, or run {command} in PowerShell and wait for success. Your previous character is retained.",
+        "review_unreachable": "Cannot reach local Ollama. Start Ollama and retry. Reinstalling the image runtime is unnecessary for a connection failure.",
+        "review_timeout": "Ollama did not complete this review in time. Wait for other model work to finish, free memory or shorten the description, then retry. Your previous character is retained.",
+        "review_memory": "Ollama reported insufficient memory for this review model. Close other model/GPU workloads and retry. Image-model VRAM selection does not change the review model.",
+        "review_service": "Ollama rejected this review request. Update Ollama and check the named model with ollama list, then retry. No unchecked artwork was applied.",
+        "review_invalid": "The review returned an invalid structured answer. Retry with the core visual features; update Ollama if it repeats. Do not edit JSON. Your previous character is retained.",
+        "review_incomplete": "The review response was cut short before completion. Retry with a shorter description containing the main visual features. This is a response-limit error, not proof that a model is missing. Your previous character is retained.",
         "art_output_blocked": "The image did not pass local safety/originality review. Try a clearer original, family-friendly design. Your previous character is retained.",
         "art_not_prepared": "Run Preparation first. The optional image runtime is missing.",
         "art_download_failed": "A model download failed after a bounded retry. Check internet and disk space, then run Preparation again; completed files are reused. No character was replaced.",
@@ -80,6 +90,7 @@ TEXT = {
         "art_downloading": "선택한 그림·안전 검사·배경 제거 모델 다운로드 중… 창을 열어 두세요.",
         "art_review_models": "Ollama 검사용 모델 다운로드 중… Ollama를 실행해 두세요.",
         "art_reviewing": "로컬에서 설명 검사 중…",
+        "art_summarizing": "승인된 외형 설명을 영어로 요약 중…",
         "art_drawing": "로컬에서 그림 생성 중… 창을 열어 두세요. CPU 분산 시 오래 걸릴 수 있습니다.",
         "art_loading": "그림 라이브러리·모델 가중치 불러오는 중…",
         "art_sampling": "그림 생성 · {completed}/{total}단계",
@@ -102,6 +113,14 @@ TEXT = {
         "art_description_required": "1~2,000자의 설명을 입력하세요.",
         "art_prompt_blocked": "독창성·콘텐츠 검사에서 설명을 거부했습니다. 기존 캐릭터·로고·선정적이거나 잔혹한 묘사 없이 독창적인 설정을 적으세요. 금지 표현은 부정 지시에도 쓰지 마세요.",
         "art_policy_unavailable": "로컬 검사가 실패했거나 잘못된 응답입니다. Ollama를 실행하고 준비 버튼으로 검사용 모델을 설치하세요. 검사하지 않은 그림은 적용하지 않습니다.",
+        "review_prompt": "설명 검사", "review_image": "그림 검사",
+        "review_missing": "이 정확한 검사 모델이 없습니다. 준비 버튼을 누르거나 PowerShell에서 {command} 실행 후 success까지 기다리세요. 기존 캐릭터는 유지됩니다.",
+        "review_unreachable": "로컬 Ollama에 연결할 수 없습니다. Ollama를 실행하고 다시 시도하세요. 연결 오류 때문에 그림 실행환경을 재설치할 필요는 없습니다.",
+        "review_timeout": "Ollama가 제한 시간 안에 검사를 끝내지 못했습니다. 다른 모델 작업이 끝나길 기다리거나 메모리를 확보하고 설명을 줄여 재시도하세요. 기존 캐릭터는 유지됩니다.",
+        "review_memory": "Ollama가 검사 모델의 메모리 부족을 보고했습니다. 다른 모델·GPU 작업을 종료하고 다시 시도하세요. 그림 모델의 VRAM 선택이 검사 모델을 바꾸지는 않습니다.",
+        "review_service": "Ollama가 검사 요청을 처리하지 못했습니다. Ollama를 업데이트하고 ollama list에서 표시된 모델의 정확한 이름을 확인한 뒤 재시도하세요. 미검사 그림은 적용하지 않습니다.",
+        "review_invalid": "검사 모델의 구조화된 응답이 잘못됐습니다. 핵심 외형 특징으로 다시 시도하고 반복되면 Ollama를 업데이트하세요. JSON을 직접 수정할 필요는 없습니다. 기존 캐릭터는 유지됩니다.",
+        "review_incomplete": "검사 응답이 끝나기 전에 잘렸습니다. 주요 외형 특징을 남겨 설명을 줄이고 다시 시도하세요. 응답 한도 오류이며 모델이 없다는 뜻은 아닙니다. 기존 캐릭터는 유지됩니다.",
         "art_output_blocked": "그림이 안전성·독창성 검사를 통과하지 못했습니다. 전연령에 적합한 독창적인 묘사로 다시 시도하세요. 기존 캐릭터는 유지됩니다.",
         "art_not_prepared": "선택형 그림 실행환경이 없습니다. 먼저 준비 버튼을 누르세요.",
         "art_download_failed": "한 차례 재개 후에도 모델 다운로드가 실패했습니다. 인터넷·디스크 여유를 확인하고 준비를 다시 누르세요. 완료한 파일은 재사용하며 기존 캐릭터는 유지됩니다.",
@@ -359,7 +378,13 @@ class ArtworkDialog(QDialog):
 
     def failed(self, code):
         self.stop_progress(False)
-        self.status.setText(self.t.get(code, self.t["art_runtime_failed"]))
+        info = review_error_info(code)
+        if info is not None:
+            stage, reason, model = info
+            self.status.setText(self.t["review_" + stage] + " · " + model + "\n" +
+                                self.t["review_" + reason].format(command="ollama pull " + model))
+        else:
+            self.status.setText(self.t.get(code, self.t["art_runtime_failed"]))
 
     def succeeded(self, result):
         self.stop_progress(True)

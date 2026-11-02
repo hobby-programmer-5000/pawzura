@@ -187,7 +187,7 @@ def prepare_artwork(tier, progress=lambda code: None, root=None):
 
 def generate_artwork(description, tier, progress=lambda code: None, root=None, assets=None):
     progress("art_reviewing")
-    prompt = review_art_prompt(description)
+    prompt = review_art_prompt(description, progress=progress)
     progress("art_drawing")
     seed = secrets.randbelow(2**31)
     result = worker("generate", tier, {"prompt": prompt, "seed": seed}, root, progress=progress)

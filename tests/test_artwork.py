@@ -128,24 +128,30 @@ class ArtworkTests(unittest.TestCase):
                 art_policy.validate_art_prompt(text)
         self.assertIn("astronomer", art_policy.validate_art_prompt("An original brass astronomer"))
         with patch("pawzura.art_policy.build_opener", side_effect=OSError()):
-            with self.assertRaisesRegex(GenerationError, "art_policy_unavailable"):
+            with self.assertRaisesRegex(GenerationError, "art_review_prompt_unreachable"):
                 art_policy.review_art_prompt("An original brass astronomer")
 
     def test_prompt_review_uses_one_verdict_and_keeps_creative_details(self):
         decision = {"verdict": "allow", "prompt": "Original brass astronomer with turquoise hair and copper boots"}
-        response = io.BytesIO(json.dumps({"response": json.dumps(decision)}).encode())
+        responses = [io.BytesIO(json.dumps({"response": json.dumps({"verdict": "allow"})}).encode()),
+                     io.BytesIO(json.dumps({"response": json.dumps({"prompt": decision["prompt"]})}).encode())]
         with patch("pawzura.art_policy.build_opener") as opener:
-            opener.return_value.open.return_value = response
-            self.assertEqual(art_policy.review_art_prompt("Original brass astronomer"), decision["prompt"])
-            payload = json.loads(opener.return_value.open.call_args.args[0].data)
-            self.assertEqual(set(payload["format"]["properties"]), {"verdict", "prompt"})
+            opener.return_value.open.side_effect = responses
+            self.assertEqual(art_policy.review_art_prompt("독창적인 황동 천문학자"), decision["prompt"])
+            calls = opener.return_value.open.call_args_list
+            self.assertEqual(len(calls), 2)
+            first = json.loads(calls[0].args[0].data)
+            second = json.loads(calls[1].args[0].data)
+            self.assertEqual(set(first["format"]["properties"]), {"verdict"})
+            self.assertEqual(set(second["format"]["properties"]), {"prompt"})
+            self.assertEqual(second["format"]["properties"]["prompt"]["maxLength"], 512)
 
     def test_image_review_checks_flags_coordinates_and_local_endpoint(self):
         for decision in ({"verdict": "unsafe", "identity": "none"},
                          {"verdict": "replica", "identity": "known character"},
                          {"verdict": "uncertain", "identity": "none"},
                          {"verdict": "allow", "identity": "known character"}):
-            response = io.BytesIO(json.dumps({"message": {"content": json.dumps(decision)}}).encode())
+            response = io.BytesIO(json.dumps({"message": {"content": json.dumps({**decision, "mouth_x": .4, "mouth_y": .3})}}).encode())
             with patch("pawzura.art_policy.build_opener") as opener:
                 opener.return_value.open.return_value = response
                 with self.assertRaisesRegex(GenerationError, "art_output_blocked"):
@@ -165,7 +171,7 @@ class ArtworkTests(unittest.TestCase):
         response = io.BytesIO(json.dumps({"message": {"content": "", "thinking": "Unfinished review"}}).encode())
         with patch("pawzura.art_policy.build_opener") as opener:
             opener.return_value.open.return_value = response
-            with self.assertRaisesRegex(GenerationError, "art_policy_unavailable"):
+            with self.assertRaisesRegex(GenerationError, "art_review_image_invalid"):
                 art_policy.review_art_image(png())
 
     def test_no_asset_saved_if_review_fails(self):
