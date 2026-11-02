@@ -680,5 +680,15 @@
     "path": "licenses/upstream/creative-models/uv-LICENSE-APACHE.txt",
     "source": "https://raw.githubusercontent.com/astral-sh/uv/0.13.6/LICENSE-APACHE",
     "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  },
+  {
+    "path": "licenses/upstream/creative-models/ViTPose-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/ViTAE-Transformer/ViTPose/main/LICENSE",
+    "sha256": "aa2c6f3408169b96e5547c875deb481c91502514c1885fa0acb4b596c8909cb9"
+  },
+  {
+    "path": "licenses/upstream/creative-models/SciPy-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/scipy/scipy/v1.16.3/LICENSE.txt",
+    "sha256": "221e59f5e910fd7f94e44f0dac77436a11338c285c6346232e4a850a50da0e94"
   }
 ]

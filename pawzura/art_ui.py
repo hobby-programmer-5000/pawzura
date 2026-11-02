@@ -15,18 +15,23 @@ TEXT = {
         "title": "Creative artwork · optional GPU mode",
         "intro": "Generate an actual image with a different silhouette, hair, clothes and materials. This is separate from the Qwen trait designer. NVIDIA CUDA is required; capacity is a guide, not a guarantee.",
         "tier": "GPU VRAM guide",
-        "license": "Model: {repo}\n{license} · image download {download}, plus ~3.5 GB review models and ~4 GB runtime. Allow 25 GB disk space; system RAM 16 GB minimum / 32 GB recommended for SDXL.\n{size} px · CPU offload: {offload}. 2/6 GB guides are especially slow. Other running models also use VRAM.",
+        "license": "Model: {repo}\n{license} · image download {download}, plus ~3.9 GB review/motion models and ~4 GB runtime. Allow 25 GB disk space; system RAM 16 GB minimum / 32 GB recommended for SDXL.\n{size} px · CPU offload: {offload}. 2/6 GB guides are especially slow. Other running models also use VRAM.",
         "read": 'Before using this advanced model, read its <a href="{url}">original license and use restrictions</a>. App code is MIT; model weights are not MIT or OSI-approved open source. No weights are bundled. Commercial use remains subject to the model license; this is not legal clearance for an output.',
         "agree": "I have reviewed the selected model's license and will request only original, family-friendly characters.",
         "prepare": "1. Prepare runtime and selected models (large download)",
-        "setup": "Install/start Ollama first. Preparation installs an isolated Python 3.12/CUDA runtime and downloads the selected image model, CPU safety/cutout models, Qwen2.5 1.5B and Qwen3-VL 2B. Internet is needed for setup; descriptions and images stay local. No administrator rights or global PATH change needed. Retry Preparation after a failed download.",
+        "setup": "Install/start Ollama first. Preparation installs an isolated Python 3.12/CUDA runtime and downloads the selected image model, CPU safety/cutout/joint models, Qwen2.5 1.5B and Qwen3-VL 2B. Internet is needed for setup; descriptions and images stay local. No administrator rights or global PATH change needed. Retry Preparation after a failed download.",
         "prompt": "2. Describe an original character (required, at most 2,000 characters)",
-        "example": "An original tiny glass-and-brass astronomer with a crescent-shaped body, turquoise curly hair, a navy embroidered cape, oversized copper boots and a floating lantern. Warm watercolor and ink, friendly expression, complete body visible.",
+        "example": "Original chibi astronomer, front view, full body standing, both hands clearly visible beside the hips, two separate copper boots. Short turquoise hair, cream shirt, navy vest, crescent brooch. Friendly watercolor illustration, white background.",
         "sample": "Insert example", "generate": "Generate artwork", "use": "Use this character", "close": "Close", "guide": "Open detailed setup/license guide",
-        "limits": "NSFW and recognizable character/logo replication requests are prohibited. Local prompt review, an image classifier and vision review must all pass. Checks can miss content or reject safe requests; they do not guarantee copyright clearance. Inspect the result before using or publishing it. Motion is whole-image sway/flip/jump, not AI-generated limb animation. Trait options cannot edit this bitmap; regenerate to change it.",
+        "limits": "NSFW and recognizable character/logo replication requests are prohibited. Local prompt review, an image classifier and vision review must all pass. Checks can miss content or reject safe requests; they do not guarantee copyright clearance. Inspect the result before using or publishing it. Editable 2D cutout motion moves hands and feet; check joint/area suggestions in Motion settings. It is not 3D or AI video. Trait options cannot repaint this bitmap.",
         "ready": "Ready. Enter an original description and generate. Review may take several minutes; SDXL generation can take much longer on a laptop.",
         "done": "Artwork passed local checks. Inspect it, then Use this character → Save settings in the main window.",
         "mouth": "Click the mouth in the preview to adjust the bite point (cross). The automatic estimate can be inaccurate.",
+        "motion": "Edit hand/foot motion…",
+        "done_no_motion": "Artwork passed content checks. A reliable limb rig was not found. Open Edit hand/foot motion to prepare the helper or adjust the four areas manually before applying.",
+        "art_rigging": "Estimating editable hand/foot motion on the CPU…",
+        "art_pose_downloading": "Downloading the CPU joint-estimation model…",
+        "art_pose_unavailable": "The CPU motion helper is unavailable or uncertain. Prepare it in the motion editor or adjust the limb areas manually.",
         "art_installing": "Preparing isolated image runtime… first setup can take tens of minutes.",
         "art_downloading": "Downloading selected image, safety and cutout models… keep this window open.",
         "art_review_models": "Downloading local Ollama review models… keep Ollama running.",
@@ -74,18 +79,23 @@ TEXT = {
         "title": "창작 그림 · 선택형 GPU 모드",
         "intro": "실루엣·머리카락·의상·재질이 다른 실제 그림을 생성합니다. Qwen 도형 설계와는 별도입니다. NVIDIA CUDA GPU가 필요하며 VRAM 기준은 실행 보장이 아닙니다.",
         "tier": "GPU VRAM 기준",
-        "license": "모델: {repo}\n{license} · 그림 모델 {download}, 별도 검사용 약 3.5 GB, 실행환경 약 4 GB 다운로드. 디스크 25 GB 여유 권장. 시스템 RAM 최소 16 GB / SDXL은 32 GB 권장.\n{size} px · CPU 분산: {offload}. 2/6 GB 기준은 특히 느립니다. 다른 모델이 점유한 VRAM도 고려하세요.",
+        "license": "모델: {repo}\n{license} · 그림 모델 {download}, 별도 검사·움직임용 약 3.9 GB, 실행환경 약 4 GB 다운로드. 디스크 25 GB 여유 권장. 시스템 RAM 최소 16 GB / SDXL은 32 GB 권장.\n{size} px · CPU 분산: {offload}. 2/6 GB 기준은 특히 느립니다. 다른 모델이 점유한 VRAM도 고려하세요.",
         "read": '고급 모델 사용 전 <a href="{url}">원본 라이선스와 이용 제한</a>을 확인하세요. 앱 코드는 MIT이며 모델은 MIT·OSI 승인 오픈소스가 아닙니다. 가중치는 배포본에 포함하지 않습니다. 상업적 이용도 모델의 조건을 따라야 하며 결과물의 권리 확보를 보증하지 않습니다.',
         "agree": "선택한 모델의 라이선스를 확인했으며 독창적이고 전연령에 적합한 캐릭터만 요청하겠습니다.",
         "prepare": "1. 실행환경·선택 모델 준비 (대용량 다운로드)",
-        "setup": "먼저 Ollama를 설치하고 실행하세요. 준비 버튼은 격리된 Python 3.12/CUDA 환경, 선택 그림 모델, CPU 안전 검사·배경 제거 모델, Qwen2.5 1.5B·Qwen3-VL 2B를 설치합니다. 설치에는 인터넷이 필요하며 설명·그림은 로컬에서 처리합니다. 관리자 권한이나 전역 PATH 변경은 필요 없습니다. 다운로드 실패 시 준비를 다시 누르세요.",
+        "setup": "먼저 Ollama를 설치하고 실행하세요. 준비 버튼은 격리된 Python 3.12/CUDA 환경, 선택 그림 모델, CPU 안전 검사·배경 제거·관절 추정 모델, Qwen2.5 1.5B·Qwen3-VL 2B를 설치합니다. 설치에는 인터넷이 필요하며 설명·그림은 로컬에서 처리합니다. 관리자 권한이나 전역 PATH 변경은 필요 없습니다. 다운로드 실패 시 준비를 다시 누르세요.",
         "prompt": "2. 독창적인 캐릭터 설명 (필수 · 최대 2,000자)",
-        "example": "초승달 모양의 몸을 가진 유리와 황동 재질의 작은 천문학자. 청록색 곱슬머리, 자수가 놓인 남색 망토, 커다란 구리 부츠와 공중에 떠 있는 등불. 따뜻한 수채화와 잉크 표현, 친근한 표정, 전신이 보이는 독창적인 캐릭터.",
+        "example": "독창적인 작은 SD 천문학자. 정면에 가까운 서 있는 전신, 양손은 엉덩이 옆에서 뚜렷하게 보이고 구리 부츠를 신은 양발은 떨어진 자세. 짧은 청록색 머리, 크림색 셔츠, 남색 조끼, 초승달 브로치. 친근한 수채화 표현, 흰색 배경.",
         "sample": "예시 넣기", "generate": "그림 생성", "use": "이 캐릭터 사용", "close": "닫기", "guide": "자세한 설치·라이선스 안내 열기",
-        "limits": "NSFW 및 식별 가능한 기존 캐릭터·로고 복제 요청은 금지합니다. 로컬 요청 검사·이미지 분류·비전 검사를 모두 통과해야 합니다. 검사 누락이나 정상 요청의 오차단이 있을 수 있으며 저작권 검증을 보장하지 않습니다. 사용·공개 전에 직접 확인하세요. 움직임은 그림 전체의 흔들림·반전·점프이며 AI 팔다리 애니메이션은 아닙니다. 도형 옵션으로 이 그림을 편집할 수 없으며 바꾸려면 다시 생성하세요.",
+        "limits": "NSFW 및 식별 가능한 기존 캐릭터·로고 복제 요청은 금지합니다. 로컬 요청 검사·이미지 분류·비전 검사를 모두 통과해야 합니다. 검사 누락이나 정상 요청의 오차단이 있을 수 있으며 저작권 검증을 보장하지 않습니다. 사용·공개 전에 직접 확인하세요. 손발은 편집 가능한 2D 그림 조각으로 움직입니다. 움직임 설정에서 관절·영역을 확인하세요. 3D·AI 영상은 아니며 도형 옵션으로 이 그림을 다시 칠할 수는 없습니다.",
         "ready": "준비됐습니다. 설명을 입력하고 생성하세요. 검사는 수 분, 노트북의 SDXL 그림 생성은 훨씬 오래 걸릴 수 있습니다.",
         "done": "로컬 검사를 통과했습니다. 결과 확인 → 이 캐릭터 사용 → 본창의 설정 저장을 누르세요.",
         "mouth": "미리보기의 입을 클릭하면 깨물기 위치(십자)를 조정합니다. 자동 추정에는 오차가 있을 수 있습니다.",
+        "motion": "그림 손발 움직임 설정…",
+        "done_no_motion": "그림 검사는 통과했지만 손발 영역을 확실히 추정하지 못했습니다. 손발 움직임 설정에서 도우미를 준비하거나 네 영역을 직접 조정한 뒤 사용하세요.",
+        "art_rigging": "CPU에서 조정 가능한 손발 움직임 추정 중…",
+        "art_pose_downloading": "CPU 관절 추정 모델 다운로드 중…",
+        "art_pose_unavailable": "CPU 움직임 도우미가 없거나 추정이 불확실합니다. 움직임 설정에서 준비하거나 손발 영역을 직접 조정하세요.",
         "art_installing": "격리된 그림 실행환경 준비 중… 최초 설치는 수십 분 걸릴 수 있습니다.",
         "art_downloading": "선택한 그림·안전 검사·배경 제거 모델 다운로드 중… 창을 열어 두세요.",
         "art_review_models": "Ollama 검사용 모델 다운로드 중… Ollama를 실행해 두세요.",
@@ -238,6 +248,9 @@ class ArtworkDialog(QDialog):
         self.preview.mouth_changed.connect(self.adjust_mouth)
         layout.addWidget(self.preview, alignment=Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(self.label(self.t["mouth"]))
+        self.motion_button = QPushButton(self.t["motion"])
+        self.motion_button.clicked.connect(self.open_motion)
+        layout.addWidget(self.motion_button)
         layout.addWidget(self.label(self.t["limits"]))
         scroll.setWidget(body)
         outer.addWidget(scroll, 1)
@@ -302,6 +315,7 @@ class ArtworkDialog(QDialog):
             control.setEnabled(not busy)
         self.preview.setEnabled(not busy)
         self.use.setEnabled(not busy and self.result_spec is not None)
+        self.motion_button.setEnabled(not busy and self.result_spec is not None)
 
     def start(self, generate):
         if self.worker is not None or not self.agree.isChecked():
@@ -393,10 +407,32 @@ class ArtworkDialog(QDialog):
         else:
             self.result_spec = result
             self.preview.spec = safe_character(result)
-            self.preview.timer.stop()
+            if self.preview.spec.get("rig"):
+                self.preview.timer.start(40)
+            else:
+                self.preview.timer.stop()
             self.preview.phase = 0
             self.preview.update()
-            self.status.setText(self.t["done"])
+            self.status.setText(self.t["done"] if self.preview.spec.get("rig") else self.t["done_no_motion"])
+
+    def open_motion(self):
+        if self.worker is not None or self.result_spec is None:
+            return
+        from .motion_ui import MotionDialog
+        dialog = MotionDialog(self.result_spec, self.language, self.preview.theme, self, self.parent())
+        dialog.chosen.connect(self.motion_chosen)
+        dialog.exec()
+        dialog.preview.timer.stop()
+        dialog.deleteLater()
+
+    def motion_chosen(self, spec):
+        self.result_spec = safe_character(spec)
+        self.preview.spec = self.result_spec
+        if self.result_spec.get("rig"):
+            self.preview.timer.start(40)
+        else:
+            self.preview.timer.stop()
+        self.preview.update()
 
     def adjust_mouth(self, x, y):
         if self.result_spec is not None and self.worker is None:

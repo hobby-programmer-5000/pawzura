@@ -14,6 +14,7 @@ For actual generated illustrations with original silhouettes, clothing and hairs
 | Inference server | Separately installed Ollama | MIT for its main project; bundled components retain individual terms | Local 127.0.0.1:11434/api/generate |
 | Vector motion models | None | Not applicable | Original vector drawing and procedural motion |
 | Optional artwork / review / cutout | SD 1.5, SDXL, Qwen3-VL, Falconsai ViT, U2NetP | Individual terms | [Separate catalog and flow](CREATIVE-ART.md) |
+| Optional artwork joint suggestions | usyd-community/vitpose-base-simple (~350 MB), pinned revision in catalog | Apache-2.0 | Local CPU helper during setup/generation; [editable hand/foot motion](ARTWORK-MOTION.md). Walking itself uses no model |
 
 ## Use the optional designer
 

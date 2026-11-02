@@ -30,6 +30,8 @@ TEXT = {
         "theme_help": "선택하면 바로 미리 봅니다. 다음 실행에도 유지하려면 설정 저장을 누르세요.",
         "advanced": "고급", "advanced_models": "큰 도형 해석 모델 사용 (외형 틀은 동일)",
         "creative_art": "창작 그림 만들기… (GPU · 별도 모델)",
+        "motion": "그림 손발 움직임 설정…",
+        "art_missing": "그림 파일이 없거나 손상됐습니다. 이전 외형을 복원하거나 그림을 다시 생성하세요.",
         "art_traits": "현재는 생성된 그림입니다. 아래 도형 옵션은 그림에 적용되지 않습니다. 변경하려면 ‘창작 그림 만들기’를 다시 이용하세요. 임의 캐릭터·기본 외형으로 도형 설계에 돌아갈 수 있습니다.",
         "vram_tier": "GPU VRAM 용량 (직접 선택)", "vram_unknown": "CPU / 모름",
         "advanced_help": "2·4·6·8 GB는 모델 선택을 돕는 기준이며 GPU 감지나 실행 보장이 아닙니다. 실제 남은 VRAM과 시스템 RAM이 충분해야 합니다. GPU 지원과 CPU 분산은 Ollama가 결정합니다.",
@@ -105,6 +107,8 @@ TEXT = {
         "theme_help": "Preview immediately. Save settings to keep your choice for next launch.",
         "advanced": "Advanced", "advanced_models": "Enable larger trait interpreters (same shapes)",
         "creative_art": "Create original artwork… (GPU · separate models)",
+        "motion": "Edit hand/foot motion…",
+        "art_missing": "The artwork file is missing or corrupt. Restore a previous appearance or generate it again.",
         "art_traits": "This character is generated artwork. Trait options below cannot edit its pixels. Use Create original artwork again to change it. Random/default returns to vector design.",
         "vram_tier": "GPU VRAM capacity (manual)", "vram_unknown": "CPU / unknown",
         "advanced_help": "2/4/6/8 GB are model-selection guides, not GPU detection or a guarantee of fit. You need sufficient free VRAM and system RAM. Ollama determines GPU support and CPU offloading.",
@@ -717,7 +721,12 @@ class SettingsDialog(QDialog):
         layout = self.page("character")
         self.art_button = QPushButton(self.t["creative_art"])
         self.art_button.clicked.connect(self.open_artwork)
-        layout.addWidget(self.art_button)
+        artwork_row = QHBoxLayout()
+        artwork_row.addWidget(self.art_button, 1)
+        self.motion_button = QPushButton(self.t["motion"])
+        self.motion_button.clicked.connect(self.open_motion)
+        artwork_row.addWidget(self.motion_button)
+        layout.addLayout(artwork_row)
         designer = QHBoxLayout()
         self.character_preview = CharacterPreview(self.config["character"])
         self.character_preview.setFixedSize(200, 220)
@@ -840,9 +849,24 @@ class SettingsDialog(QDialog):
 
     def refresh_art_traits(self):
         artwork = self.config["character"].get("kind") == "artwork"
+        self.motion_button.setEnabled(artwork)
         self.custom_panel.setEnabled(not artwork)
         self.custom_button.setEnabled(not artwork)
         self.art_trait_note.setVisible(artwork)
+
+    def open_motion(self):
+        if self.worker is not None or self.config["character"].get("kind") != "artwork":
+            return
+        from .artwork import load_artwork
+        if load_artwork(self.config["character"]["art_id"]).isNull():
+            self.message.setText(self.t["art_missing"])
+            return
+        from .motion_ui import MotionDialog
+        dialog = MotionDialog(self.config["character"], self.config["language"], self.theme.currentData(), self)
+        dialog.chosen.connect(self.apply_character)
+        dialog.exec()
+        dialog.preview.timer.stop()
+        dialog.deleteLater()
 
     def refresh_model_help(self):
         model = self.character_model.currentData()

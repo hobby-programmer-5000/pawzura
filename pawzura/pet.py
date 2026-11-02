@@ -5,12 +5,12 @@ import math
 import random
 import time
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPolygonF
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPolygonF, QCursor
 from PySide6.QtWidgets import QApplication, QWidget
 from .config import safe_character
 
 
-def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=False):
+def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=False, pose="walk"):
     p = painter
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
     p.save()
@@ -22,11 +22,13 @@ def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=Fa
         image = load_artwork(spec.get("art_id"))
         if not image.isNull():
             p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-            if not biting:
+            if not biting and not spec.get("rig"):
                 p.translate(72, 136)
                 p.rotate(math.sin(phase) * 2)
                 p.translate(-72, -136 - abs(math.sin(phase)) * 3)
-            p.drawImage(QRectF(0, 0, 144, 144), image)
+            from .art_rig import draw_rig
+            if not draw_rig(p, spec, phase, "bite" if biting else pose):
+                p.drawImage(QRectF(0, 0, 144, 144), image)
             if biting:
                 x, y = 144 * spec["mouth_x"], 144 * spec["mouth_y"]
                 p.setPen(QPen(QColor("#34304a"), 1.5))
@@ -198,8 +200,8 @@ def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=Fa
         p.drawEllipse(QRectF(66, 100, 20, 20))
         p.drawLine(QPointF(70, 114), QPointF(82, 114))
     p.setBrush(body)
-    p.drawEllipse(QRectF(38, 103 + math.sin(phase) * 4, 16, 19))
-    p.drawEllipse(QRectF(98, 103 - math.sin(phase) * 4, 16, 19))
+    p.drawEllipse(QRectF(38, 103 + math.sin(phase) * 4 - (18 if pose in ("hop", "cheer") else 0), 16, 19))
+    p.drawEllipse(QRectF(98, 103 - math.sin(phase) * 4 - (30 if pose in ("wave", "hover", "hop", "cheer") else 0), 16, 19))
     p.restore()
 
 
@@ -209,6 +211,7 @@ class CharacterPreview(QWidget):
         self.spec = spec
         self.theme = "dark"
         self.phase = 0.0
+        self.pose = "walk"
         self.setMinimumSize(200, 220)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
@@ -228,9 +231,11 @@ class CharacterPreview(QWidget):
         scale = min(self.width() / 180, self.height() / 180)
         p.translate((self.width() - 144 * scale) / 2, (self.height() - 144 * scale) / 2)
         p.scale(scale, scale)
+        if self.pose == "hop":
+            p.translate(0, -abs(math.sin(self.phase)) * 10)
         p.setBrush(QColor("#ddd5e9" if self.theme == "light" else "#171b2b"))
         p.drawEllipse(QRectF(37, 137, 72, 7))
-        draw_character(p, self.spec, self.phase)
+        draw_character(p, self.spec, self.phase, pose=self.pose)
 
 
 class Crack(QWidget):
@@ -316,7 +321,7 @@ class TabTarget(QWidget):
 class Pet(QWidget):
     settings_requested = Signal()
 
-    def __init__(self, spec):
+    def __init__(self, spec, language="en"):
         super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool | Qt.WindowType.WindowDoesNotAcceptFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
@@ -327,6 +332,14 @@ class Pet(QWidget):
         self.direction = 1
         self.last_tick = time.monotonic()
         self.action = None
+        self.reaction = None
+        self.hovered = False
+        self.look_direction = 1
+        self.click_count = 0
+        self.next_idle = time.monotonic() + 12
+        self.setMouseTracking(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.set_language(language)
         self.cracks = []
         self.tab_marker = None
         self.home()
@@ -338,6 +351,35 @@ class Pet(QWidget):
         for screen in QApplication.screens():
             self.watch_screen(screen)
         QApplication.instance().screenAdded.connect(self.watch_screen)
+
+    def set_language(self, language):
+        self.setToolTip("커서: 인사 · 클릭: 인사/점프/환호 · 더블 클릭/우클릭: 설정" if language == "ko" else
+                        "Hover: greet · Click: wave / hop / cheer · Double-click / right-click: settings")
+
+    def react(self, kind):
+        if self.action or kind not in ("wave", "hop", "cheer"):
+            return False
+        self.reaction = {"kind": kind, "start": time.monotonic(), "duration": .9 if kind == "hop" else 1.6}
+        return True
+
+    def enterEvent(self, event):
+        self.hovered = True
+        self.look_direction = -1 if QCursor.pos().x() < self.geometry().center().x() else 1
+        self.update()
+
+    def leaveEvent(self, event):
+        self.hovered = False
+        self.update()
+
+    def mouseMoveEvent(self, event):
+        self.look_direction = -1 if event.position().x() < self.width() / 2 else 1
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and not self.action:
+            kind = ("wave", "hop", "cheer")[self.click_count % 3]
+            self.click_count += 1
+            self.react(kind)
+            event.accept()
 
     def watch_screen(self, screen):
         screen.availableGeometryChanged.connect(self.screen_changed)
@@ -368,6 +410,9 @@ class Pet(QWidget):
     def bite(self, point: QPointF, callback, label="", tab=False):
         if self.action:
             return False
+        # Pointer reactions never replace or complete a guardian action.
+        self.reaction = None
+        self.move(round(self.px), round(self.py))
         marker = None
         if tab and self.isVisible():
             if self.tab_marker is None:
@@ -390,6 +435,8 @@ class Pet(QWidget):
     def cancel_bite(self):
         self.clear_marker()
         self.action = None
+        self.reaction = None
+        self.hovered = False
         self.home()
 
     def clear_marker(self):
@@ -400,6 +447,8 @@ class Pet(QWidget):
 
     def dispose(self):
         self.timer.stop()
+        self.reaction = None
+        self.hovered = False
         self.clear_marker()
         self.action = None
         app = QApplication.instance()
@@ -426,6 +475,11 @@ class Pet(QWidget):
         dt = min(0.1, now - self.last_tick)
         self.last_tick = now
         self.phase += dt * 9
+        if self.reaction and now - self.reaction["start"] >= self.reaction["duration"]:
+            self.reaction = None
+        if not self.action and not self.reaction and not self.hovered and now >= self.next_idle:
+            self.react("wave")
+            self.next_idle = now + random.uniform(12, 20)
         action = self.action
         if action:
             elapsed = now - action["start"]
@@ -474,14 +528,20 @@ class Pet(QWidget):
                 self.home()
                 screen = QApplication.primaryScreen()
             area = screen.availableGeometry()
-            self.px += self.direction * dt * 42
+            if not self.hovered and self.reaction is None:
+                self.px += self.direction * dt * 42
             # At each edge, continue onto the next extended display; wrap at the outer edge.
             if self.px + 72 > area.right():
                 index = (screens.index(screen) + 1) % len(screens)
                 area = screens[index].availableGeometry()
                 self.px = float(area.left())
             self.py = float(max(area.top(), area.bottom() - self.height() + 1))
-        self.move(round(self.px), round(self.py))
+        display_y = self.py
+        if not self.action and self.reaction and self.reaction["kind"] == "hop":
+            elapsed = max(0, min(1, (now - self.reaction["start"]) / self.reaction["duration"]))
+            screen = QApplication.screenAt(QPointF(self.px + 72, self.py + 72).toPoint()) or QApplication.primaryScreen()
+            display_y = max(screen.availableGeometry().top(), self.py - math.sin(elapsed * math.pi) * 28) if screen else self.py
+        self.move(round(self.px), round(display_y))
         self.update()
 
     def paintEvent(self, _):
@@ -490,9 +550,19 @@ class Pet(QWidget):
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
         p.fillRect(self.rect(), Qt.GlobalColor.transparent)
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-        draw_character(p, self.spec, self.phase, self.direction, bool(self.action and self.action["hit"]))
+        pose = "walk" if self.action else self.reaction["kind"] if self.reaction else "hover" if self.hovered else "walk"
+        facing = self.look_direction if self.hovered and not self.action else self.direction
+        draw_character(p, self.spec, self.phase, facing, bool(self.action and self.action["hit"]), pose)
+        if not self.action and (self.hovered or self.reaction):
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QColor("#f9ce80"))
+            for index in range(3):
+                x = 19 + index * 50
+                y = 16 + math.sin(self.phase * .8 + index) * 5
+                p.drawEllipse(QPointF(x, y), 2.5, 2.5)
 
     def mouseDoubleClickEvent(self, _):
+        self.reaction = None
         self.settings_requested.emit()
 
     def contextMenuEvent(self, event):

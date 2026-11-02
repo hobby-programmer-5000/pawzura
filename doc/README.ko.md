@@ -4,6 +4,9 @@
 
 기본 문서는 영어이며 모든 자체 문서에 한국어 버전이 있습니다.
 
+- [그림 손발 움직임·커서 상호작용](ko/ARTWORK-MOTION.md)
+- [0.3.0 그림 움직임](ko/RELEASE-v0.3.0.md)
+
 - [처음 사용하기](ko/GETTING_STARTED.md)
 - [로컬 설정과 개인정보](ko/PRIVACY.md)
 - [브라우저 연결과 예시](ko/BROWSERS.md)

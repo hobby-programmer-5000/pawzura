@@ -26,7 +26,7 @@ For websites, choose your browser and click **Install/connect extension…**. On
 
 ## What it does
 
-- Walks across connected monitors with an original, changeable character.
+- Walks across monitors, animates configured artwork hands/feet and reacts to hover/clicks. [Motion setup](doc/en/ARTWORK-MOTION.md).
 - Jumps, bites and shows a fading crack before requesting an unlisted window to close.
 - Protects browser windows; its extension closes blocked tabs and connects with desktop approval, without code entry.
 - Offers light/dark settings, a lightweight Qwen trait designer and optional GPU [original artwork generation](doc/en/CREATIVE-ART.md). Advanced image models require separate downloads and license review.

@@ -9,7 +9,7 @@
 - Windows 10/11 x64 and a supported **NVIDIA CUDA GPU** are required for this optional implementation. AMD/Intel graphics and CPU-only image generation are not supported. The main app still works without this feature.
 - Install and start [Ollama](https://ollama.com/). The image runtime is separate: Windows Ollama is used for **local review**, not for drawing the image.
 - Allow **25 GB of disk space**, at least **16 GB system RAM** (32 GB recommended for SDXL), and additional free VRAM. Total capacity is not available memory. Close other GPU/model workloads yourself if needed.
-- Downloads can take tens of minutes. The first setup downloads roughly 4 GB of runtime packages, about 3.5 GB of review models and the selected image weights. Installation expands these files and caches may consume more space. Keep the window open until it finishes.
+- Downloads can take tens of minutes. The first setup downloads roughly 4 GB of runtime packages, about 3.9 GB of review/motion models and the selected image weights. Installation expands these files and caches may consume more space. Keep the window open until it finishes.
 - **Check the selected advanced model's original license before use.** Pawzura code is MIT; SD 1.5 and SDXL weights use different, restricted OpenRAIL licenses, not MIT/Apache or OSI-approved open-source terms. The app does not bundle or relicense weights. The optional installer also downloads third-party runtime packages, including NVIDIA components with their own terms. See [notices](THIRD-PARTY-NOTICES.md).
 
 ## Select a memory guide
@@ -30,15 +30,15 @@ The image model generates a single illustration. There is no preset list of body
 1. Open **Character → Create original artwork…** (also available in **Advanced**).
 2. Choose your VRAM guide. Open the model's original license link and read its restrictions. Check the acknowledgement for that selection. Changing the guide clears it. The acknowledgement is session-only.
 3. Click **1. Prepare runtime and selected models**. This explicitly installs an isolated Python 3.12.14 environment and pinned CUDA image packages under `%LOCALAPPDATA%\Pawzura\art-runtime`. It does not change global Python, PATH, administrator permissions or persistent PowerShell execution policy. Runtime bootstrapping uses a checksum-verified official uv download. Preparation is resumable; run it again after a failed download or when changing image families.
-4. Preparation downloads the selected image weights, a CPU NSFW classifier, a background-removal model, and these exact local Ollama review models:
+4. Preparation downloads the selected image weights, a CPU NSFW classifier, a background-removal model, an Apache-2.0 ViTPose joint helper, and these exact local Ollama review models:
 
    ```powershell
    ollama pull hf.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M
    ollama pull qwen3-vl:2b
    ```
 
-5. Enter an original description or click **Insert example**. Example: “A tiny glass-and-brass astronomer with a crescent-shaped body, turquoise curly hair, an embroidered navy cape, copper boots and a floating lantern; warm watercolor and ink, friendly expression, full body.” Do not name an existing character, franchise or logo. Do not include restricted content even as a negative instruction.
-6. Click **Generate artwork**. The local stages are description verdict → concise English summary when needed → image generation → image classifier/background removal → vision review. A laptop may take many minutes, especially with sequential offload. Wait for the current operation before closing the dialog or quitting.
+5. Enter an original description or click **Insert example**. The example requests a front-facing chibi astronomer with both hands visible beside the hips, separate copper boots, short turquoise hair, cream shirt, navy vest and crescent brooch on white. Visible, separated limbs make motion setup easier. Custom designs remain available. Do not name an existing character, franchise or logo. Do not include restricted content even as a negative instruction.
+6. Click **Generate artwork**. The local stages are description verdict → concise English summary when needed → image generation → image classifier/background removal → optional joint suggestions → vision review. A laptop may take many minutes, especially with sequential offload. Wait for the current operation before closing the dialog or quitting.
 7. Inspect the preview. Click **Use this character**, then **Save settings** in the main window. This final save applies the companion. Errors retain the previous design; the old result remains selectable after a failed retry.
 
 No private prompt or image goes to a cloud inference service. Setup contacts official package/model hosts; inference uses fixed local files and `127.0.0.1:11434`. Descriptions remain in the dialog for the session and are not written to settings, command arguments or app logs. Ollama is an external service with its own behavior. Approved PNG pixels are stored locally under `%LOCALAPPDATA%\Pawzura\artwork` by content hash; no arbitrary model-supplied file path is accepted. Metadata is removed. Up to 20 design references remain in history; old PNG files are not automatically deleted.
@@ -52,11 +52,16 @@ Library/model loading and local review use an indeterminate bar because they do 
 
 Completion/failure freezes the elapsed time and clearly marks Completed/Stopped. Existing review timeouts apply; the image worker wait is limited to 30 minutes, runtime installation and each Ollama pull to 60 minutes. A timeout stops waiting and preserves the previous character; a local review or installer child may still finish in the background. No late progress/output is applied after failure. This update does not add cancellation or bypass content review. Progress contains only fixed stage codes and numeric counters; backend logs, prompts, local paths and pairing data are not displayed or persisted.
 
+
 ## Animation and recovery
 
-Artwork uses whole-image sway, horizontal flip and the existing jump/bite/crack sequence. It is **not an articulated or model-generated walking/blinking sprite rig**. A local vision estimate places the bite marker near the mouth; it can be approximate. Click the mouth in the creation preview to adjust the cross before using the character. The existing native/browser close protections still apply.
+New humanoid artwork receives editable hand/forearm and foot cutout suggestions from the local CPU joint helper. The app moves these original pixels independently during walking, waving and cheering; it does not generate a 3D rig or AI video. Hover pauses walking and greets, clicks cycle wave/hop/cheer, and idle greetings occur occasionally. Double-click/right-click still opens settings. These visual reactions never close an app/tab or replace a guardian bite.
 
-Vector appearance options cannot recolor or change an image. Regenerate artwork to edit it; **Random character** or **Reset default appearance** returns to vector design. **Use previous character** restores saved image/vector references. **Recover companion on screen** still recovers position. If a PNG is missing/corrupt, the renderer uses a vector fallback; regenerate or restore a retained image to recover the artwork. Keep the local artwork folder when backing up settings; copying the EXE alone does not copy your designs.
+For existing pictures, open **Character → Edit hand/foot motion…**. Prepare the optional helper once, click **Estimate joints automatically**, inspect the four colored areas and joints, then **Use motion settings → Save settings**. No image regeneration is needed. Manual area/joint editing also works without the helper. New artwork has the same editor in its creation dialog. [Full motion guide](ARTWORK-MOTION.md).
+
+Animals, hidden limbs and unusual clothing may need manual corrections. Revealed sleeve/cape areas use simple edge blending and can show seams; no missing anatomy is reconstructed. If estimation is unavailable, the creation dialog explicitly points to motion setup rather than claiming articulated motion. Unconfigured/disabled rigs retain the prior whole-image fallback. Mouth coordinates remain separately adjustable. The source PNG stays unchanged; rig geometry is kept with settings/history.
+
+Vector appearance options cannot recolor an image. Regenerate to repaint it; Random/default returns to vector design. History restores retained image/rig references, and Recover companion on screen cancels current visual actions and recovers position. A missing/corrupt source image uses the existing vector fallback. Back up the artwork folder with settings.
 
 ## Content and rights
 

@@ -68,9 +68,14 @@ def safe_character(raw) -> dict:
         coords = [raw.get(key) for key in ("mouth_x", "mouth_y")]
         if not all(type(value) in (int, float) and math.isfinite(value) and .05 <= value <= .95 for value in coords):
             return default_character()
-        return {**default_character(), "kind": "artwork", "source": "artwork", "seed": seed,
+        result = {**default_character(), "kind": "artwork", "source": "artwork", "seed": seed,
                 "art_id": raw["art_id"], "art_model": raw["art_model"],
                 "mouth_x": coords[0], "mouth_y": coords[1]}
+        from .art_rig import safe_rig
+        rig = safe_rig(raw.get("rig"))
+        if rig is not None:
+            result["rig"] = rig
+        return result
     result = validate_character({**default_character(), **raw}, seed)
     result["source"] = raw.get("source") if raw.get("source") in ("qwen", "custom") else "random"
     if result["source"] == "qwen" or (result["source"] == "custom" and raw.get("model")):

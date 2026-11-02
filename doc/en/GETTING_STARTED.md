@@ -45,6 +45,8 @@ Return to **General**, leave **Preview mode** checked, enable **Enable focus gua
 | Exit the whole app | Right-click → Quit |
 | Start at sign-in | General → Run when I sign in to Windows → Save settings |
 | Change language | General → Language → Save settings |
+| Play with the companion | Hover to greet; click to cycle wave/hop/cheer; double-click/right-click to open settings |
+| Animate generated hands/feet | Character → Edit hand/foot motion… → Use motion settings → Save settings; [guide](ARTWORK-MOTION.md) |
 
 The settings window's close button returns to the tray. **Hide companion** keeps the guardian running; **Quit** stops it.
 

@@ -34,6 +34,8 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [MIT licensing](en/LICENSE.md)
 
 - [Original GPU artwork and model licenses](en/CREATIVE-ART.md)
+- [Artwork hand/foot motion and pointer interactions](en/ARTWORK-MOTION.md)
+- [0.3.0 artwork motion](en/RELEASE-v0.3.0.md)
 
 - [0.2.0 original artwork](en/RELEASE-v0.2.0.md)
 

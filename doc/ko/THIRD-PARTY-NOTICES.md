@@ -44,6 +44,8 @@ CPython 표준 바이너리 확장의 구성은 버전과 import 그래프에 �
 | Qwen3-VL 2B Instruct / Ollama `qwen3-vl:2b` | Apache-2.0 · [공식 모델](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct) · [Ollama 패키지](https://ollama.com/library/qwen3-vl:2b) | 로컬 그림 검사. 위의 Qwen2.5 1.5B는 설명 검사 |
 | Falconsai/nsfw_image_detection | Apache-2.0 · [모델 카드](https://huggingface.co/Falconsai/nsfw_image_detection) · [원문](../../licenses/upstream/Apache-2.0.txt) | CPU ViT 분류기, 완벽한 안전 보장 아님 |
 | U2NetP ONNX | Apache-2.0 · [미러](https://huggingface.co/edgetools/u2netp) · [원본 U-2-Net 라이선스](../../licenses/upstream/creative-models/U2Net-LICENSE.txt) | CPU 배경 제거 |
+| ViTPose base simple | Apache-2.0 · [모델 카드](https://huggingface.co/usyd-community/vitpose-base-simple) · [원문](../../licenses/upstream/creative-models/ViTPose-LICENSE.txt) | 선택형 CPU 손발 관절 추정. revision 고정, 가중치 미동봉 |
+| SciPy 1.16.3 | BSD-3-Clause·포함 고지 · [원문](../../licenses/upstream/creative-models/SciPy-LICENSE.txt) | 선택형 자세 모델 전후 처리. 설치 wheel의 포함 의존성 고지 유지 |
 | uv 0.13.6 | MIT OR Apache-2.0 · [MIT](../../licenses/upstream/creative-models/uv-LICENSE-MIT.txt) · [Apache](../../licenses/upstream/creative-models/uv-LICENSE-APACHE.txt) | 공식 파일 체크섬 검증 후 환경 준비 |
 | 별도 CPython 3.12.14 | PSF·포함 고지 · [python-build-standalone](https://github.com/astral-sh/python-build-standalone) | 격리된 그림 인터프리터, 원본 배포의 고지 유지 |
 | PyTorch 2.7.1 CUDA 11.8 | BSD-3-Clause·포함 고지 · [원문](https://github.com/pytorch/pytorch/blob/v2.7.1/LICENSE) | 추론. 내려받는 NVIDIA CUDA·cuDNN은 [CUDA EULA](https://docs.nvidia.com/cuda/eula/index.html) 등 자체 독점 조건 적용 |

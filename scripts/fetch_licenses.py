@@ -56,6 +56,8 @@ def main():
         "creative-models/U2Net-LICENSE.txt": "https://raw.githubusercontent.com/xuebinqin/U-2-Net/master/LICENSE",
         "creative-models/uv-LICENSE-MIT.txt": "https://raw.githubusercontent.com/astral-sh/uv/0.13.6/LICENSE-MIT",
         "creative-models/uv-LICENSE-APACHE.txt": "https://raw.githubusercontent.com/astral-sh/uv/0.13.6/LICENSE-APACHE",
+        "creative-models/ViTPose-LICENSE.txt": "https://raw.githubusercontent.com/ViTAE-Transformer/ViTPose/main/LICENSE",
+        "creative-models/SciPy-LICENSE.txt": "https://raw.githubusercontent.com/scipy/scipy/v1.16.3/LICENSE.txt",
         "OpenSSL-LICENSE.txt": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.8/LICENSE.txt",
         "libffi-LICENSE.txt": "https://raw.githubusercontent.com/libffi/libffi/v3.4.8/LICENSE",
         "zlib-LICENSE.txt": "https://raw.githubusercontent.com/madler/zlib/v1.3.2/LICENSE",

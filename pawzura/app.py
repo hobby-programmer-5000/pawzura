@@ -23,7 +23,7 @@ from . import windows
 class Companion:
     def __init__(self, app, settings):
         self.app, self.settings = app, settings
-        self.pet = Pet(settings.snapshot()["character"])
+        self.pet = Pet(settings.snapshot()["character"], settings.snapshot()["language"])
         self.pet.settings_requested.connect(self.show_settings)
         self.dialog = None
         self.pairing_dialog_open = False
@@ -102,7 +102,7 @@ class Companion:
         self.settings.save({"pet_visible": True})
         self.bridge.invalidate_tickets()
         self.pet.dispose()
-        self.pet = Pet(self.settings.snapshot()["character"])
+        self.pet = Pet(self.settings.snapshot()["character"], self.settings.snapshot()["language"])
         self.pet.settings_requested.connect(self.show_settings)
         self.pet.show()
         self.pet.raise_()
@@ -116,6 +116,7 @@ class Companion:
         self.bridge.invalidate_tickets()
         self.pet.cancel_bite()
         self.pet.spec = config["character"]
+        self.pet.set_language(config["language"])
         self.pet.setVisible(config["pet_visible"])
         self.tray.setIcon(self.make_icon())
         self.tray.setToolTip("Pawzura · " + ("Preview" if config["guard_enabled"] and config["preview_only"] else "Guardian on" if config["guard_enabled"] else "Guardian off"))

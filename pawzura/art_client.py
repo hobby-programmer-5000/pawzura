@@ -17,7 +17,7 @@ TIERS = {2: ("sd15", 384, "sequential"), 4: ("sd15", 512, "model"),
 PROGRESS_PREFIX = b"PAWZURA_PROGRESS "
 PROGRESS_STAGES = frozenset({"art_loading", "art_sampling", "art_decoding", "art_scanning",
                              "art_cutting", "art_downloading", "art_runtime_tool", "art_runtime_python",
-                             "art_runtime_torch", "art_runtime_packages", "art_runtime_notices"})
+                             "art_runtime_torch", "art_runtime_packages", "art_runtime_notices", "art_rigging", "art_pose_downloading"})
 
 
 def progress_event(line):
@@ -144,7 +144,7 @@ def _run(command, payload=None, timeout=1800, progress=None):
             code = json.loads(output).get("error")
         except (ValueError, AttributeError):
             code = None
-        allowed = {"art_gpu_required", "model_memory_error", "art_output_blocked", "art_cutout_failed", "art_download_failed"}
+        allowed = {"art_gpu_required", "model_memory_error", "art_output_blocked", "art_cutout_failed", "art_download_failed", "art_pose_unavailable"}
         raise GenerationError(code if code in allowed else "art_runtime_failed")
     return output
 
@@ -185,6 +185,34 @@ def prepare_artwork(tier, progress=lambda code: None, root=None):
     progress({"stage": "art_review_models", "completed": 2, "total": 2})
 
 
+def prepare_motion(progress=lambda code: None, root=None):
+    root = root or runtime_root()
+    progress("art_installing")
+    _run(["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+          "-File", source_dir() / "setup.ps1", "-RuntimeRoot", root], timeout=3600, progress=progress)
+    progress("art_pose_downloading")
+    worker("prepare-motion", 8, root=root, progress=progress)
+
+
+def detect_motion(spec, progress=lambda code: None, root=None):
+    from PySide6.QtCore import QByteArray, QBuffer, QIODevice
+    from .artwork import load_artwork
+    from .art_rig import safe_rig
+    image = load_artwork(spec.get("art_id"))
+    if image.isNull():
+        raise GenerationError("art_pose_unavailable")
+    encoded = QByteArray()
+    buffer = QBuffer(encoded)
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+    image.save(buffer, "PNG")
+    progress("art_rigging")
+    result = worker("rig", 8, {"png": base64.b64encode(bytes(encoded)).decode("ascii")}, root=root, progress=progress)
+    rig = safe_rig(result.get("rig"))
+    if rig is None:
+        raise GenerationError("art_pose_unavailable")
+    return rig
+
+
 def generate_artwork(description, tier, progress=lambda code: None, root=None, assets=None):
     progress("art_reviewing")
     prompt = review_art_prompt(description, progress=progress)
@@ -201,5 +229,10 @@ def generate_artwork(description, tier, progress=lambda code: None, root=None, a
     progress("art_checking")
     mouth_x, mouth_y = review_art_image(data)
     digest = store_artwork(data, assets)
-    return {"kind": "artwork", "source": "artwork", "art_id": digest, "art_model": result["model"],
+    from .art_rig import safe_rig
+    spec = {"kind": "artwork", "source": "artwork", "art_id": digest, "art_model": result["model"],
             "seed": seed, "mouth_x": mouth_x, "mouth_y": mouth_y}
+    rig = safe_rig(result.get("rig"))
+    if rig is not None:
+        spec["rig"] = rig
+    return spec

@@ -39,7 +39,7 @@ def snapshot(name, cache, download=False):
     from huggingface_hub import snapshot_download
     model = CATALOG[name]
     patterns = (["*.json", "*.txt", "*.fp16.safetensors"] if name in ("sd15", "sdxl")
-                else ["config.json", "preprocessor_config.json", "model.safetensors"] if name == "safety"
+                else ["config.json", "preprocessor_config.json", "model.safetensors"] if name in ("safety", "pose")
                 else ["u2netp.onnx"])
     for attempt in range(2 if download else 1):
         try:
@@ -119,9 +119,7 @@ def generate(tier, cache, payload):
         pipe.enable_attention_slicing("max")
     else:
         pipe.enable_model_cpu_offload()
-    composed = ("Original character illustration, single full body chibi character, "
-                "complete head and feet visible, centered, isolated on a plain white background, "
-                "clear silhouette, appealing detailed design, " + prompt)
+    composed = "Single original full-body chibi character, isolated on white background, " + prompt
     report("art_sampling", 0, 30)
     with torch.inference_mode():
         output = pipe(prompt=composed,
@@ -139,15 +137,27 @@ def generate(tier, cache, payload):
     scan(image, cache)
     report("art_cutting")
     image = cutout(image, cache)
+    report("art_rigging")
+    rig = make_rig(image, cache)
     buffer = io.BytesIO()
     image.save(buffer, "PNG")
     return {"png": base64.b64encode(buffer.getvalue()).decode("ascii"), "model": name, "seed": seed,
-            "seconds": round(time.monotonic() - started, 1), "peak_allocated_mib": peak}
+            "seconds": round(time.monotonic() - started, 1), "peak_allocated_mib": peak, "rig": rig}
+
+
+def make_rig(image, cache):
+    try:
+        from pose import suggest
+        return suggest(image, snapshot("pose", cache))
+    except Exception:
+        # Geometry is optional. Never bypass content checks or lose valid artwork
+        # just because a helper cannot estimate a non-human/occluded limb.
+        return None
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("prepare", "generate", "check"))
+    parser.add_argument("action", choices=("prepare", "generate", "check", "prepare-motion", "rig"))
     parser.add_argument("--tier", type=int, choices=PRESETS, required=True)
     parser.add_argument("--cache", type=Path, required=True)
     parser.add_argument("--accept-model-license", action="store_true")
@@ -161,16 +171,37 @@ def main():
                 if not args.accept_model_license:
                     raise WorkerError("art_license_required")
                 if args.action == "prepare":
-                    for index, name in enumerate((PRESETS[args.tier][0], "safety", "cutout")):
-                        report("art_downloading", index, 3)
+                    for index, name in enumerate((PRESETS[args.tier][0], "safety", "cutout", "pose")):
+                        report("art_downloading", index, 4)
                         snapshot(name, args.cache, download=True)
-                    report("art_downloading", 3, 3)
+                    report("art_downloading", 4, 4)
+                    result = {"ready": True}
+                elif args.action == "prepare-motion":
+                    report("art_pose_downloading", 0, 1)
+                    snapshot("pose", args.cache, download=True)
+                    report("art_pose_downloading", 1, 1)
                     result = {"ready": True}
                 else:
-                    raw = sys.stdin.buffer.read(16385)
-                    if len(raw) > 16384:
+                    limit = 12 * 1024 * 1024 if args.action == "rig" else 16384
+                    raw = sys.stdin.buffer.read(limit + 1)
+                    if len(raw) > limit:
                         raise WorkerError("art_invalid_request")
-                    result = generate(args.tier, args.cache, json.loads(raw))
+                    payload = json.loads(raw)
+                    if args.action == "rig":
+                        from PIL import Image
+                        data = base64.b64decode(payload["png"], validate=True)
+                        if len(data) > 8 * 1024 * 1024:
+                            raise WorkerError("art_invalid_request")
+                        with Image.open(io.BytesIO(data)) as image:
+                            if not 16 <= image.width <= 1024 or not 16 <= image.height <= 1024:
+                                raise WorkerError("art_invalid_request")
+                            report("art_rigging")
+                            rig = make_rig(image, args.cache)
+                        if rig is None:
+                            raise WorkerError("art_pose_unavailable")
+                        result = {"rig": rig}
+                    else:
+                        result = generate(args.tier, args.cache, payload)
         print(json.dumps(result))
         return 0
     except Exception as error:

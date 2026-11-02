@@ -23,6 +23,13 @@
     "revision": "25dee37ab19c5b6ad64ba6578eba63f1ae07720c",
     "license": "Apache-2.0"
   },
+  "pose": {
+    "repo": "usyd-community/vitpose-base-simple",
+    "revision": "a93ac0c67e0b7e2c55287d21d4c460c8f3c54d45",
+    "license": "Apache-2.0",
+    "license_url": "https://huggingface.co/usyd-community/vitpose-base-simple",
+    "download": "~350 MB"
+  },
   "vision": {
     "repo": "Qwen/Qwen3-VL-2B-Instruct",
     "revision": "89644892e4d85e24eaac8bacfd4f463576704203",

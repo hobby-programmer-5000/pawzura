@@ -7,6 +7,16 @@ Date: 2026-11-03, Asia/Seoul. Intended support and actual checks are separate.
 
 
 
+## 0.3.0 independent artwork limbs and reactions
+
+The working-tree checks passed 143 Python tests and 19 extension tests locally, including independent movement of four differently colored limb regions while head pixels/source hashes remain unchanged, bounded geometry, invalid-rig fallback, generation-after-review ordering, history/restart, disabling/restoring motion, manual region editing, failed-helper recovery, pointer reactions during a pending guardian action and hopping within a negative-origin work area. Main-window/bite routing protections remain covered by the existing suite.
+
+An actual final built-in English example completed SDXL 8 GB drawing, safety/cutout, CPU joint suggestions, vision review and approved storage in 96.8 seconds on the existing NVIDIA 8 GB device. An earlier cape example hid a hand and produced a bad automatic region; the default was changed to a vest with visible hands, and missing hand-color evidence now rejects automatic rigging instead of selecting cape pixels. Real cached helper Preparation, valid existing-image estimation and refusal of that hidden-hand image passed in 34.3 seconds. These timings are observations, not ETAs. Only the 8 GB physical test device was used.
+
+English/Korean light/dark editor views were rendered at 800×600 and 920×720, with representative top/bottom views inspected after explicitly loading system fonts for offscreen rendering. A test-owned widget passed hover-stop and wave/hop/cheer click delivery. Actual generated-pixel walk/wave frames were inspected. A sandbox smoke run rendered successfully but failed temporary-folder cleanup (WinError 5); its unsandboxed isolated-settings rerun exited 0. These are not live guardian or full tray/UI E2E checks.
+
+This is editable 2D cutout motion. Hidden/non-human limbs, sleeve seams and original image anatomy can need manual correction; a successful example does not prove reliable rigging for arbitrary pictures. Walking uses Qt, without ongoing model inference. Existing Windows 11, browser-profile and hardware coverage limits remain.
+
 ## 0.2.2 local review failures
 
 **132 Python tests passed locally.** Synthetic long Korean input reproduced the old combined request stopping at its 600-token limit with incomplete JSON. A bounded single-call attempt completed but could copy system phrases; the final design separates a small full-input verdict from independent bounded summarization and retains approved short ASCII input unchanged. Tests cover full-input delivery, rejection before translation, malformed/incomplete answers, missing model, connection/timeout/memory/service taxonomy, safe error codes without backend text, bounded translations and image-coordinate rejection. An initial test expected trailing whitespace that the existing input validator trims; its expectation was corrected.
