@@ -43,6 +43,15 @@ The image model generates a single illustration. There is no preset list of body
 
 No private prompt or image goes to a cloud inference service. Setup contacts official package/model hosts; inference uses fixed local files and `127.0.0.1:11434`. Descriptions remain in the dialog for the session and are not written to settings, command arguments or app logs. Ollama is an external service with its own behavior. Approved PNG pixels are stored locally under `%LOCALAPPDATA%\Pawzura\artwork` by content hash; no arbitrary model-supplied file path is accepted. Metadata is removed. Up to 20 design references remain in history; old PNG files are not automatically deleted.
 
+
+## Follow progress
+
+A progress area stays below the scrolling content during preparation/generation. It shows the current stage, total elapsed time, time in the current stage, and the age of the last progress report. Drawing uses real completed diffusion steps (for example 12/30); this percentage belongs only to that stage, not the entire operation. Scheduler step counts can differ between models. Image decoding, CPU safety checks, background removal and final vision review follow drawing; 30/30 is not final success.
+
+Library/model loading and local review use an indeterminate bar because they do not provide a reliable percentage. Installation reports tool/Python/PyTorch/library/license stages. Model preparation counts completed model groups, not downloaded bytes. No overall ETA is fabricated. If no progress is reported for 60 seconds, the panel says so: loading, CPU offload, network transfer or review may still be running, so this alone does not prove a hang. A new report clears the notice. Closing a busy dialog leaves the stage/counters visible.
+
+Completion/failure freezes the elapsed time and clearly marks Completed/Stopped. Existing review timeouts apply; the image worker wait is limited to 30 minutes, runtime installation and each Ollama pull to 60 minutes. A timeout stops waiting and preserves the previous character; a local review or installer child may still finish in the background. No late progress/output is applied after failure. This update does not add cancellation or bypass content review. Progress contains only fixed stage codes and numeric counters; backend logs, prompts, local paths and pairing data are not displayed or persisted.
+
 ## Animation and recovery
 
 Artwork uses whole-image sway, horizontal flip and the existing jump/bite/crack sequence. It is **not an articulated or model-generated walking/blinking sprite rig**. A local vision estimate places the bite marker near the mouth; it can be approximate. Click the mouth in the creation preview to adjust the cross before using the character. The existing native/browser close protections still apply.

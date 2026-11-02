@@ -5,6 +5,15 @@
 Date: 2026-11-03, Asia/Seoul. Intended support and actual checks are separate.
 
 
+
+## 0.2.1 progress reporting
+
+**125 Python tests and 19 extension tests passed locally.** New regressions verify allowlisted/bounded progress events, discarded backend text and extra fields, delivery before final output, bounded result size, safe child error codes, timeout cleanup (including a child that never reads stdin), complete stdin transfer, actual scheduler-length callbacks, English/Korean elapsed and last-report timing, the 60-second notice, indeterminate review stages and terminal timer state. Closing a busy dialog preserves the current stage.
+
+An actual isolated SDXL 8 GB guide run on the existing NVIDIA 8 GB test device reported every drawing step from 0/30 through 30/30, followed by decoding, CPU classification/cutout, vision review and approved storage. SD 1.5's 4 GB configuration on that same device also exercises its 31-step scheduler. This does not certify smaller physical GPUs. Cached runtime setup reported all five trusted installation stages. English/Korean light/dark progress and delayed-report screens were rendered at 680×560 and 820×760; representative views and panel geometry were inspected. No real user prompt/settings or live guardian target was used.
+
+Progress percentages describe their own stage only. Loading/review have no reliable percent/ETA, and a delayed report is not proof of a hang. Timeouts stop waiting; local reviews or installer descendants may still finish, but late progress/results cannot replace the retained character. Model/safety/license and earlier device-coverage limits remain unchanged.
+
 ## 0.2.0 creative artwork
 
 **116 Python tests and 19 extension tests passed locally.** New checks cover bounded PNG decode/metadata removal/hash validation, invalid assets and vector fallback, settings/history privacy and restart, procedural poses/bite coordinates/cancellation, explicit per-selection license acknowledgement, local review failure/unsafe/replica/uncertain rejection, Ollama structured-answer compatibility, one bounded download retry and exclusion of personal artwork/runtimes/weights from distribution. Existing native/browser close protections are unchanged.

@@ -2,6 +2,7 @@
 param([Parameter(Mandatory=$true)][string]$RuntimeRoot)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+[Console]::Error.WriteLine('PAWZURA_PROGRESS {"stage":"art_runtime_tool"}')
 $RuntimeRoot = [IO.Path]::GetFullPath($RuntimeRoot)
 New-Item -ItemType Directory -Force -Path $RuntimeRoot | Out-Null
 $uvPath = Join-Path $RuntimeRoot 'uv.exe'
@@ -17,6 +18,7 @@ if (-not (Test-Path -LiteralPath $uvPath)) {
 }
 $env:UV_CACHE_DIR = Join-Path $RuntimeRoot 'package-cache'
 $env:UV_PYTHON_INSTALL_DIR = Join-Path $RuntimeRoot 'python'
+[Console]::Error.WriteLine('PAWZURA_PROGRESS {"stage":"art_runtime_python"}')
 & $uvPath python install 3.12.14
 if ($LASTEXITCODE -ne 0) { throw 'Python installation failed' }
 $venv = Join-Path $RuntimeRoot 'venv'
@@ -25,10 +27,13 @@ if (-not (Test-Path -LiteralPath (Join-Path $venv 'Scripts/python.exe'))) {
     if ($LASTEXITCODE -ne 0) { throw 'Environment creation failed' }
 }
 $python = Join-Path $venv 'Scripts/python.exe'
+[Console]::Error.WriteLine('PAWZURA_PROGRESS {"stage":"art_runtime_torch"}')
 & $uvPath pip install --python $python torch==2.7.1 --index-url https://download.pytorch.org/whl/cu118
 if ($LASTEXITCODE -ne 0) { throw 'CUDA runtime installation failed' }
+[Console]::Error.WriteLine('PAWZURA_PROGRESS {"stage":"art_runtime_packages"}')
 & $uvPath pip install --python $python --index-url https://pypi.org/simple -r (Join-Path $PSScriptRoot 'requirements.txt')
 if ($LASTEXITCODE -ne 0) { throw 'Image runtime installation failed' }
+[Console]::Error.WriteLine('PAWZURA_PROGRESS {"stage":"art_runtime_notices"}')
 & $python (Join-Path $PSScriptRoot 'inventory.py') $RuntimeRoot
 if ($LASTEXITCODE -ne 0) { throw 'Runtime notices inventory failed' }
 Write-Output 'READY'

@@ -36,3 +36,5 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [Original GPU artwork and model licenses](en/CREATIVE-ART.md)
 
 - [0.2.0 original artwork](en/RELEASE-v0.2.0.md)
+
+- [0.2.1 Artwork progress](en/RELEASE-v0.2.1.md)

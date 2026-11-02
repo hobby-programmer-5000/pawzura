@@ -1,8 +1,9 @@
 """Explicit setup and original-artwork flow, independent of vector trait controls."""
-from PySide6.QtCore import QThread, Signal, Qt, QUrl
+import time
+from PySide6.QtCore import QThread, Signal, Qt, QUrl, QTimer
 from PySide6.QtGui import QDesktopServices, QPainter, QColor, QPen
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel,
-                               QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget, QLayout)
+                               QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget, QLayout, QProgressBar)
 from .art_client import TIERS, catalog, generate_artwork, prepare_artwork, source_dir
 from .characters import GenerationError, MAX_PROMPT
 from .config import default_character, safe_character
@@ -30,6 +31,22 @@ TEXT = {
         "art_review_models": "Downloading local Ollama review models… keep Ollama running.",
         "art_reviewing": "Reviewing your description locally…",
         "art_drawing": "Drawing artwork locally… keep this window open. CPU offload may be slow.",
+        "art_loading": "Loading image libraries and model weights…",
+        "art_sampling": "Drawing image · step {completed}/{total}",
+        "art_decoding": "Decoding the image…",
+        "art_scanning": "Checking image safety on the CPU…",
+        "art_cutting": "Removing the background on the CPU…",
+        "progress_download": "Downloading model groups · {completed}/{total} complete",
+        "progress_review_download": "Downloading Ollama review models · {completed}/{total} complete",
+        "art_runtime_tool": "Preparing the runtime bootstrap tool…",
+        "art_runtime_python": "Preparing isolated Python…",
+        "art_runtime_torch": "Downloading/installing PyTorch and CUDA…",
+        "art_runtime_packages": "Downloading/installing image libraries…",
+        "art_runtime_notices": "Recording installed library licenses…",
+        "progress_time": "Elapsed {elapsed} · this stage {stage} · last progress report {quiet} ago",
+        "progress_wait": "Still waiting; no progress report for {quiet}. Loading, CPU offload or review can be slow. This alone does not confirm a hang; remaining time is unknown.",
+        "progress_complete": "Completed", "progress_stopped": "Stopped",
+        "art_timed_out": "Stopped waiting after the time limit. Your previous character is retained. A local review or installer child may still finish in the background. Check Ollama, memory and your connection before retrying.",
         "art_checking": "Reviewing image content locally before saving or displaying it…",
         "busy": "Wait for the current operation to finish before closing. Your current character is retained.",
         "art_description_required": "Enter a description of 1–2,000 characters.",
@@ -64,6 +81,22 @@ TEXT = {
         "art_review_models": "Ollama 검사용 모델 다운로드 중… Ollama를 실행해 두세요.",
         "art_reviewing": "로컬에서 설명 검사 중…",
         "art_drawing": "로컬에서 그림 생성 중… 창을 열어 두세요. CPU 분산 시 오래 걸릴 수 있습니다.",
+        "art_loading": "그림 라이브러리·모델 가중치 불러오는 중…",
+        "art_sampling": "그림 생성 · {completed}/{total}단계",
+        "art_decoding": "이미지로 변환 중…",
+        "art_scanning": "CPU에서 그림 안전성 검사 중…",
+        "art_cutting": "CPU에서 배경 제거 중…",
+        "progress_download": "모델 그룹 다운로드 · {completed}/{total}개 완료",
+        "progress_review_download": "Ollama 검사 모델 다운로드 · {completed}/{total}개 완료",
+        "art_runtime_tool": "실행환경 준비 도구 설치 중…",
+        "art_runtime_python": "격리된 Python 준비 중…",
+        "art_runtime_torch": "PyTorch·CUDA 다운로드·설치 중…",
+        "art_runtime_packages": "그림 라이브러리 다운로드·설치 중…",
+        "art_runtime_notices": "설치한 라이브러리 라이선스 기록 중…",
+        "progress_time": "전체 {elapsed} · 현재 단계 {stage} · 마지막 진행 보고 {quiet} 전",
+        "progress_wait": "진행 보고 없이 {quiet}째 대기 중입니다. 로딩·CPU 분산·검사가 오래 걸릴 수 있어 이것만으로 멈춤을 확정할 수는 없습니다. 남은 시간은 알 수 없습니다.",
+        "progress_complete": "완료", "progress_stopped": "중단됨",
+        "art_timed_out": "제한 시간을 초과해 대기를 중단했습니다. 기존 캐릭터는 유지됩니다. 로컬 검사·설치의 하위 작업은 백그라운드에서 끝날 수 있습니다. 재시도 전 Ollama·메모리·네트워크를 확인하세요.",
         "art_checking": "저장·표시 전에 로컬에서 그림 내용 검사 중…",
         "busy": "현재 작업이 끝난 뒤 닫으세요. 기존 캐릭터는 유지됩니다.",
         "art_description_required": "1~2,000자의 설명을 입력하세요.",
@@ -81,7 +114,7 @@ TEXT = {
 
 
 class ArtworkWorker(QThread):
-    progress = Signal(str)
+    progress = Signal(object)
     succeeded = Signal(dict)
     failed = Signal(str)
 
@@ -189,6 +222,23 @@ class ArtworkDialog(QDialog):
         layout.addWidget(self.label(self.t["limits"]))
         scroll.setWidget(body)
         outer.addWidget(scroll, 1)
+        self.progress_panel = QWidget()
+        progress_layout = QVBoxLayout(self.progress_panel)
+        progress_layout.setContentsMargins(0, 0, 0, 0)
+        progress_layout.setSpacing(4)
+        self.stage_label = self.label("")
+        self.progress_bar = QProgressBar()
+        self.timing_label = self.label("")
+        self.wait_label = self.label("")
+        for control in (self.stage_label, self.progress_bar, self.timing_label, self.wait_label):
+            progress_layout.addWidget(control)
+        outer.addWidget(self.progress_panel)
+        self.progress_panel.hide()
+        self.progress_timer = QTimer(self)
+        self.progress_timer.setInterval(1000)
+        self.progress_timer.timeout.connect(self.update_timing)
+        self.started_at = self.stage_started_at = self.last_report_at = None
+        self.current_stage = None
         self.status = self.label("")
         outer.addWidget(self.status)
         footer = QHBoxLayout()
@@ -241,17 +291,78 @@ class ArtworkDialog(QDialog):
         if generate and (not description.strip() or len(description) > MAX_PROMPT):
             self.status.setText(self.t["art_description_required"])
             return
+        self.started_at = self.stage_started_at = self.last_report_at = time.monotonic()
+        self.current_stage = None
+        self.progress_panel.show()
+        self.wait_label.clear()
+        self.status.clear()
+        self.progress_timer.start()
+        self.set_progress("art_reviewing" if generate else "art_installing")
         self.worker = ArtworkWorker(self.tier.currentData(), description, self)
         if self.parent():
             self.parent().worker = self.worker  # App's quit/language-change guard.
-        self.worker.progress.connect(lambda code: self.status.setText(self.t[code]))
+        self.worker.progress.connect(self.set_progress)
         self.worker.succeeded.connect(self.succeeded)
-        self.worker.failed.connect(lambda code: self.status.setText(self.t.get(code, self.t["art_runtime_failed"])))
+        self.worker.failed.connect(self.failed)
         self.worker.finished.connect(self.finished_work)
         self.controls()
         self.worker.start()
 
+    @staticmethod
+    def duration(seconds):
+        seconds = max(0, int(seconds))
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        return f"{hours}:{minutes:02}:{seconds:02}" if hours else f"{minutes}:{seconds:02}"
+
+    def set_progress(self, event):
+        if self.started_at is None or not self.progress_timer.isActive():
+            return
+        event = {"stage": event} if isinstance(event, str) else event
+        stage = event.get("stage")
+        if stage not in self.t:
+            return
+        now = time.monotonic()
+        if stage != self.current_stage:
+            self.stage_started_at = now
+            self.current_stage = stage
+        self.last_report_at = now
+        if "completed" in event:
+            completed, total = event["completed"], event["total"]
+            self.progress_bar.setRange(0, total)
+            self.progress_bar.setValue(completed)
+            self.progress_bar.setFormat("%p%")
+            key = {"art_downloading": "progress_download", "art_review_models": "progress_review_download"}.get(stage, stage)
+            self.stage_label.setText(self.t[key].format(completed=completed, total=total))
+        else:
+            self.progress_bar.setRange(0, 0)
+            self.stage_label.setText(self.t[stage])
+        self.update_timing()
+
+    def update_timing(self):
+        if self.started_at is None:
+            return
+        now = time.monotonic()
+        quiet = self.duration(now - self.last_report_at)
+        self.timing_label.setText(self.t["progress_time"].format(
+            elapsed=self.duration(now - self.started_at), stage=self.duration(now - self.stage_started_at), quiet=quiet))
+        self.wait_label.setText(self.t["progress_wait"].format(quiet=quiet)
+                                if self.progress_timer.isActive() and now - self.last_report_at >= 60 else "")
+
+    def stop_progress(self, success):
+        self.update_timing()
+        self.progress_timer.stop()
+        self.wait_label.clear()
+        self.progress_bar.setRange(0, 1)
+        self.progress_bar.setValue(1 if success else 0)
+        self.progress_bar.setFormat(self.t["progress_complete" if success else "progress_stopped"])
+
+    def failed(self, code):
+        self.stop_progress(False)
+        self.status.setText(self.t.get(code, self.t["art_runtime_failed"]))
+
     def succeeded(self, result):
+        self.stop_progress(True)
         if result.get("ready"):
             self.status.setText(self.t["ready"])
         else:

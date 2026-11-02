@@ -36,3 +36,5 @@
 - [GPU 창작 그림과 모델 라이선스](ko/CREATIVE-ART.md)
 
 - [0.2.0 창작 그림](ko/RELEASE-v0.2.0.md)
+
+- [0.2.1 그림 생성 진행 상황](ko/RELEASE-v0.2.1.md)

@@ -21,6 +21,20 @@ class WorkerError(Exception):
     pass
 
 
+def report(stage, completed=None, total=None):
+    event = {"stage": stage}
+    if completed is not None:
+        event.update(completed=completed, total=total)
+    print("PAWZURA_PROGRESS " + json.dumps(event), file=sys.__stderr__, flush=True)
+
+
+def sampling_progress(pipeline, step, timestep, callback_kwargs):
+    report("art_sampling", step + 1, len(pipeline.scheduler.timesteps))
+    if step + 1 == len(pipeline.scheduler.timesteps):
+        report("art_decoding")
+    return callback_kwargs
+
+
 def snapshot(name, cache, download=False):
     from huggingface_hub import snapshot_download
     model = CATALOG[name]
@@ -82,6 +96,7 @@ def cutout(image, cache):
 
 
 def generate(tier, cache, payload):
+    report("art_loading")
     import torch
     from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
     if not torch.cuda.is_available():
@@ -107,10 +122,12 @@ def generate(tier, cache, payload):
     composed = ("Original character illustration, single full body chibi character, "
                 "complete head and feet visible, centered, isolated on a plain white background, "
                 "clear silhouette, appealing detailed design, " + prompt)
+    report("art_sampling", 0, 30)
     with torch.inference_mode():
         output = pipe(prompt=composed,
                       negative_prompt="nsfw, nude, sexual, gore, logo, text, watermark, signature, cropped, frame, multiple characters",
                       height=size, width=size, num_inference_steps=30, guidance_scale=7,
+                      callback_on_step_end=sampling_progress,
                       generator=torch.Generator("cpu").manual_seed(seed))
     if any(getattr(output, "nsfw_content_detected", None) or []):
         raise WorkerError("art_output_blocked")
@@ -118,7 +135,9 @@ def generate(tier, cache, payload):
     peak = torch.cuda.max_memory_allocated() // (1024 * 1024)
     del pipe, output
     torch.cuda.empty_cache()
+    report("art_scanning")
     scan(image, cache)
+    report("art_cutting")
     image = cutout(image, cache)
     buffer = io.BytesIO()
     image.save(buffer, "PNG")
@@ -142,8 +161,10 @@ def main():
                 if not args.accept_model_license:
                     raise WorkerError("art_license_required")
                 if args.action == "prepare":
-                    for name in (PRESETS[args.tier][0], "safety", "cutout"):
+                    for index, name in enumerate((PRESETS[args.tier][0], "safety", "cutout")):
+                        report("art_downloading", index, 3)
                         snapshot(name, args.cache, download=True)
+                    report("art_downloading", 3, 3)
                     result = {"ready": True}
                 else:
                     raw = sys.stdin.buffer.read(16385)
