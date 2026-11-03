@@ -100,6 +100,9 @@ class ConnectedMotionTests(unittest.TestCase):
                 tree=parse(*args,**kwargs)
                 for node in ast.walk(tree):
                     node._fields=tuple(key for key in node._fields if getattr(node,key,None) is not None and getattr(node,key)!=[])
+                    if isinstance(node,(ast.Import,ast.ImportFrom)):
+                        if 'is_lazy' not in node._fields:node._fields=(*node._fields,'is_lazy')
+                        node.is_lazy=0
                 return tree
             with patch('pawzura.motion_client.ast.parse',side_effect=without_empty_fields):
                 self.assertEqual(motion_client.stage_signatures(),before)

@@ -42,7 +42,10 @@ def _code(path, names, follow_calls=False):
         if isinstance(value, ast.AST):
             return {"node": type(value).__name__, "fields": {
                 key: stable(item) for key, item in ast.iter_fields(value)
-                if item is not None and not (isinstance(item, list) and not item)}}
+                if item is not None and not (isinstance(item, list) and not item)
+                # 3.15 adds is_lazy=0 to ordinary imports. Earlier versions
+                # imply that same eager behavior; a nonzero flag stays hashed.
+                and not (key == "is_lazy" and isinstance(value, (ast.Import, ast.ImportFrom)) and item == 0)}}
         if isinstance(value, (list, tuple)):
             return [stable(item) for item in value]
         if isinstance(value, bytes):
