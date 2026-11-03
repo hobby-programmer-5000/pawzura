@@ -6,9 +6,11 @@ This source implementation connects an approved artwork character to directional
 
 ## Use it
 
+**Artwork generation, image-runtime preparation and 3D motion preparation are separate steps.** The top **1. Prepare runtime and selected models** button does not prepare 3D motion for the picture. An existing drawing can be reused.
+
 1. Open **Settings → Character → Create original artwork…**. An existing artwork character opens in the preview; you do not need to draw it again. For a new character, finish image preparation/generation and its local reviews first.
 2. Prefer one front-facing, full-body humanoid with two visible arms, separated hands and two clear legs/boots on a plain background. Adjust the original mouth cross before preparing motion. Hidden limbs, animals, props and unusual anatomy may fail.
-3. Read the image model's license and the TripoSR/ViTPose terms below. Check the license acknowledgement near the top of this window. **Prepare 3D motion · 8 GB · pose-assisted** then downloads the optional components if needed and runs preparation. If the button is disabled, check that acknowledgement and finish any active job first.
+3. Read the image model's license and the TripoSR/ViTPose terms below. Check the license acknowledgement near the top of this window. **Scroll inside the artwork window, below the picture and “Edit hand/foot motion…”**, then click **Prepare 3D motion · 8 GB · pose-assisted**. It downloads the optional components if needed and runs preparation. If the button is disabled, check that acknowledgement and finish any active job first. The acknowledgement resets when this window opens or the image model changes.
 4. Watch the stage, real frame/view counter, elapsed time and time since the last report. Download/reconstruction stages may have no percentage. No overall ETA is promised. **Cancel preparation** stops only this job's owned workers and keeps the current character; completed verified stages can be reused on retry.
 5. Use the dropdown below the preparation button to inspect **front idle, left/right walking, turning, wave, hop, cheer and both bites**. Check side/back details, foot motion, eyelids and jaw at small desktop size. Passing file validation does not establish visual quality or rights clearance.
 6. Click **Use this character → Save settings** in the main window. Preparation alone does not replace the desktop character. It walks sideways, turns to front when paused/hovered and uses its own mouth coordinates during a bite. Existing click reactions and guardian safety boundaries are retained.

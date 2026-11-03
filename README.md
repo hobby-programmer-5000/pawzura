@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-A small SD desktop companion that walks above the Windows taskbar and helps you stay focused with optional app and website allowlists.
+A small SD desktop companion that walks across monitors above the Windows taskbar, reacts to hover/clicks and helps you stay focused with optional app and website allowlists. It jumps and bites before requesting an unlisted app window to close.
 
 Windows 10 (1809+) / Windows 11 · x64 · Python 3.12–3.15 for source use · MIT
 
@@ -24,12 +24,13 @@ The app starts in English. Switch with **General → Language → 한국어 → 
 
 For websites, choose your browser and click **Install/connect extension…**. On the extensions page it opens, enable **Developer mode** (Chrome: upper-right switch on `chrome://extensions`), then **Load unpacked** using the copied folder. **Ctrl+Shift+I opens Developer Tools, not this switch.** Finish loading before opening the connection page. [Steps and button locations](doc/en/BROWSERS.md).
 
-## What it does
+## 3D motion needs a separate preparation step
 
-- Walks left/right across monitors and reacts to hover/clicks; [2D motion](doc/en/ARTWORK-MOTION.md) and optional experimental [8 GB 3D motion](doc/en/3D-MOTION.md).
-- Jumps, bites and shows a fading crack before requesting an unlisted window to close.
-- Protects browser windows; its extension closes blocked tabs and connects with desktop approval, without code entry.
-- Offers light/dark settings, a lightweight Qwen trait designer and optional GPU [original artwork generation](doc/en/CREATIVE-ART.md). Advanced image models require separate downloads and license review.
+**Generating artwork or preparing its runtime does not create 3D motion.** Optional experimental 3D requires an NVIDIA CUDA GPU with at least **8 GB VRAM**.
+
+1. Open **Settings → Character → Create original artwork…** and check the license acknowledgement. An existing drawing loads automatically; you do not need to draw it again.
+2. **Scroll inside that window, below the picture and “Edit hand/foot motion…”**. Click **Prepare 3D motion · 8 GB · pose-assisted**. This is separate from **1. Prepare runtime and selected models** near the top.
+3. Wait for completion, then click **Use this character → Save settings** in the main window. Preparation alone does not change the desktop character. [Full 3D guide and troubleshooting](doc/en/3D-MOTION.md).
 
 ## Guides
 
@@ -41,7 +42,6 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | Create, save, restore or delete characters | [Artwork and licenses](doc/en/CREATIVE-ART.md) · [Character library](doc/en/CHARACTER-LIBRARY.md) |
 | Run source or build an EXE | [Setup and builds](doc/en/BUILD.md) |
 | Check test results and current limits | [Validation](doc/en/VALIDATION.md) |
-| See ownership and AI contribution roles | [Contributors](doc/en/CONTRIBUTORS.md) |
 | Review library/model licenses | [Third-party notices](doc/en/THIRD-PARTY-NOTICES.md) |
 
 **Browser behavior:** monitoring closes tabs after navigation; tab animations use a separate marker near the taskbar.
