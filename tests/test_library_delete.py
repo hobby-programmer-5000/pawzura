@@ -98,6 +98,14 @@ class LibraryDeleteTests(unittest.TestCase):
   from types import SimpleNamespace
   with patch.object(Path,'lstat',return_value=SimpleNamespace(st_mode=0o100644,st_file_attributes=0x400)):
    with self.assertRaisesRegex(deletion.DeleteError,'delete_unsafe'):deletion._regular(self.source,self.root)
+ def test_canonical_ancestor_alias_is_accepted_without_following_reparses(self):
+  # Model Windows 8.3 TEMP spelling resolving to its long ancestor spelling.
+  original=Path.resolve;canonical=self.root/'canonical-long-name'
+  def resolve(path,*args,**kwargs):
+   value=original(path,*args,**kwargs)
+   return canonical/value.relative_to(self.root) if value.is_relative_to(self.root) else value
+  with patch.object(Path,'resolve',resolve):
+   self.assertEqual(deletion._regular(self.source,self.root).st_ino,self.source.stat().st_ino)
  def test_partial_failure_keeps_entry_for_retry_and_reports_bytes(self):
   entry=lib.save(self.animated,'Synthetic');plan=deletion.plan_delete(entry['id']);unlink=Path.unlink
   def fail_source(path,*args,**kwargs):

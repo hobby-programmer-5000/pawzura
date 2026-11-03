@@ -17,7 +17,7 @@ The 3D path uses MIT TripoSR code/weights and Apache-2.0 ViTPose, plus separatel
 
 The new pose-assisted rig corrects the observed backward torso lean and reuses compatible scenes when only rigging/motion changes. It remains experimental: edges may soften, joints/clothing can distort, feet may slide and inferred side/back views may differ. It is not specialist learned skeleton generation or a guarantee of better animation than the vector character. Keep the original if the result is worse.
 
-Windows 10 source checks include 187 Python regressions, 19 extension tests, three optional geometry checks, localized Qt renders and actual 8 GB test-owned artwork/motion preparation documented in [validation](VALIDATION.md) and the 3D guide. The final packaged artifact must additionally pass frozen smoke, embedded source/version, privacy, license and checksum checks before publication. New Windows 11 hardware/model testing and full user-profile browser E2E are not established by these checks.
+Windows 10 source checks include 190 Python regressions, 19 extension tests, three optional geometry checks, localized Qt renders and actual 8 GB test-owned artwork/motion preparation documented in [validation](VALIDATION.md) and the 3D guide. The final packaged artifact must additionally pass frozen smoke, embedded source/version, privacy, license and checksum checks before publication. New Windows 11 hardware/model testing and full user-profile browser E2E are not established by these checks.
 
 ## Update
 

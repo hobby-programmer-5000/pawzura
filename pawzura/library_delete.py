@@ -18,9 +18,12 @@ def _regular(path,base):
     base=Path(base).resolve();path=Path(path).absolute()
     if not path.resolve().is_relative_to(base) or path.resolve()==base:raise DeleteError('delete_unsafe')
     current=path
-    while current!=base:
+    while True:
         info=current.lstat()
         if stat.S_ISLNK(info.st_mode) or getattr(info,'st_file_attributes',0)&0x400:raise DeleteError('delete_unsafe')
+        # Windows TEMP may use an 8.3 alias (RUNNER~1). Compare canonical
+        # identities while still checking every lexical ancestor for reparses.
+        if current.resolve()==base:break
         if current.parent==current:raise DeleteError('delete_unsafe')
         current=current.parent
     info=path.stat()

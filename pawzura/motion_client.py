@@ -36,23 +36,40 @@ def _code(path, names, follow_calls=False):
     found = {node.name for node in selected if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
     if not set(names) <= found:
         raise GenerationError("motion_runtime_failed")
-    return ast.dump(ast.Module(body=selected, type_ignores=[]), include_attributes=False).encode()
+    def stable(value):
+        # ast.dump's optional empty-field formatting changes across CPython
+        # versions. Serialize meaningful fields explicitly for 3.12+ checkouts.
+        if isinstance(value, ast.AST):
+            return {"node": type(value).__name__, "fields": {
+                key: stable(item) for key, item in ast.iter_fields(value)
+                if item is not None and not (isinstance(item, list) and not item)}}
+        if isinstance(value, (list, tuple)):
+            return [stable(item) for item in value]
+        if isinstance(value, bytes):
+            return {"bytes": value.hex()}
+        if value is Ellipsis:
+            return {"literal": "Ellipsis"}
+        return value
+    return json.dumps(stable(ast.Module(body=selected, type_ignores=[])), sort_keys=True, separators=(",", ":")).encode()
 
 
 def stage_signatures():
     source = art_client.source_dir()
-    common = b"".join((source / name).read_bytes() for name in ("motion_catalog.json", "triposr-sources.json", "requirements.txt"))
+    # Git checkouts and Windows editors can differ only in CRLF/LF. Fingerprint
+    # the same trusted text identically without weakening model/output hashes.
+    text = lambda name: (source / name).read_text(encoding="utf-8").encode("utf-8")
+    common = b"".join(text(name) for name in ("motion_catalog.json", "triposr-sources.json", "requirements.txt"))
     geometry = {"reconstruct": {"extract", "projected_colors"}, "rig": {"lift", "fit", "smooth"},
                 "bake": {"pose", "knee_at", "ry", "rz", "smooth"}}
     result = {}
     for stage in STAGE_FILES:
         worker = _code(source / "three_d.py", {stage, "model_path", "digest", "report", "main"} if stage != "bake" else {"model_path", "digest", "report", "main"})
         parts = common + worker + _code(source / "motion_geometry.py", geometry[stage], follow_calls=True)
-        parts += (source / ("motion_bake.py" if stage == "bake" else "runner.py")).read_bytes()
+        parts += text("motion_bake.py" if stage == "bake" else "runner.py")
         if stage != "reconstruct":
-            parts += (source / "catalog.json").read_bytes()
+            parts += text("catalog.json")
         result[stage] = hashlib.sha256(parts).hexdigest()
-    result["prepare"] = hashlib.sha256(common + (source / "catalog.json").read_bytes() + _code(source / "three_d.py", {"prepare", "digest", "report"})).hexdigest()
+    result["prepare"] = hashlib.sha256(common + text("catalog.json") + _code(source / "three_d.py", {"prepare", "digest", "report"})).hexdigest()
     return result
 
 
@@ -118,18 +135,26 @@ def _legacy_stage(folder, cache, stage, key, signatures, spec, cancel):
                 continue
             state = json.loads(path.read_text())
             revision = state.get("revision")
-            if pins.get(revision, {}).get(stage) != signatures[stage]:
+            pin = pins.get(revision, {})
+            if pin.get(stage) != signatures[stage]:
                 continue
             previous = spec["art_id"]
             candidate = None
             for name in STAGE_FILES:
                 record = state["stages"][name]
                 parameters = [spec["mouth_x"], spec["mouth_y"]] if name == "rig" else []
-                expected = hashlib.sha256(json.dumps([previous, revision, parameters]).encode()).hexdigest()
+                algorithm = pin.get("inputs", {}).get(name) if pin.get("format") == "staged" else revision
+                if not artwork.valid_art_id(algorithm):
+                    break
+                expected = hashlib.sha256(json.dumps([previous, algorithm, parameters]).encode()).hexdigest()
                 if record.get("input") != expected or not _valid_outputs(old, name, record.get("files")):
                     break
                 if name == stage:
                     candidate = record
+                    break
+                # A downstream legacy stage must match the exact scene/rig
+                # already adopted into this job, not merely its algorithm.
+                if not _valid_outputs(folder, name, record.get("files")):
                     break
                 previous = hashlib.sha256(json.dumps(record, sort_keys=True).encode()).hexdigest()
             if candidate:
@@ -217,7 +242,7 @@ def prepare_animation(spec, progress=lambda event: None, cancel=None, root=None,
                 parameters = payload["mouth"] if stage == "rig" else []
                 key = hashlib.sha256(json.dumps([previous, signatures[stage], parameters]).encode()).hexdigest()
                 record = state["stages"].get(stage, {})
-                if not record and not state["stages"]:
+                if not record:
                     record = _legacy_stage(folder, cache, stage, key, signatures, spec, cancel) or {}
                 if (isinstance(record, dict) and record.get("input") == key and
                         _valid_outputs(folder, stage, record.get("files"))):

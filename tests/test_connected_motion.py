@@ -83,6 +83,45 @@ class ConnectedMotionTests(unittest.TestCase):
         (job/'state.json').write_text(json.dumps({'revision':revision,'stages':{'reconstruct':record}}))
         self.calls.clear();self.prepare();self.assertNotIn('reconstruct',self.calls);self.assertIn('rig',self.calls)
 
+    def test_text_newlines_and_empty_ast_fields_do_not_invalidate_verified_stages(self):
+        import shutil,ast
+        source=self.root/'source';source.mkdir()
+        for path in art_client.source_dir().glob('*'):
+            if path.is_file():shutil.copy2(path,source/path.name)
+        with patch('pawzura.art_client.source_dir',return_value=source):
+            before=motion_client.stage_signatures();self.prepare();self.calls.clear()
+            for path in source.glob('*'):
+                if path.suffix in ('.py','.json','.txt'):
+                    text=path.read_text(encoding='utf-8');path.write_bytes(text.replace('\n','\r\n').encode('utf-8'))
+            self.assertEqual(motion_client.stage_signatures(),before)
+            self.prepare();self.assertEqual(self.calls,[])
+            parse=ast.parse
+            def without_empty_fields(*args,**kwargs):
+                tree=parse(*args,**kwargs)
+                for node in ast.walk(tree):
+                    node._fields=tuple(key for key in node._fields if getattr(node,key,None) is not None and getattr(node,key)!=[])
+                return tree
+            with patch('pawzura.motion_client.ast.parse',side_effect=without_empty_fields):
+                self.assertEqual(motion_client.stage_signatures(),before)
+
+    def test_pinned_pre_normalization_staged_cache_reuses_verified_outputs(self):
+        import hashlib
+        pins=json.loads((art_client.source_dir()/'motion_cache_legacy.json').read_text())['backends']
+        revision,pin=next((rev,pin) for rev,pin in pins.items() if pin.get('format')=='staged')
+        job=self.cache/(self.source+'-staged-'+revision[:16]);job.mkdir(parents=True)
+        state={'revision':revision,'status':'ready','stages':{}};previous=self.source
+        for stage in motion_client.STAGE_FILES:
+            files=self.fake_worker(stage,job,self.runtime,{},lambda e:None,threading.Event())['files']
+            params=[self.spec['mouth_x'],self.spec['mouth_y']] if stage=='rig' else []
+            record={'input':hashlib.sha256(json.dumps([previous,pin['inputs'][stage],params]).encode()).hexdigest(),'files':files}
+            state['stages'][stage]=record;previous=hashlib.sha256(json.dumps(record,sort_keys=True).encode()).hexdigest()
+        (job/'state.json').write_text(json.dumps(state));self.calls.clear();self.prepare()
+        self.assertEqual(self.calls,['prepare'])
+        # Algorithm identity alone cannot attach a rig to a different scene.
+        current=self.cache/(self.source+'-staged-'+motion_client.stage_signatures()['reconstruct'][:16])
+        (current/'surface.npz').write_bytes(b'different scene')
+        self.assertIsNone(motion_client._legacy_stage(current,self.cache,'rig','a'*64,motion_client.stage_signatures(),self.spec,threading.Event()))
+
     def test_cancellation_retains_verified_stage_and_never_returns_candidate(self):
         cancel=threading.Event()
         def worker(*args):
