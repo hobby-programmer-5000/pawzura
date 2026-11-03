@@ -690,5 +690,39 @@
     "path": "licenses/upstream/creative-models/SciPy-LICENSE.txt",
     "source": "https://raw.githubusercontent.com/scipy/scipy/v1.16.3/LICENSE.txt",
     "sha256": "221e59f5e910fd7f94e44f0dac77436a11338c285c6346232e4a850a50da0e94"
+  },
+  {
+    "path": "licenses/upstream/creative-models/einops-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/arogozhnikov/einops/v0.7.0/LICENSE",
+    "distribution": "einops==0.7.0",
+    "sha256": "30d984364296f51ffaecad4b01ee127e95250c5068918d4b66fc96206723e434"
+  },
+  {
+    "path": "licenses/upstream/creative-models/omegaconf-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/omry/omegaconf/v2.3.0/LICENSE",
+    "distribution": "omegaconf==2.3.0",
+    "sha256": "b31375ed5d5cbe7ec2d0c4c14df8afa7a8e5501bbe25f70b6cbc461685f4b91a"
+  },
+  {
+    "path": "licenses/upstream/creative-models/trimesh-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/mikedh/trimesh/4.0.5/LICENSE.md",
+    "distribution": "trimesh==4.0.5",
+    "sha256": "fe27b5ef8710676cc85255da28a32f394e2ef3f4ce47075a1c732a9ea1d7bd03"
+  },
+  {
+    "path": "licenses/upstream/creative-models/imageio-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/imageio/imageio/v2.37.0/LICENSE",
+    "distribution": "imageio==2.37.0",
+    "sha256": "ae599ea50a494efb725e420aab35d1f759200cfe4186b6c64a30ba49db3fd064"
+  },
+  {
+    "path": "licenses/upstream/creative-models/ANTLR4-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/antlr/antlr4/4.9.3/LICENSE.txt",
+    "sha256": "b1b379fcaf3219593a4c433feb1b35c780bed23fafaae440b1ae2771a9521e3a"
+  },
+  {
+    "path": "licenses/upstream/triposr/LICENSE",
+    "source": "https://raw.githubusercontent.com/VAST-AI-Research/TripoSR/107cefdc244c39106fa830359024f6a2f1c78871/LICENSE",
+    "sha256": "ade0a66629bdd7e01e46b3296b3851cff0fd27989bca53da470ad6e96ed620fb"
   }
 ]

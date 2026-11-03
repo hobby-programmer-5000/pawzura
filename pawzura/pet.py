@@ -10,10 +10,21 @@ from PySide6.QtWidgets import QApplication, QWidget
 from .config import safe_character
 
 
-def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=False, pose="walk"):
+def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=False, pose="walk", motion_clip=None, motion_time=None):
     p = painter
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
     p.save()
+    if spec.get("kind") == "artwork" and spec.get("animation_id"):
+        from .motion_pack import frame
+        clip = motion_clip or (("bite_right" if facing >= 0 else "bite_left") if biting else
+                               ("walk_right" if facing >= 0 else "walk_left") if pose == "walk" else
+                               pose if pose in ("wave", "hop", "cheer") else "idle_front")
+        item = frame(spec, clip, phase / 9 if motion_time is None else motion_time)
+        if item is not None:
+            p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+            p.drawImage(QRectF(0, 0, 144, 144), item[0])
+            p.restore()
+            return
     if facing < 0:
         p.translate(144, 0)
         p.scale(-1, 1)
@@ -212,6 +223,7 @@ class CharacterPreview(QWidget):
         self.theme = "dark"
         self.phase = 0.0
         self.pose = "walk"
+        self.facing = 1
         self.setMinimumSize(200, 220)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
@@ -219,7 +231,7 @@ class CharacterPreview(QWidget):
 
     def tick(self):
         if self.isVisible():
-            self.phase += 0.14
+            self.phase += .36 if self.spec.get("animation_id") else .14
             self.update()
 
     def paintEvent(self, _):
@@ -235,7 +247,9 @@ class CharacterPreview(QWidget):
             p.translate(0, -abs(math.sin(self.phase)) * 10)
         p.setBrush(QColor("#ddd5e9" if self.theme == "light" else "#171b2b"))
         p.drawEllipse(QRectF(37, 137, 72, 7))
-        draw_character(p, self.spec, self.phase, pose=self.pose)
+        from .motion_pack import CLIPS
+        draw_character(p, self.spec, self.phase, facing=self.facing, pose=self.pose,
+                       motion_clip=self.pose if self.spec.get("animation_id") and self.pose in CLIPS else None)
 
 
 class Crack(QWidget):
@@ -321,15 +335,16 @@ class TabTarget(QWidget):
 class Pet(QWidget):
     settings_requested = Signal()
 
-    def __init__(self, spec, language="en"):
+    def __init__(self, spec, language="en", walk_direction="right"):
         super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool | Qt.WindowType.WindowDoesNotAcceptFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setWindowTitle("Pawzura companion")
-        self.resize(144, 146)
+        self.setFixedSize(144, 146)
         self.spec = safe_character(spec)
         self.phase = 0.0
-        self.direction = 1
+        self.walk_direction = -1 if walk_direction == "left" else 1
+        self.direction = self.walk_direction
         self.last_tick = time.monotonic()
         self.action = None
         self.reaction = None
@@ -337,6 +352,12 @@ class Pet(QWidget):
         self.look_direction = 1
         self.click_count = 0
         self.next_idle = time.monotonic() + 12
+        from .motion_pack import MotionPlayer
+        self.motion_player = MotionPlayer()
+        self.motion_clip = "idle_front"
+        self.motion_time = 0.0
+        self.next_pause = time.monotonic() + random.uniform(7, 13)
+        self.pause_until = 0.0
         self.setMouseTracking(True)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.set_language(language)
@@ -355,6 +376,11 @@ class Pet(QWidget):
     def set_language(self, language):
         self.setToolTip("커서: 인사 · 클릭: 인사/점프/환호 · 더블 클릭/우클릭: 설정" if language == "ko" else
                         "Hover: greet · Click: wave / hop / cheer · Double-click / right-click: settings")
+
+    def set_walk_direction(self, direction):
+        self.walk_direction = -1 if direction == "left" else 1
+        if self.action is None:
+            self.direction = self.walk_direction
 
     def react(self, kind):
         if self.action or kind not in ("wave", "hop", "cheer"):
@@ -392,12 +418,32 @@ class Pet(QWidget):
     def screens(self):
         return sorted(QApplication.screens(), key=lambda s: (s.geometry().x(), s.geometry().y()))
 
+    def use_screen(self, screen):
+        handle = self.windowHandle()
+        if handle is not None and handle.screen() != screen:
+            handle.setScreen(screen)
+        self.setFixedSize(144, 146)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # A Windows per-monitor DPI transition can deliver a suggested native
+        # size even for a constrained tool window. Keep our painter/anchor
+        # coordinate system in logical pixels, including during that event.
+        if (self.width(), self.height()) != (144, 146) and not getattr(self, "_repairing_size", False):
+            self._repairing_size = True
+            try:
+                self.resize(144, 146)
+            finally:
+                self._repairing_size = False
+
     def home(self):
+        self.direction = self.walk_direction
         screen = QApplication.primaryScreen()
         if screen is None:
             self.px, self.py = 0.0, 0.0
             return
         area = screen.availableGeometry()
+        self.use_screen(screen)
         self.px = float(area.x() + max(0, (area.width() - self.width()) // 2))
         self.py = float(max(area.top(), area.bottom() - self.height() + 1))
         self.move(round(self.px), round(self.py))
@@ -406,6 +452,16 @@ class Pet(QWidget):
         screen = QApplication.screenAt(self.geometry().center()) or QApplication.primaryScreen()
         area = screen.availableGeometry()
         return QPointF(area.center().x(), max(area.top() + 100, area.bottom() - 200))
+
+    def has_motion(self):
+        key = (self.spec.get("art_id"), self.spec.get("animation_id"))
+        if key != getattr(self, "_motion_key", None):
+            from .motion_pack import load_pack, MotionPlayer
+            self._motion_key = key
+            self._motion_available = bool(load_pack(key[1], key[0]))
+            self.motion_player = MotionPlayer()
+            self.motion_clip, self.motion_time = "idle_front", 0.0
+        return self._motion_available
 
     def bite(self, point: QPointF, callback, label="", tab=False):
         if self.action:
@@ -420,12 +476,20 @@ class Pet(QWidget):
             else:
                 self.tab_marker.show_at(point, label)
             marker = self.tab_marker
-        anchor = QPointF(77, 82)
+        # An action can face its target without changing the saved walking preference.
+        self.direction = 1 if point.x() >= self.px + 72 else -1
+        anchor = QPointF(77 if self.direction >= 0 else 144 - 77, 82)
         if self.spec.get("kind") == "artwork":
             from .artwork import load_artwork
             if not load_artwork(self.spec.get("art_id")).isNull():
                 x = 144 * self.spec["mouth_x"]
                 anchor = QPointF(x if self.direction >= 0 else 144 - x, 144 * self.spec["mouth_y"])
+        if self.has_motion():
+            from .motion_pack import frame
+            # Latch the target-facing clip for the entire action, independent of cursor gaze.
+            item = frame(self.spec, "bite_right" if self.direction >= 0 else "bite_left", .72)
+            if item is not None:
+                anchor = QPointF(144 * item[1][0], 144 * item[1][1])
         self.action = {"start": time.monotonic(), "from": QPointF(self.px, self.py),
                        "to": point - anchor, "point": point, "callback": callback, "hit": False, "label": label,
                        "marker": marker}
@@ -437,6 +501,11 @@ class Pet(QWidget):
         self.action = None
         self.reaction = None
         self.hovered = False
+        self._motion_key = None
+        from .motion_pack import MotionPlayer
+        self.motion_player = MotionPlayer()
+        self.motion_clip = "idle_front"
+        self.motion_time = 0.0
         self.home()
 
     def clear_marker(self):
@@ -483,12 +552,20 @@ class Pet(QWidget):
         action = self.action
         if action:
             elapsed = now - action["start"]
+            if self.has_motion():
+                self.motion_clip = "bite_right" if self.direction >= 0 else "bite_left"
+                self.motion_time = min(elapsed, .99)
             if elapsed <= 0.72:
                 t = elapsed / 0.72
                 pos = action["from"] * (1 - t) + action["to"] * t
                 pos.setY(pos.y() - math.sin(t * math.pi) * 120)
             elif elapsed < 1.0:
                 pos = action["to"]
+                if self.has_motion():
+                    from .motion_pack import frame
+                    item = frame(self.spec, self.motion_clip, elapsed)
+                    if item is not None:
+                        pos = action["point"] - QPointF(item[1][0] * 144, item[1][1] * 144)
                 if not action["hit"]:
                     action["hit"] = True
                     if self.isVisible():
@@ -511,6 +588,7 @@ class Pet(QWidget):
                 pos = action["from"]
                 self.clear_marker()
                 self.action = None
+                self.direction = self.walk_direction
                 # Return to the current desktop floor, even if the saved launch
                 # point was stale after a display/overlay geometry transition.
                 screen = QApplication.screenAt((pos + QPointF(72,72)).toPoint()) or QApplication.primaryScreen()
@@ -528,13 +606,27 @@ class Pet(QWidget):
                 self.home()
                 screen = QApplication.primaryScreen()
             area = screen.availableGeometry()
-            if not self.hovered and self.reaction is None:
+            travel = not self.hovered and self.reaction is None
+            if self.has_motion():
+                if now >= self.next_pause and now >= self.pause_until:
+                    self.pause_until = now + random.uniform(1.5, 2.5)
+                    self.next_pause = self.pause_until + random.uniform(7, 13)
+                desired_travel = travel and now >= self.pause_until
+                pose = self.reaction["kind"] if self.reaction else "idle_front"
+                self.motion_clip, self.motion_time, travel = self.motion_player.update(desired_travel, self.direction, pose, now)
+            if travel:
                 self.px += self.direction * dt * 42
             # At each edge, continue onto the next extended display; wrap at the outer edge.
             if self.px + 72 > area.right():
                 index = (screens.index(screen) + 1) % len(screens)
                 area = screens[index].availableGeometry()
+                self.use_screen(screens[index])
                 self.px = float(area.left())
+            elif self.px + 72 < area.left():
+                index = (screens.index(screen) - 1) % len(screens)
+                area = screens[index].availableGeometry()
+                self.use_screen(screens[index])
+                self.px = float(area.right() - 72)
             self.py = float(max(area.top(), area.bottom() - self.height() + 1))
         display_y = self.py
         if not self.action and self.reaction and self.reaction["kind"] == "hop":
@@ -552,7 +644,8 @@ class Pet(QWidget):
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         pose = "walk" if self.action else self.reaction["kind"] if self.reaction else "hover" if self.hovered else "walk"
         facing = self.look_direction if self.hovered and not self.action else self.direction
-        draw_character(p, self.spec, self.phase, facing, bool(self.action and self.action["hit"]), pose)
+        draw_character(p, self.spec, self.phase, facing, bool(self.action and self.action["hit"]), pose,
+                       self.motion_clip if self.has_motion() else None, self.motion_time)
         if not self.action and (self.hovered or self.reaction):
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(QColor("#f9ce80"))

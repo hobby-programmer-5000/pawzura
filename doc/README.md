@@ -4,6 +4,11 @@
 
 English is the default. Every project-authored guide has a Korean counterpart.
 
+- [Single-image animation research and prototype options](en/ANIMATION-RESEARCH.md)
+- [Measured animation prototype results](en/ANIMATION-EXPERIMENT.md)
+- [Directional walking, turning and depth criteria](en/DIRECTIONAL-ANIMATION.md)
+- [Consistent frames and sequential model preparation](en/STAGED-CHARACTER-PIPELINE.md)
+
 - [Getting started](en/GETTING_STARTED.md)
 - [Local settings and privacy](en/PRIVACY.md)
 - [Browser connection and examples](en/BROWSERS.md)
@@ -42,3 +47,8 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [0.2.1 Artwork progress](en/RELEASE-v0.2.1.md)
 
 - [0.2.2 Local review fixes](en/RELEASE-v0.2.2.md)
+
+- [Experimental 8 GB pose-assisted 3D motion](en/3D-MOTION.md)
+
+- [Local character library and saved preparation](en/CHARACTER-LIBRARY.md)
+- [0.4.0 directional motion and character storage](en/RELEASE-v0.4.0.md)

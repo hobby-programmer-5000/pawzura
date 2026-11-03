@@ -75,6 +75,8 @@ def safe_character(raw) -> dict:
         rig = safe_rig(raw.get("rig"))
         if rig is not None:
             result["rig"] = rig
+        if valid_art_id(raw.get("animation_id")):
+            result["animation_id"] = raw["animation_id"]
         return result
     result = validate_character({**default_character(), **raw}, seed)
     result["source"] = raw.get("source") if raw.get("source") in ("qwen", "custom") else "random"
@@ -119,7 +121,7 @@ def defaults() -> dict:
     return {
         "version": 1, "language": "en", "theme": "dark", "start_at_login": False,
         "advanced_models": False, "vram_tier": 0,
-        "guard_enabled": False, "preview_only": True, "pet_visible": True,
+        "guard_enabled": False, "preview_only": True, "pet_visible": True, "walk_direction": "right",
         "browser_control_enabled": False,
         "allowed_apps": DEFAULT_APPS.copy(), "startup_apps": [],
         "browsers": {name: {"enabled": False, "allowed_sites": []} for name in BROWSERS},
@@ -153,6 +155,8 @@ class Settings:
                 raise ValueError(f"Cannot load {self.path}: {error}") from error
         if self.data.get("theme") not in ("dark", "light"):
             self.data["theme"] = "dark"
+        if self.data.get("walk_direction") not in ("left", "right"):
+            self.data["walk_direction"] = "right"
         self.data["advanced_models"] = self.data.get("advanced_models") is True
         if type(self.data.get("vram_tier")) is not int or self.data["vram_tier"] not in (0, 2, 4, 6, 8):
             self.data["vram_tier"] = 0
@@ -170,12 +174,22 @@ class Settings:
             return copy.deepcopy(self.data)
 
     def save(self, updates: dict | None = None):
+        from .artwork import asset_root
+        if self.path.parent.resolve() == asset_root().parent.resolve():
+            from .character_library import storage_lock
+            with storage_lock():
+                return self._save(updates, validate_changed_artwork=True)
+        return self._save(updates)
+
+    def _save(self, updates=None, validate_changed_artwork=False):
         with self.lock:
             candidate = copy.deepcopy(self.data)
             if updates:
                 candidate.update(updates)
             if candidate.get("theme") not in ("dark", "light"):
                 raise ValueError("Choose dark or light theme")
+            if candidate.get("walk_direction") not in ("left", "right"):
+                raise ValueError("Choose left or right walking direction")
             from .characters import models_for_vram
             if type(candidate.get("vram_tier")) is not int or candidate["vram_tier"] not in (0, 2, 4, 6, 8) or type(candidate.get("advanced_models")) is not bool:
                 raise ValueError("Choose a supported VRAM guide")
@@ -183,6 +197,10 @@ class Settings:
                 raise ValueError("Choose a model available for this VRAM guide")
             candidate["allowed_apps"] = expand_app_aliases(candidate["allowed_apps"])
             candidate["character"] = safe_character(candidate["character"])
+            if (validate_changed_artwork and candidate["character"].get("kind") == "artwork"
+                    and candidate["character"] != self.data["character"]):
+                from .character_library import validate_assets
+                validate_assets(candidate["character"])
             history = candidate.get("character_history", [])
             candidate["character_history"] = [safe_character(item) for item in history[-20:]] if isinstance(history, list) else []
             prepare_profiles(candidate)

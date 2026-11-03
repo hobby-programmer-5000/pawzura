@@ -194,6 +194,10 @@ class Bridge:
                                   else bridge.pairing_result(data, origin))
                         self.send_json(200, result)
                         return
+                    # Drain only the bounded body before rejecting authentication.
+                    # Closing with unread upload bytes can reset the Windows TCP
+                    # connection before the client receives its 401 response.
+                    payload = self.rfile.read(length)
                     token = self.headers.get("X-Pawzura-Token", "")
                     if not hmac.compare_digest(token.encode(), config["bridge_token"].encode()):
                         self.send_json(401, {"error": "Pairing required"})
@@ -201,7 +205,7 @@ class Bridge:
                     if self.path not in ("/evaluate", "/status"):
                         self.send_json(404, {"error": "Unknown endpoint"})
                         return
-                    data = json.loads(self.rfile.read(length))
+                    data = json.loads(payload)
                     if not isinstance(data, dict):
                         raise ValueError("Invalid object")
                     self.send_json(200, bridge.status(data) if self.path == "/status" else bridge.evaluate(data))

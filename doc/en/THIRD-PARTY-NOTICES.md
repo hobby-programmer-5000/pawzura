@@ -56,6 +56,23 @@ The app ZIP contains only trusted setup/worker source and the pinned [catalog](.
 
 The optional environment also resolves transitive packages (for example requests/urllib3/certifi, tokenizers, filelock, fsspec, Jinja2/MarkupSafe, SymPy/mpmath, networkx, packaging, PyYAML, regex, tqdm, psutil, protobuf, coloredlogs/humanfriendly, flatbuffers, typing-extensions and setuptools). Their individual license files and package metadata remain in the installed environment; they are not relicensed or bundled in the app ZIP. Preparation writes a local `DEPENDENCIES.json` inventory and copies available installed license/notice texts into `art-runtime/licenses/`. Model snapshots and library revisions are separate. Preserve all applicable terms if redistributing a prepared runtime yourself; the app's lightweight EXE notices are not a complete license inventory for such a redistribution.
 
+## Optional pose-assisted 3D connection
+
+[Usage and limitations](3D-MOTION.md). No weights or prepared runtime are shipped. All dependencies retain their own terms, including existing PyTorch/NVIDIA components. Exact installed/transitive notices are copied into the local runtime inventory during preparation.
+
+| Component | Version / original terms | Role |
+| --- | --- | --- |
+| TripoSR code and checkpoint | Source `107cefdc244c39106fa830359024f6a2f1c78871`; weights `5b521936b01fbe1890f6f9baed0254ab6351c04a`; **MIT**, [original license](../../licenses/upstream/triposr/LICENSE), [model card](https://huggingface.co/stabilityai/TripoSR) | Shared single-image scene, camera views and geometry. Original source retained; separate adapted copy defers unused rembg/torchmcubes imports. Surface extraction/rigging/baking are Pawzura code |
+| DINO ViT-B/16 configuration | `f205d5d8e640a89a2b8ef0369670dfc37cc07fc2`; **Apache-2.0**, [model card](https://huggingface.co/facebook/dino-vitb16), [license](../../licenses/upstream/Apache-2.0.txt) | TripoSR image-encoder configuration; no separate DINO pretrained weights downloaded |
+| ViTPose | Existing pinned Apache-2.0 model above | CPU landmarks for pose-assisted joint lifting, not a learned specialist 3D rigger |
+| einops | 0.7.0, MIT, [original](../../licenses/upstream/creative-models/einops-LICENSE.txt) | Tensor rearrangement |
+| OmegaConf | 2.3.0, BSD-3-Clause, [original](../../licenses/upstream/creative-models/omegaconf-LICENSE.txt) | Trusted upstream model configuration |
+| ANTLR4 Python runtime | 4.9.3 resolved by OmegaConf, BSD-3-Clause and incorporated terms, [original](../../licenses/upstream/creative-models/ANTLR4-LICENSE.txt) | Configuration parser; preserve installed component notices |
+| trimesh | 4.0.5, MIT, [original](../../licenses/upstream/creative-models/trimesh-LICENSE.txt) | Upstream geometry interface dependency |
+| imageio | 2.37.0, BSD-2-Clause, [original](../../licenses/upstream/creative-models/imageio-LICENSE.txt) | Upstream image utility dependency |
+
+The [motion catalog](../../art_runtime/motion_catalog.json) pins model files/hashes; the [source record](../../art_runtime/triposr-sources.json) pins original source hashes. Downloaded adapted sources record their original revision, modifications and hashes. Skin weights, gait and face/jaw corrections are procedural. MIT permits use subject to its terms; it does not certify generated character rights. Original drawing model restrictions remain applicable.
+
 ## Original notices and attributions
 
 Optional browser testing uses Playwright (Apache-2.0) and a separately installed Chromium with its own notices. These are development/test tools and are not redistributed in Pawzura's EXE ZIP. The `test-browser` extra is optional; keep the tools' installed license files if distributing a test environment.

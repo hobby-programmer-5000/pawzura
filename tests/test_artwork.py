@@ -112,10 +112,10 @@ class ArtworkTests(unittest.TestCase):
         pet = Pet(self.spec())
         pet.timer.stop()
         pet.direction = -1
-        target = QPointF(500, 300)
+        target = QPointF(pet.px - 200, 300)
         called = []
         self.assertTrue(pet.bite(target, lambda: called.append(True)))
-        self.assertAlmostEqual(pet.action["to"].x(), 500 - (144 - 144 * .4))
+        self.assertAlmostEqual(pet.action["to"].x(), target.x() - (144 - 144 * .4))
         self.assertAlmostEqual(pet.action["to"].y(), 300 - 144 * .3)
         pet.cancel_bite()
         self.assertIsNone(pet.action)
@@ -151,12 +151,12 @@ class ArtworkTests(unittest.TestCase):
                          {"verdict": "replica", "identity": "known character"},
                          {"verdict": "uncertain", "identity": "none"},
                          {"verdict": "allow", "identity": "known character"}):
-            response = io.BytesIO(json.dumps({"message": {"content": json.dumps({**decision, "mouth_x": .4, "mouth_y": .3})}}).encode())
+            response = io.BytesIO(json.dumps({"message": {"content": json.dumps({**decision, "single_character": True, "mouth_x": .4, "mouth_y": .3})}}).encode())
             with patch("pawzura.art_policy.build_opener") as opener:
                 opener.return_value.open.return_value = response
                 with self.assertRaisesRegex(GenerationError, "art_output_blocked"):
                     art_policy.review_art_image(png())
-        good = {"verdict": "allow", "identity": "none", "mouth_x": .4, "mouth_y": .3}
+        good = {"verdict": "allow", "identity": "none", "single_character": True, "mouth_x": .4, "mouth_y": .3}
         response = io.BytesIO(json.dumps({"message": {"content": json.dumps(good)}}).encode())
         with patch("pawzura.art_policy.build_opener") as opener:
             opener.return_value.open.return_value = response
@@ -184,6 +184,62 @@ class ArtworkTests(unittest.TestCase):
             with self.assertRaisesRegex(GenerationError, "art_output_blocked"):
                 art_client.generate_artwork("original", 8)
             store.assert_not_called()
+
+    def test_character_sheet_is_rejected_before_asset_storage(self):
+        result = {"png": base64.b64encode(png()).decode(), "model": "sdxl", "seed": 42}
+        decision = {"verdict": "allow", "identity": "none", "single_character": False,
+                    "mouth_x": .4, "mouth_y": .3}
+        output = {"message": {"content": json.dumps(decision)}}
+        with patch.object(art_client, "review_art_prompt", return_value="An original character standing alone"), \
+             patch.object(art_client.secrets, "randbelow", return_value=42), \
+             patch.object(art_client, "worker", return_value=result), \
+             patch.object(art_policy, "_review_call", return_value=output), \
+             patch.object(art_client, "store_artwork") as store:
+            with self.assertRaisesRegex(GenerationError, "art_multiple_characters"):
+                art_client.generate_artwork("original", 8)
+            store.assert_not_called()
+
+    def test_subject_count_requires_an_explicit_boolean_and_keeps_previous_result(self):
+        for invalid in (None, 1, "true"):
+            decision = {"verdict": "allow", "identity": "none", "single_character": invalid,
+                        "mouth_x": .4, "mouth_y": .3}
+            with patch.object(art_policy, "_review_call", return_value={"message": {"content": json.dumps(decision)}}):
+                with self.assertRaisesRegex(GenerationError, "art_review_image_invalid"):
+                    art_policy.review_art_image(png())
+        for language in ("en", "ko"):
+            dialog = ArtworkDialog(language)
+            previous = self.spec()
+            dialog.succeeded(previous)
+            dialog.failed("art_multiple_characters")
+            dialog.controls()  # Worker-finished lifecycle normally refreshes controls.
+            self.assertEqual(dialog.result_spec, previous)
+            self.assertTrue(dialog.use.isEnabled())
+            self.assertEqual(dialog.status.text(), dialog.t["art_multiple_characters"])
+            dialog.preview.timer.stop()
+            dialog.deleteLater()
+
+    def test_detached_character_silhouettes_are_blocked_without_a_model_call(self):
+        image = QImage(256, 256, QImage.Format.Format_ARGB32)
+        image.fill(0)
+        painter = QPainter(image)
+        painter.fillRect(90, 20, 80, 220, Qt.GlobalColor.blue)
+        painter.fillRect(20, 80, 35, 160, Qt.GlobalColor.green)
+        painter.end()
+        encoded = QByteArray()
+        buffer = QBuffer(encoded)
+        buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+        image.save(buffer, "PNG")
+        with patch.object(art_policy, "_review_call") as review:
+            with self.assertRaisesRegex(GenerationError, "art_multiple_characters"):
+                art_policy.review_art_image(bytes(encoded))
+            review.assert_not_called()
+        # Small detached foot/accessory fragments alone must not reject a design.
+        image.fill(0)
+        painter = QPainter(image)
+        painter.fillRect(90, 20, 80, 180, Qt.GlobalColor.blue)
+        painter.fillRect(94, 210, 28, 25, Qt.GlobalColor.green)
+        painter.end()
+        self.assertFalse(artwork.has_large_separate_figures(image))
 
     def test_art_dialog_requires_fresh_license_acknowledgement_per_model(self):
         for language in ("en", "ko"):

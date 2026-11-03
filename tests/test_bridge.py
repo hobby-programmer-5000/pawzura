@@ -41,6 +41,14 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, 401)
         raised.exception.close()
 
+    def test_repeated_bad_token_uploads_receive_401_without_transport_resets(self):
+        for _ in range(100):
+            with self.assertRaises(HTTPError) as raised:
+                self.send("wrong-token")
+            self.assertEqual(raised.exception.code, 401)
+            raised.exception.close()
+        self.assertTrue(self.bridge.events.empty())
+
     def test_disabled_never_closes(self):
         result = self.send()
         self.assertTrue(result["decisions"][0]["allowed"])

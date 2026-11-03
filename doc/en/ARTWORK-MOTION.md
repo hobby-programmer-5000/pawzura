@@ -2,6 +2,8 @@
 
 # Moving artwork hands and feet
 
+Source update: [experimental 8 GB pose-assisted 3D motion](3D-MOTION.md) now connects approved artwork to the actual app. The older release/experiment descriptions below retain their original scope.
+
 Generated artwork can move four separate cutout regions: two arms/hands and two feet. Walking alternates them; waving, hopping and cheering use different poses. This works with existing approved artwork, without generating another picture.
 
 ## New artwork

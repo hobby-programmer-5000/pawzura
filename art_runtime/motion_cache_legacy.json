@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "backends": {
+    "9b6fa94b888a87305b1926d9567d936f4ff7fd57f430256bd6c7013566adb20f": {
+      "reconstruct": "f5a84ec3c07b4b494f4a1a20762a5c0aa61f77e2901d3ec3904cbf02e3d38d8d",
+      "rig": "ed2d0221c65bd3f04d3b05c2e7916b36da29d345e0be599d69043c753f7fbfa6",
+      "bake": "4dde462297d10ebd52cb468e4a58184f8804beaab077de8f75b8577fee7ba43a",
+      "prepare": "71528fb2ec4d9419014bc5ba5929e0f8a13f7a31c533f6e81896558037c921f2"
+    }
+  }
+}

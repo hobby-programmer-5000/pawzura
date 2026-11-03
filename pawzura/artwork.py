@@ -13,6 +13,44 @@ MAX_ART_SIDE = 1024
 _IMAGES = {}
 
 
+def has_large_separate_figures(image):
+    """Reject substantial detached upright silhouettes, not a semantic counter.
+
+    Helps catch reference sheets missed by the local vision reviewer. Large
+    detached accessories can be false positives; connected collages can escape.
+    """
+    from collections import deque
+    from PySide6.QtCore import Qt
+    small = image.scaled(128, 128, Qt.AspectRatioMode.KeepAspectRatio,
+                         Qt.TransformationMode.FastTransformation)
+    width, height = small.width(), small.height()
+    remaining = {(x, y) for y in range(height) for x in range(width)
+                 if small.pixelColor(x, y).alpha() > 64}
+    components = []
+    while remaining:
+        start = remaining.pop()
+        queue = deque([start])
+        count = 0
+        left = right = start[0]
+        top = bottom = start[1]
+        while queue:
+            x, y = queue.popleft()
+            count += 1
+            left, right = min(left, x), max(right, x)
+            top, bottom = min(top, y), max(bottom, y)
+            for point in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if point in remaining:
+                    remaining.remove(point)
+                    queue.append(point)
+        components.append((count, right - left + 1, bottom - top + 1))
+    components.sort(reverse=True)
+    if not components:
+        return False
+    largest = components[0][0]
+    return any(area >= largest * .12 and h >= height * .35 and h >= w * 1.4
+               for area, w, h in components[1:])
+
+
 def asset_root():
     return Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local/share")) / "Pawzura" / "artwork"
 

@@ -2,6 +2,8 @@
 
 # Models and character generation
 
+Source update: [experimental 8 GB pose-assisted 3D motion](3D-MOTION.md) now connects approved artwork to the actual app. The older release/experiment descriptions below retain their original scope.
+
 For actual generated illustrations with original silhouettes, clothing and hairstyles, use **Character → Create original artwork…**. This separate optional GPU path has its own setup, content checks and model license acknowledgement: [Creative artwork](CREATIVE-ART.md). The remaining sections describe the vector trait designer.
 
 **Ollama must be running and the selected model downloaded. Keep enough free system RAM/VRAM for weights plus inference overhead.** Random/manual characters work without it. For **Advanced → 2/4/6/8 GB VRAM guides**, larger Qwen3 options and licenses, see [advanced models and memory](ADVANCED-MODELS.md). These improve the available description-interpreting choices; the vector artwork capabilities remain the same.

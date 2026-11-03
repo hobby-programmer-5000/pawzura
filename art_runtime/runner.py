@@ -119,11 +119,11 @@ def generate(tier, cache, payload):
         pipe.enable_attention_slicing("max")
     else:
         pipe.enable_model_cpu_offload()
-    composed = "Single original full-body chibi character, isolated on white background, " + prompt
+    composed = "One single original full-body chibi character standing alone, one face and one body, centered front view on plain white background. " + prompt
     report("art_sampling", 0, 30)
     with torch.inference_mode():
         output = pipe(prompt=composed,
-                      negative_prompt="nsfw, nude, sexual, gore, logo, text, watermark, signature, cropped, frame, multiple characters",
+                      negative_prompt="nsfw, nude, sexual, gore, logo, text, watermark, signature, cropped, frame, multiple characters, character sheet, reference sheet, turnaround sheet, multiple views, multiple poses, collage, montage, comic panels, duplicate bodies, portrait insets",
                       height=size, width=size, num_inference_steps=30, guidance_scale=7,
                       callback_on_step_end=sampling_progress,
                       generator=torch.Generator("cpu").manual_seed(seed))

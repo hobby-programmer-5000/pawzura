@@ -59,3 +59,9 @@ The settings window's close button returns to the tray. **Hide companion** keeps
 - **Qt fails in Conda:** use the [standard CPython setup](BUILD.md).
 
 See [validation and current limits](VALIDATION.md) before relying on preview functionality. Settings are stored in `%LOCALAPPDATA%\Pawzura\settings.json`.
+
+## Walking direction
+
+In **Settings → General → Walking direction**, choose **Left** or **Right**, then **Save settings**. Right is the default for new and older settings. The preference applies to vector, 2D artwork and prepared 3D characters, and survives restarting or recovering the companion. It is a global setting, independent of allowlist profiles. During a bite the character faces the target, then returns to the selected walking direction. The motion dropdown in the artwork window only previews clips; it does not save this preference.
+
+The companion keeps a 144 × 146 logical-pixel window when crossing display scales. A real Windows 10 100%/125% boundary check in both directions exposed and corrected repeated tool-window resizing. For an optional test with your own monitor arrangement, run `.venv-standard/Scripts/python.exe tests/pet_dpi_probe.py --output .cache/pet-dpi-probe.json` from the checkout. It displays only a test-owned vector pet; it performs no guardian actions. Exit 2 means NOT RUN because Windows or different monitor scale factors are unavailable. A pass covers that connected arrangement, not every DPI/layout.

@@ -26,7 +26,7 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 
 ## 주요 기능
 
-- 모니터를 오가며 설정한 그림의 손발을 움직이고 커서·클릭에 반응합니다. [움직임 설정](doc/ko/ARTWORK-MOTION.md).
+- 모니터를 왼쪽/오른쪽으로 걸으며 커서·클릭에 반응합니다. [2D 움직임](doc/ko/ARTWORK-MOTION.md)과 선택형 실험 기능인 [8 GB 3D 움직임](doc/ko/3D-MOTION.md)을 제공합니다.
 - 미허용 창을 닫기 전에 점프·깨물기·사라지는 균열을 표시합니다.
 - 브라우저 창을 보호하고 미허용 탭만 닫습니다. 확장에서 자동 연결 후 앱에서 승인하면 됩니다.
 - 라이트·다크 설정, 가벼운 Qwen 도형 설계와 선택형 GPU [창작 그림 생성](doc/ko/CREATIVE-ART.md)을 제공합니다. 고급 그림 모델은 별도 다운로드와 라이선스 확인이 필요합니다.
@@ -38,7 +38,7 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | 실행·한국어 변경·트레이 사용 | [처음 사용하기](doc/ko/GETTING_STARTED.md) |
 | Chrome/Edge/Firefox 연결과 입력 예시 | [브라우저 연결](doc/ko/BROWSERS.md) |
 | 업무·여가 목록 분리·캐릭터 복구 | [프로필과 복구](doc/ko/PROFILES-AND-RECOVERY.md) |
-| GPU 그림 생성과 모델 라이선스 확인 | [창작 그림](doc/ko/CREATIVE-ART.md) |
+| 캐릭터 생성·저장·복원·삭제 | [그림과 라이선스](doc/ko/CREATIVE-ART.md) · [캐릭터 보관함](doc/ko/CHARACTER-LIBRARY.md) |
 | 소스 실행·EXE 빌드 | [설정과 빌드](doc/ko/BUILD.md) |
 | 테스트 결과·현재 제한 | [검증 기록](doc/ko/VALIDATION.md) |
 | 기획자·AI 기여 역할 | [기여자](doc/ko/CONTRIBUTORS.md) |
@@ -52,4 +52,4 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | --- | --- |
 | [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
 
-자체 코드 [MIT](LICENSE). [역할과 GitHub 표시 제한](doc/ko/CONTRIBUTORS.md) · [전체 문서](doc/README.ko.md).
+자체 코드 [MIT](LICENSE). [기여 역할](doc/ko/CONTRIBUTORS.md) · [0.4.0 변경](doc/ko/RELEASE-v0.4.0.md) · [전체 안내](doc/README.ko.md).

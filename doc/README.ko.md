@@ -4,6 +4,11 @@
 
 기본 문서는 영어이며 모든 자체 문서에 한국어 버전이 있습니다.
 
+- [단일 이미지 애니메이션 연구·시제품 후보](ko/ANIMATION-RESEARCH.md)
+- [애니메이션 시제품 실측 결과](ko/ANIMATION-EXPERIMENT.md)
+- [방향에 맞는 걷기·회전·입체감 기준](ko/DIRECTIONAL-ANIMATION.md)
+- [일관된 프레임·모델 순차 준비](ko/STAGED-CHARACTER-PIPELINE.md)
+
 - [그림 손발 움직임·커서 상호작용](ko/ARTWORK-MOTION.md)
 - [0.3.0 그림 움직임](ko/RELEASE-v0.3.0.md)
 
@@ -43,3 +48,8 @@
 - [0.2.1 그림 생성 진행 상황](ko/RELEASE-v0.2.1.md)
 
 - [0.2.2 로컬 검사 수정](ko/RELEASE-v0.2.2.md)
+
+- [실험용 8GB 포즈 추정 보조 3D 움직임](ko/3D-MOTION.md)
+
+- [로컬 캐릭터 보관함과 중간 결과 저장](ko/CHARACTER-LIBRARY.md)
+- [0.4.0 방향별 모션과 캐릭터 보관](ko/RELEASE-v0.4.0.md)

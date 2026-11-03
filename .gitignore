@@ -8,6 +8,12 @@ dist/
 .cache/
 artwork/
 art-runtime/
+character-library/
+motion/
+motion-jobs/
+motion-source/
+*.pawzura-character.json
+*.ckpt
 *.safetensors
 *.gguf
 *.onnx
@@ -16,5 +22,6 @@ pairing.json
 settings.json
 settings.tmp
 instance.lock
+.character-storage.lock
 artifacts/settings-general.png
 artifacts/exe-*.png

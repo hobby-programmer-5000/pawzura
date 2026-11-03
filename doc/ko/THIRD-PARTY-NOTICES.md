@@ -56,6 +56,23 @@ CPython 표준 바이너리 확장의 구성은 버전과 import 그래프에 �
 
 간접 패키지로 requests/urllib3/certifi, tokenizers, filelock, fsspec, Jinja2/MarkupSafe, SymPy/mpmath, networkx, packaging, PyYAML, regex, tqdm, psutil, protobuf, coloredlogs/humanfriendly, flatbuffers, typing-extensions, setuptools 등이 설치될 수 있습니다. 각 라이선스·메타데이터를 설치 환경에 유지하며 앱 ZIP에 포함하거나 재라이선스하지 않습니다. 준비 과정에서 로컬 `DEPENDENCIES.json` 목록과 사용 가능한 라이선스·NOTICE 원문을 `art-runtime/licenses/`에 보존합니다. 모델 snapshot과 라이브러리 버전은 별개입니다. 준비된 실행환경을 직접 재배포한다면 모든 개별 조건을 유지해야 하며 가벼운 앱 EXE의 고지만으로 충분한 전체 고지 목록이 되지 않습니다.
 
+## 선택형 포즈 추정 보조 3D 연결
+
+[사용법·한계](3D-MOTION.md). 가중치·준비된 실행환경은 배포하지 않습니다. 기존 PyTorch·NVIDIA 구성요소를 포함해 모두 각자의 조건을 유지하며 준비 시 실제 설치·전이 의존성의 고지를 로컬 목록에 복사합니다.
+
+| 구성요소 | 버전·원본 조건 | 역할 |
+| --- | --- | --- |
+| TripoSR 코드·체크포인트 | 소스 `107cefdc244c39106fa830359024f6a2f1c78871`, 가중치 `5b521936b01fbe1890f6f9baed0254ab6351c04a`, **MIT** · [원문](../../licenses/upstream/triposr/LICENSE) · [모델 카드](https://huggingface.co/stabilityai/TripoSR) | 단일 이미지의 공유 장면·시점·형상. 원본 유지, 별도 수정본에서 미사용 rembg/torchmcubes import 지연. 표면 추출·리깅·저장은 앱 코드 |
+| DINO ViT-B/16 설정 | `f205d5d8e640a89a2b8ef0369670dfc37cc07fc2`, **Apache-2.0** · [모델 카드](https://huggingface.co/facebook/dino-vitb16) · [원문](../../licenses/upstream/Apache-2.0.txt) | TripoSR 이미지 인코더 설정. 별도 DINO 사전학습 가중치는 다운로드하지 않음 |
+| ViTPose | 위의 기존 revision 고정 Apache-2.0 모델 | 관절의 표면 투영을 돕는 CPU 포즈 모델. 전문 학습형 3D 리깅 모델은 아님 |
+| einops | 0.7.0, MIT · [원문](../../licenses/upstream/creative-models/einops-LICENSE.txt) | 텐서 배열 변환 |
+| OmegaConf | 2.3.0, BSD-3-Clause · [원문](../../licenses/upstream/creative-models/omegaconf-LICENSE.txt) | 신뢰하는 공식 모델 설정 |
+| ANTLR4 Python runtime | OmegaConf가 선택한 4.9.3, BSD-3-Clause·포함 조건 · [원문](../../licenses/upstream/creative-models/ANTLR4-LICENSE.txt) | 설정 파서. 설치 구성요소 고지 유지 |
+| trimesh | 4.0.5, MIT · [원문](../../licenses/upstream/creative-models/trimesh-LICENSE.txt) | 공식 소스의 형상 인터페이스 의존성 |
+| imageio | 2.37.0, BSD-2-Clause · [원문](../../licenses/upstream/creative-models/imageio-LICENSE.txt) | 공식 이미지 유틸리티 의존성 |
+
+[모션 카탈로그](../../art_runtime/motion_catalog.json)는 모델 파일·해시, [소스 기록](../../art_runtime/triposr-sources.json)은 원본 소스 해시를 고정합니다. 받은 수정본에는 원래 revision·수정 내용·해시를 기록합니다. 스킨 가중치·보행·얼굴·턱 보정은 직접 계산합니다. MIT 이용도 조건 준수가 필요하며 캐릭터 권리 확인을 보증하지 않습니다. 원본 그림 모델의 제한도 계속 적용합니다.
+
 ## 원문 보관
 
 선택적 브라우저 검사에는 Playwright(Apache-2.0)와 개별 고지가 적용되는 별도 Chromium을 사용합니다. 개발·검사 도구이며 Pawzura EXE ZIP에 재배포하지 않습니다. `test-browser` 추가 의존성은 선택 사항이고 검사 환경 자체를 배포한다면 설치된 도구의 라이선스 원문도 유지해야 합니다.

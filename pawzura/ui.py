@@ -27,6 +27,8 @@ TEXT = {
         "guard": "집중 지킴이 켜기", "preview": "미리보기 모드 · 애니메이션만 표시하고 닫지 않기",
         "visible": "바탕화면에 캐릭터 표시", "startup": "Windows 로그인 시 자동 실행", "language": "언어",
         "theme": "화면 테마", "theme_dark": "다크", "theme_light": "라이트 (화이트)",
+        "walk_direction": "걷기 방향", "walk_right": "오른쪽", "walk_left": "왼쪽",
+        "walk_help": "설정 저장 후 모든 캐릭터에 적용됩니다. 깨물 때는 대상을 향하고, 끝나면 선택한 방향으로 다시 걷습니다.",
         "theme_help": "선택하면 바로 미리 봅니다. 다음 실행에도 유지하려면 설정 저장을 누르세요.",
         "advanced": "고급", "advanced_models": "큰 도형 해석 모델 사용 (외형 틀은 동일)",
         "creative_art": "창작 그림 만들기… (GPU · 별도 모델)",
@@ -104,6 +106,8 @@ TEXT = {
         "guard": "Enable focus guardian", "preview": "Preview mode · animate without closing anything",
         "visible": "Show desktop companion", "startup": "Run when I sign in to Windows", "language": "Language",
         "theme": "Theme", "theme_dark": "Dark", "theme_light": "Light (white)",
+        "walk_direction": "Walking direction", "walk_right": "Right", "walk_left": "Left",
+        "walk_help": "Save settings to apply to every character type. Bites face their target, then resume your chosen walking direction.",
         "theme_help": "Preview immediately. Save settings to keep your choice for next launch.",
         "advanced": "Advanced", "advanced_models": "Enable larger trait interpreters (same shapes)",
         "creative_art": "Create original artwork… (GPU · separate models)",
@@ -328,6 +332,7 @@ class SettingsDialog(QDialog):
     def __init__(self, settings, parent=None, connection_check=None):
         super().__init__(parent)
         self.settings = settings
+        self.library_root = settings.path.parent / "character-library"
         self.config = settings.snapshot()
         self.t = TEXT.get(self.config["language"], TEXT["en"])
         self.worker = None
@@ -355,6 +360,8 @@ class SettingsDialog(QDialog):
         self.build_character()
         self.build_advanced()
         self.build_about()
+        self.walk_direction.currentIndexChanged.connect(self.preview_walk_direction)
+        self.preview_walk_direction()
         self.preview_theme(self.config.get("theme", "dark"))
         self.message = QLabel(self.t["status"] if not self.config["guard_enabled"] else self.t["preview"] if self.config["preview_only"] else self.t["guard"])
         self.message.setObjectName("status")
@@ -506,12 +513,23 @@ class SettingsDialog(QDialog):
         self.theme.setCurrentIndex(max(0, self.theme.findData(self.config.get("theme", "dark"))))
         self.theme.currentIndexChanged.connect(lambda: self.preview_theme(self.theme.currentData()))
         form.addRow(self.t["theme"], self.theme)
+        self.walk_direction = QComboBox()
+        self.walk_direction.addItem(self.t["walk_right"], "right")
+        self.walk_direction.addItem(self.t["walk_left"], "left")
+        self.walk_direction.setCurrentIndex(self.walk_direction.findData(self.config["walk_direction"]))
+        self.walk_direction.setToolTip(self.t["walk_help"])
+        form.addRow(self.t["walk_direction"], self.walk_direction)
         layout.insertLayout(1, form)
         self.theme.setToolTip(self.t["theme_help"])
+        layout.addWidget(self.label(self.t["walk_help"]))
         demo = QPushButton(self.t["demo"])
         demo.clicked.connect(self.demo_requested.emit)
         layout.addWidget(demo, alignment=Qt.AlignmentFlag.AlignLeft)
         layout.addStretch()
+
+    def preview_walk_direction(self):
+        self.character_preview.facing = -1 if self.walk_direction.currentData() == "left" else 1
+        self.character_preview.update()
 
     def preview_theme(self, theme):
         light = theme == "light"
@@ -727,6 +745,16 @@ class SettingsDialog(QDialog):
         self.motion_button.clicked.connect(self.open_motion)
         artwork_row.addWidget(self.motion_button)
         layout.addLayout(artwork_row)
+        from .library_ui import TEXT as LIBRARY_TEXT
+        lt = LIBRARY_TEXT.get(self.config["language"], LIBRARY_TEXT["en"])
+        library_row = QHBoxLayout()
+        self.save_character_button = QPushButton(lt["save"])
+        self.save_character_button.clicked.connect(self.save_character_locally)
+        self.library_button = QPushButton(lt["open"])
+        self.library_button.clicked.connect(self.open_character_library)
+        library_row.addWidget(self.save_character_button)
+        library_row.addWidget(self.library_button)
+        layout.addLayout(library_row)
         designer = QHBoxLayout()
         self.character_preview = CharacterPreview(self.config["character"])
         self.character_preview.setFixedSize(200, 220)
@@ -836,11 +864,37 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.art_trait_note)
         self.refresh_art_traits()
 
+    def save_character_locally(self):
+        if self.worker is not None:
+            return
+        from .library_ui import save_named
+        message = save_named(self.config["character"], self.config["language"], self, self.library_root)
+        if message:
+            self.message.setText(message)
+
+    def library_references(self):
+        saved = self.settings.snapshot()
+        return {"active": [self.config["character"], saved["character"]],
+                "history": [*self.config["character_history"], *saved["character_history"]],
+                "busy": self.worker is not None}
+
+    def open_character_library(self):
+        if self.worker is not None:
+            return
+        from .library_ui import LibraryDialog
+        dialog = LibraryDialog(self.config["language"], self.theme.currentData(), self, self.library_root, current_spec=self.config["character"], reference_provider=self.library_references)
+        dialog.preview.facing = -1 if self.walk_direction.currentData() == "left" else 1
+        dialog.chosen.connect(self.apply_character)
+        dialog.exec()
+        dialog.preview.timer.stop()
+        dialog.deleteLater()
+
     def open_artwork(self):
         if self.worker is not None:
             return
         from .art_ui import ArtworkDialog
-        dialog = ArtworkDialog(self.config["language"], self.vram_tier.currentData() or 8, self)
+        dialog = ArtworkDialog(self.config["language"], self.vram_tier.currentData() or 8, self,
+                               initial_spec=self.config["character"])
         dialog.preview.theme = self.theme.currentData()
         dialog.chosen.connect(self.apply_character)
         dialog.exec()
@@ -849,13 +903,13 @@ class SettingsDialog(QDialog):
 
     def refresh_art_traits(self):
         artwork = self.config["character"].get("kind") == "artwork"
-        self.motion_button.setEnabled(artwork)
+        self.motion_button.setEnabled(artwork and not self.config["character"].get("animation_id"))
         self.custom_panel.setEnabled(not artwork)
         self.custom_button.setEnabled(not artwork)
         self.art_trait_note.setVisible(artwork)
 
     def open_motion(self):
-        if self.worker is not None or self.config["character"].get("kind") != "artwork":
+        if self.worker is not None or self.config["character"].get("kind") != "artwork" or self.config["character"].get("animation_id"):
             return
         from .artwork import load_artwork
         if load_artwork(self.config["character"]["art_id"]).isNull():
@@ -953,7 +1007,10 @@ class SettingsDialog(QDialog):
         self.character_preview.spec = spec
         self.character_preview.update()
         self.refresh_art_traits()
-        self.message.setText(self.t["generated"])
+        from .character_library import try_save
+        from .library_ui import TEXT as LIBRARY_TEXT
+        saved = try_save(spec, self.library_root)
+        self.message.setText(self.t["generated"] + "\n" + LIBRARY_TEXT[self.config["language"]]["auto_saved" if saved else "auto_failed"])
 
     def restore_character(self):
         if self.config["character_history"]:
@@ -976,6 +1033,7 @@ class SettingsDialog(QDialog):
             return
         self.generation_controls = (self.generate_button, self.reset_button, self.language, self.random_button,
                                     self.previous_button, self.custom_button, self.custom_panel, self.character_model,
+                                    self.save_character_button, self.library_button,
                                     self.advanced_models, self.vram_tier)
         for control in self.generation_controls:
             control.setEnabled(False)
@@ -1011,18 +1069,34 @@ class SettingsDialog(QDialog):
         layout.addStretch()
 
     def save(self):
+        from .character_library import root as library_root, storage_lock
+        from contextlib import nullcontext
+        context = storage_lock() if self.library_root.resolve() == library_root().resolve() else nullcontext()
+        try:
+            with context:
+                self._save_settings()
+        except (OSError, ValueError) as error:
+            QMessageBox.warning(self, "Pawzura", str(error))
+
+    def _save_settings(self):
         try:
             self.store_profile()
             updates = {"guard_enabled": self.guard.isChecked(), "preview_only": self.preview.isChecked(),
                        "browser_control_enabled": self.website_control.isChecked(),
                        "pet_visible": self.visible.isChecked(), "start_at_login": self.startup.isChecked(),
                        "language": self.language.currentData(), "allowed_apps": self.config["allowed_apps"],
-                       "theme": self.theme.currentData(),
+                       "theme": self.theme.currentData(), "walk_direction": self.walk_direction.currentData(),
                        "advanced_models": self.advanced_models.isChecked(), "vram_tier": self.vram_tier.currentData(),
                        "designer_model": self.character_model.currentData(),
                        "profiles": self.config["profiles"], "active_profile": self.config["active_profile"],
                        "startup_apps": self.config["startup_apps"], "browsers": self.config["browsers"],
                        "character": self.config["character"], "character_history": self.config["character_history"]}
+            from .character_library import root as library_root
+            if (self.library_root.resolve() == library_root().resolve()
+                    and updates["character"].get("kind") == "artwork"
+                    and updates["character"] != self.settings.snapshot()["character"]):
+                from .character_library import validate_assets
+                validate_assets(updates["character"])
             old_startup = self.settings.snapshot()["start_at_login"]
             if updates["start_at_login"] != old_startup:
                 windows.set_startup(updates["start_at_login"])

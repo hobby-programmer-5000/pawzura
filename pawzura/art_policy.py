@@ -152,14 +152,17 @@ def review_art_prompt(description, progress=None):
 
 def review_art_image(data):
     """A second local model reviews visible content; no image is persisted first."""
-    from .artwork import validate_png
-    validate_png(data)
+    from .artwork import validate_png, has_large_separate_figures
+    image = validate_png(data)
+    if has_large_separate_figures(image):
+        raise GenerationError("art_multiple_characters")
     schema = {"type": "object", "additionalProperties": False,
               "properties": {"verdict": {"type": "string", "enum": ["allow", "unsafe", "replica", "uncertain"]},
                              "identity": {"type": "string", "maxLength": 100},
+                             "single_character": {"type": "boolean"},
                              "mouth_x": {"type": "number", "minimum": .05, "maximum": .95},
                              "mouth_y": {"type": "number", "minimum": .05, "maximum": .95}},
-              "required": ["verdict", "identity", "mouth_x", "mouth_y"]}
+              "required": ["verdict", "identity", "single_character", "mouth_x", "mouth_y"]}
     payload = {"model": VISION_MODEL, "stream": False, "format": schema, "keep_alive": 0,
                "think": False, "options": {"temperature": 0, "num_ctx": 4096, "num_predict": 512},
                "messages": [{"role": "user", "content":
@@ -169,6 +172,10 @@ def review_art_image(data):
                    "illustration styles alone do not identify a franchise. Original fantasy creatures and "
                    "nonsexual animals with natural fur are allowed. uncertain: image is too unclear to classify. "
                    "allow: family-friendly and no identifiable franchise character/logo. "
+                   "Independently set single_character to true only if the ENTIRE image shows exactly one "
+                   "character figure, one head and one body, suitable as one desktop companion. "
+                   "Set it false for character/reference sheets, extra small figures, multiple poses/views, "
+                   "collages, repeated heads or bodies, even if they depict the same character. "
                    "Set identity to none for allow. Give the mouth center in normalized image coordinates "
                    "from 0 to 1. If no mouth is visible, use the center of the face. JSON only.",
                    "images": [base64.b64encode(data).decode("ascii")]}]}
@@ -182,11 +189,15 @@ def review_art_image(data):
     raw = message.get("content")
     if not isinstance(raw, str) or not raw.strip():
         raw = message.get("thinking")
-    decision = _decision(raw, "image", ("verdict", "identity", "mouth_x", "mouth_y"))
+    decision = _decision(raw, "image", ("verdict", "identity", "single_character", "mouth_x", "mouth_y"))
     if not isinstance(decision["identity"], str) or len(decision["identity"]) > 100:
         raise ReviewError("image", "invalid")
     if decision["verdict"] != "allow" or decision["identity"].strip().casefold() != "none":
         raise GenerationError("art_output_blocked")
+    if type(decision["single_character"]) is not bool:
+        raise ReviewError("image", "invalid")
+    if not decision["single_character"]:
+        raise GenerationError("art_multiple_characters")
     coords = [decision[key] for key in ("mouth_x", "mouth_y")]
     if not all(type(value) in (int, float) and math.isfinite(value) and .05 <= value <= .95 for value in coords):
         raise ReviewError("image", "invalid")

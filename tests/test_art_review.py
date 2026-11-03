@@ -85,7 +85,7 @@ class ArtReviewTests(unittest.TestCase):
 
     def test_image_invalid_coordinates_and_missing_model_name_are_actionable(self):
         from test_artwork import png
-        output = {"message": {"content": json.dumps({"verdict": "allow", "identity": "none", "mouth_x": 50, "mouth_y": .5})}}
+        output = {"message": {"content": json.dumps({"verdict": "allow", "identity": "none", "single_character": True, "mouth_x": 50, "mouth_y": .5})}}
         with patch("pawzura.art_policy.build_opener") as opener:
             opener.return_value.open.return_value = response(output)
             with self.assertRaisesRegex(GenerationError, "art_review_image_invalid"):

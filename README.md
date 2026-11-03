@@ -26,7 +26,7 @@ For websites, choose your browser and click **Install/connect extension…**. On
 
 ## What it does
 
-- Walks across monitors, animates configured artwork hands/feet and reacts to hover/clicks. [Motion setup](doc/en/ARTWORK-MOTION.md).
+- Walks left/right across monitors and reacts to hover/clicks; [2D motion](doc/en/ARTWORK-MOTION.md) and optional experimental [8 GB 3D motion](doc/en/3D-MOTION.md).
 - Jumps, bites and shows a fading crack before requesting an unlisted window to close.
 - Protects browser windows; its extension closes blocked tabs and connects with desktop approval, without code entry.
 - Offers light/dark settings, a lightweight Qwen trait designer and optional GPU [original artwork generation](doc/en/CREATIVE-ART.md). Advanced image models require separate downloads and license review.
@@ -38,7 +38,7 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | Run the app, change language, use the tray | [Getting started](doc/en/GETTING_STARTED.md) |
 | Connect Chrome/Edge/Firefox, with examples | [Browser setup](doc/en/BROWSERS.md) |
 | Separate work/leisure lists or recover the companion | [Profiles and recovery](doc/en/PROFILES-AND-RECOVERY.md) |
-| Create GPU artwork and review model licenses | [Creative artwork](doc/en/CREATIVE-ART.md) |
+| Create, save, restore or delete characters | [Artwork and licenses](doc/en/CREATIVE-ART.md) · [Character library](doc/en/CHARACTER-LIBRARY.md) |
 | Run source or build an EXE | [Setup and builds](doc/en/BUILD.md) |
 | Check test results and current limits | [Validation](doc/en/VALIDATION.md) |
 | See ownership and AI contribution roles | [Contributors](doc/en/CONTRIBUTORS.md) |
@@ -52,4 +52,4 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | --- | --- |
 | [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
 
-App code: [MIT](LICENSE). [Roles and GitHub display limits](doc/en/CONTRIBUTORS.md) · [All documentation](doc/README.md).
+App code: [MIT](LICENSE). [Roles](doc/en/CONTRIBUTORS.md) · [0.4.0 changes](doc/en/RELEASE-v0.4.0.md) · [All guides](doc/README.md).

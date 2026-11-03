@@ -2,6 +2,8 @@
 
 # Original artwork with a GPU
 
+Source update: [experimental 8 GB pose-assisted 3D motion](3D-MOTION.md) now connects approved artwork to the actual app. The older release/experiment descriptions below retain their original scope.
+
 **Character → Create original artwork…** generates actual pixels instead of selecting the same vector ears, tails and accessories. Use descriptions of original silhouettes, clothing, hair, materials and illustration styles. The lightweight **Generate with Qwen** and manual trait options remain available without the image runtime.
 
 ## Before downloading
@@ -37,8 +39,8 @@ The image model generates a single illustration. There is no preset list of body
    ollama pull qwen3-vl:2b
    ```
 
-5. Enter an original description or click **Insert example**. The example requests a front-facing chibi astronomer with both hands visible beside the hips, separate copper boots, short turquoise hair, cream shirt, navy vest and crescent brooch on white. Visible, separated limbs make motion setup easier. Custom designs remain available. Do not name an existing character, franchise or logo. Do not include restricted content even as a negative instruction.
-6. Click **Generate artwork**. The local stages are description verdict → concise English summary when needed → image generation → image classifier/background removal → optional joint suggestions → vision review. A laptop may take many minutes, especially with sequential offload. Wait for the current operation before closing the dialog or quitting.
+5. Enter an original description, or select **Motion-friendly drawing examples → Chibi astronomer / Woodland courier / Clockwork gardener**, then click **Insert example**. Selecting a name alone preserves your current text; Insert example replaces it. The examples request a front-facing full body with visible, separated hands and feet on white, making the current motion setup easier. The selector and insert button are disabled while generation is running. You can edit the inserted description before generating. Do not name an existing character, franchise or logo. Do not include restricted content even as a negative instruction.
+6. Click **Generate artwork**. The local stages are description verdict → concise English summary when needed → image generation → image classifier/background removal → optional joint suggestions → composition/vision review. Generation asks for one centered figure and discourages reference sheets and repeated views. A transparent-silhouette check rejects substantial separate upright figures; the vision response must also explicitly identify a single character. A laptop may take many minutes, especially with sequential offload. Wait for the current operation before closing the dialog or quitting.
 7. Inspect the preview. Click **Use this character**, then **Save settings** in the main window. This final save applies the companion. Errors retain the previous design; the old result remains selectable after a failed retry.
 
 No private prompt or image goes to a cloud inference service. Setup contacts official package/model hosts; inference uses fixed local files and `127.0.0.1:11434`. Descriptions remain in the dialog for the session and are not written to settings, command arguments or app logs. Ollama is an external service with its own behavior. Approved PNG pixels are stored locally under `%LOCALAPPDATA%\Pawzura\artwork` by content hash; no arbitrary model-supplied file path is accepted. Metadata is removed. Up to 20 design references remain in history; old PNG files are not automatically deleted.
@@ -56,6 +58,12 @@ Completion/failure freezes the elapsed time and clearly marks Completed/Stopped.
 ## Animation and recovery
 
 New humanoid artwork receives editable hand/forearm and foot cutout suggestions from the local CPU joint helper. The app moves these original pixels independently during walking, waving and cheering; it does not generate a 3D rig or AI video. Hover pauses walking and greets, clicks cycle wave/hop/cheer, and idle greetings occur occasionally. Double-click/right-click still opens settings. These visual reactions never close an app/tab or replace a guardian bite.
+
+To check an example in the app, wait for all generation/review stages to finish, inspect the picture and motion areas, then **Use this character → Save settings**. Keep **guardian off** and **website control off** while checking appearance. The companion should walk along the current monitor's available work-area floor; hover/click to check reactions. The existing settings animation preview can show a bite without closing a real window. Recovery cancels the animation and returns the companion to the current floor. Results vary: a successful picture or joint estimate does not establish natural limb motion.
+
+If generation produces a sheet with small extra figures or several views, the whole sheet must not be used as one pet. The composition error asks you to request one centered full-body character standing alone on white, then generate again. Rejected output is not stored/applied; the previous result remains selectable. The silhouette heuristic can reject large detached accessories and can miss touching/connected figures; the local vision model can also miscount. Inspect the entire picture even after checks pass. These checks are quality aids, not proof of a correct rig or a single subject in every case.
+
+The separate [directional-animation research demo](DIRECTIONAL-ANIMATION.md) uses a manually fitted 3D character and procedural facial controls. It is **not connected to this generation/app path**. These drawing examples do not activate side-view turns, profile expressions or that demo's animated jaw. Verify the app's current 2D behavior separately rather than treating the research preview as a shipped feature.
 
 For existing pictures, open **Character → Edit hand/foot motion…**. Prepare the optional helper once, click **Estimate joints automatically**, inspect the four colored areas and joints, then **Use motion settings → Save settings**. No image regeneration is needed. Manual area/joint editing also works without the helper. New artwork has the same editor in its creation dialog. [Full motion guide](ARTWORK-MOTION.md).
 
@@ -90,3 +98,5 @@ NSFW content and identifiable existing character/logo replication requests are p
 Pinned model revisions are recorded in [the catalog](../../art_runtime/catalog.json). The optional runtime keeps package license files in its environment. See [validation](VALIDATION.md) for tested environments and remaining GPU coverage; do not infer 2/4/6 GB device testing from an 8 GB result.
 
 Description review now returns only a small verdict over the full input. Approved non-ASCII/long input is summarized separately into bounded English (at most 512 characters, compacted to 55 words); short usable ASCII descriptions remain unchanged. Common Korean color translations are hints, not appearance restrictions. Small-model summaries can still omit/alter details; concise English is useful when exact wording matters. The 8,192-token text-review context and 1,024-token summary budget need inference memory. Any failed verdict/summary/image review retains the old character rather than bypassing checks.
+
+[Save and reuse characters locally](CHARACTER-LIBRARY.md): approved drawing/motion versions are retained automatically; load saved pixels/clips without running a model. Intermediate preparation is reused by stage fingerprint.

@@ -159,3 +159,9 @@ The Windows automation helper's screenshot capture timed out in baseline testing
 - Navigation occurs before tab closing. The app fails open if stopped/disconnected and is a focus aid, not a tamper-resistant security tool.
 
 The guardian defaults off with preview on. Model-free drawing and procedural motion remain available without Ollama.
+
+## Additional source regressions
+
+Walking direction is persisted globally and checked through settings save, target-facing bite return and companion recovery. The optional `tests/pet_dpi_probe.py` uses only a test-owned vector companion; a Windows 10 100%/125% layout passed 238 samples over both directions after correcting native tool-window resizing. Separate checks with a newly generated artwork character covered its actual source-app playback. Other layouts and Windows 11 remain outside this result.
+
+An intermittent Windows loopback `WinError 10053` in the invalid-token test was reproduced in 4 of 100 requests. The handler now reads the already bounded request body before sending the authentication rejection; it parses/evaluates only authenticated requests, with the existing size limit and timeout retained. A 100-request rejection regression checks HTTP 401 and no guardian event. This does not change pairing approvals or authorize a browser.

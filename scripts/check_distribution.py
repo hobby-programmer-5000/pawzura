@@ -2,10 +2,12 @@
 import json
 from pathlib import Path
 import sys
+import zipfile
 
-PRIVATE_FILES = {"settings.json", "settings.tmp", "pairing.json", "instance.lock",
+PRIVATE_FILES = {"settings.json", "settings.tmp", "pairing.json", "instance.lock", ".character-storage.lock",
                  "preferences", "secure preferences", "local state", "cookies", "history"}
-PRIVATE_DIRS = {".git", ".cache", ".venv", ".venv-standard", "artwork", "art-runtime"}
+PRIVATE_DIRS = {".git", ".cache", ".venv", ".venv-standard", "artwork", "art-runtime",
+                "motion", "motion-jobs", "motion-source", "character-library"}
 
 
 def check_distribution(folder: Path):
@@ -22,13 +24,23 @@ def check_distribution(folder: Path):
         if path.name.casefold() in PRIVATE_FILES:
             problems.append(str(relative))
             continue
-        if path.suffix.casefold() in (".safetensors", ".gguf", ".onnx"):
+        if path.suffix.casefold() in (".safetensors", ".gguf", ".onnx", ".ckpt"):
             problems.append(str(relative))
             continue
+        if path.suffix.casefold() == ".zip":
+            try:
+                with zipfile.ZipFile(path) as archive:
+                    info = archive.getinfo("manifest.json")
+                    if info.file_size <= 256 * 1024:
+                        data = json.loads(archive.read(info))
+                        if isinstance(data, dict) and {"source_art_id", "clips"} <= data.keys():
+                            problems.append(str(relative))
+            except (OSError, KeyError, ValueError, zipfile.BadZipFile):
+                pass
         if path.suffix.casefold() == ".json":
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
-                if isinstance(data, dict) and ("bridge_token" in data or "active_profile" in data or "profiles" in data or {"browsers", "allowed_apps"} <= data.keys()):
+                if isinstance(data, dict) and (data.get("format") == "pawzura-character-v1" or "bridge_token" in data or "active_profile" in data or "profiles" in data or {"browsers", "allowed_apps"} <= data.keys()):
                     problems.append(str(relative))
             except (UnicodeError, ValueError):
                 pass
