@@ -52,3 +52,4 @@ English is the default. Every project-authored guide has a Korean counterpart.
 
 - [Local character library and saved preparation](en/CHARACTER-LIBRARY.md)
 - [0.4.0 directional motion and character storage](en/RELEASE-v0.4.0.md)
+- [0.4.1 browser settings pages and clearer setup](en/RELEASE-v0.4.1.md)

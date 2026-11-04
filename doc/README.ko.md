@@ -53,3 +53,4 @@
 
 - [로컬 캐릭터 보관함과 중간 결과 저장](ko/CHARACTER-LIBRARY.md)
 - [0.4.0 방향별 모션과 캐릭터 보관](ko/RELEASE-v0.4.0.md)
+- [0.4.1 브라우저 설정 페이지와 사용 안내](ko/RELEASE-v0.4.1.md)
