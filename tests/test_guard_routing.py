@@ -15,13 +15,23 @@ class RoutingTests(unittest.TestCase):
         config = defaults()
         config.update(guard_enabled=True,preview_only=False,browser_control_enabled=True,allowed_apps=["codex.exe"])
         fake = SimpleNamespace(settings=SimpleNamespace(snapshot=lambda: config),
-                               pet=SimpleNamespace(action=None,bite=Mock(),tab_target_point=Mock(return_value=QPointF(480,650))),
+                               pet=SimpleNamespace(action=None,pointer_active=False,bite=Mock(),tab_target_point=Mock(return_value=QPointF(480,650))),
                                bridge=SimpleNamespace(events=Queue(),pairing_events=Queue(),complete=Mock()),
                                pairing_dialog_open=False,observed={},cooldown={},previewed=set())
         return fake,config
 
     def window(self, exe):
         return Window(100,200,exe,"Example",(100,100,1000,700),(975,115))
+
+    def test_pointer_hold_defers_browser_events_and_native_inspection(self):
+        fake, _ = self.harness()
+        fake.pet.pointer_active = True
+        fake.bridge.events.put({"browser": "chrome", "ticket": "test"})
+        with patch("pawzura.app.windows.list_windows") as inspect:
+            Companion.tick(fake)
+        inspect.assert_not_called()
+        fake.pet.bite.assert_not_called()
+        self.assertEqual(fake.bridge.events.qsize(), 1)
 
     def test_real_codex_and_browser_windows_never_reach_native_bite(self):
         fake,_ = self.harness()

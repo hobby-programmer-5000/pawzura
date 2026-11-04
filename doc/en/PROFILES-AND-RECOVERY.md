@@ -20,6 +20,18 @@ An upgrade puts the existing live lists into **Default**, retaining them. Existi
 
 System windows, known browser windows and the app itself remain protected. Detected startup applications are shared exemptions, so they may stay allowed in both profiles. Inspect your lists in **Preview mode** before enabling real closing. Browser changes take effect on the next extension sweep; an already in-flight response cannot be recalled.
 
+## Move the companion out of your way
+
+Right-click the companion (or double-click it) → **General → Pin companion at its current position → Save settings**. It stops roaming at its current resting position. Clear that checkbox and save to resume walking above the taskbar in the selected direction.
+
+You can also **hold the left mouse button on the companion, drag it, then release**. A drop immediately pins the companion and saves that location locally; no extra Save click is needed. A short click still cycles wave/hop/cheer. Dragging uses a movement threshold so small pointer movements remain clicks. The whole companion is kept inside the nearest monitor's available work area; extended displays and negative origins use Qt logical coordinates.
+
+Pinning does not disable the guardian or website control. A bite can temporarily leave the pinned position and returns there afterward. Starting a drag cancels the current bite and pending browser approvals; it cannot undo a close that already happened. New guardian actions wait until the mouse is released. Hide the companion or pause the guardian from the tray when needed.
+
+Pin mode and its position are shared across allowlist profiles and restored on restart. They are private local settings, never release defaults. If saving a drop fails, a notification asks you to check folder write access/free disk space; the current on-screen drop remains, but persistence is not guaranteed. Recovery clears the saved location, preserves pin mode and places the companion above the primary taskbar. Display changes also cancel gestures/actions and rehome it. Saved positions are fitted to the current work areas, rather than assuming the same monitor arrangement is still present.
+
+These controls are available in **0.5.0 EXE and source builds**. Users of 0.4.1 should upgrade the complete portable folder; see [the update guide](RELEASE-v0.5.0.md).
+
 ## Recover an invisible or broken companion
 
 Right-click Pawzura's tray icon near the clock → **Recover companion on screen**. Check Windows' hidden-icon arrow if the icon is not visible. The same button is available under **Character**.

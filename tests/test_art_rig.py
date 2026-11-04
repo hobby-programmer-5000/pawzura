@@ -236,6 +236,8 @@ class RigTests(unittest.TestCase):
         for expected in ("wave", "hop", "cheer"):
             press = QMouseEvent(QEvent.Type.MouseButtonPress, QPointF(72, 72), QPointF(72, 72), Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
             pet.mousePressEvent(press)
+            release = QMouseEvent(QEvent.Type.MouseButtonRelease, QPointF(72, 72), QPointF(72, 72), Qt.MouseButton.LeftButton, Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier)
+            pet.mouseReleaseEvent(release)
             self.assertEqual(pet.reaction["kind"], expected)
             self.assertIsNone(pet.action)
         signals = []

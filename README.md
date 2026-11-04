@@ -41,7 +41,7 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | --- | --- |
 | Run the app, change language, use the tray | [Getting started](doc/en/GETTING_STARTED.md) |
 | Connect Chrome/Edge/Firefox, with examples | [Browser setup](doc/en/BROWSERS.md) |
-| Separate work/leisure lists or recover the companion | [Profiles and recovery](doc/en/PROFILES-AND-RECOVERY.md) |
+| Move/pin the companion, recover it or separate work/leisure lists | [Profiles and recovery](doc/en/PROFILES-AND-RECOVERY.md) |
 | Create, save, restore or delete characters | [Artwork and licenses](doc/en/CREATIVE-ART.md) · [Character library](doc/en/CHARACTER-LIBRARY.md) |
 | Run source or build an EXE | [Setup and builds](doc/en/BUILD.md) |
 | Check test coverage, limits and the maintainer's Windows 11 manual report | [Validation](doc/en/VALIDATION.md) |
@@ -51,4 +51,4 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | --- | --- |
 | [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
 
-App code: [MIT](LICENSE). [Roles](doc/en/CONTRIBUTORS.md) · [0.4.1 changes](doc/en/RELEASE-v0.4.1.md) · [All guides](doc/README.md).
+App code: [MIT](LICENSE) · [Artwork policy](doc/en/ASSET-LICENSING.md). [Roles](doc/en/CONTRIBUTORS.md) · [0.5.0 changes](doc/en/RELEASE-v0.5.0.md) · [All guides](doc/README.md).

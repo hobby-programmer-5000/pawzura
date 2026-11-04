@@ -25,9 +25,11 @@ class Companion:
         self.app, self.settings = app, settings
         self.pet = Pet(settings.snapshot()["character"], settings.snapshot()["language"], settings.snapshot()["walk_direction"])
         self.pet.settings_requested.connect(self.show_settings)
+        self.pet.placement_changed.connect(self.save_placement)
         self.dialog = None
         self.pairing_dialog_open = False
         self.bridge = Bridge(settings)
+        self.pet.drag_started.connect(self.bridge.invalidate_tickets)
         self.bridge_error = None
         try:
             self.bridge.start()
@@ -99,22 +101,38 @@ class Companion:
 
     def recover_pet(self):
         # Recreate the native transparent window as well as resetting its position.
-        self.settings.save({"pet_visible": True})
+        self.settings.save({"pet_visible": True, "pet_position": None})
         self.bridge.invalidate_tickets()
         self.pet.dispose()
         self.pet = Pet(self.settings.snapshot()["character"], self.settings.snapshot()["language"], self.settings.snapshot()["walk_direction"])
         self.pet.settings_requested.connect(self.show_settings)
+        self.pet.placement_changed.connect(lambda position: Companion.save_placement(self, position))
+        self.pet.drag_started.connect(self.bridge.invalidate_tickets)
+        self.pet.set_placement(self.settings.snapshot()["pet_pinned"])
         self.pet.show()
         self.pet.raise_()
         self.refresh_menu()
         if self.dialog:
             self.dialog.visible.setChecked(True)
+            self.dialog.position_provider = self.pet.resting_position
             self.dialog.message.setText(self.dialog.t["recovered"])
+
+    def save_placement(self, position):
+        try:
+            self.settings.save({"pet_pinned": True, "pet_position": position})
+        except (OSError, ValueError):
+            # Keep the safe on-screen drop, but do not claim persistence succeeded.
+            ko = self.settings.snapshot()["language"] == "ko"
+            self.tray.showMessage("Pawzura", "위치를 저장하지 못했습니다. 폴더 쓰기 권한과 디스크 공간을 확인하세요." if ko else
+                                  "Could not save the position. Check folder write access and free disk space.")
+        if self.dialog:
+            self.dialog.pin.setChecked(True)
 
     def apply(self):
         config = self.settings.snapshot()
         self.bridge.invalidate_tickets()
-        self.pet.cancel_bite()
+        self.pet.cancel_bite(recover=False)
+        self.pet.set_placement(config["pet_pinned"], config["pet_position"])
         self.pet.spec = config["character"]
         self.pet.set_walk_direction(config["walk_direction"])
         self.pet.set_language(config["language"])
@@ -135,7 +153,8 @@ class Companion:
             self.dialog.deleteLater()
             self.dialog = None
         if not self.dialog:
-            self.dialog = SettingsDialog(self.settings, connection_check=self.bridge.is_connected)
+            self.dialog = SettingsDialog(self.settings, connection_check=self.bridge.is_connected,
+                                         position_provider=self.pet.resting_position)
             self.dialog.applied.connect(self.apply)
             self.dialog.language_changed.connect(lambda: QTimer.singleShot(0, self.show_settings))
             self.dialog.demo_requested.connect(self.demo)
@@ -144,6 +163,8 @@ class Companion:
         config = self.settings.snapshot()
         self.dialog.guard.setChecked(config["guard_enabled"])
         self.dialog.visible.setChecked(config["pet_visible"])
+        self.dialog.pin.setChecked(config["pet_pinned"])
+        self.dialog.position_provider = self.pet.resting_position
         self.dialog.website_control.blockSignals(True)
         self.dialog.website_control.setChecked(config["browser_control_enabled"])
         self.dialog.website_control.blockSignals(False)
@@ -180,7 +201,7 @@ class Companion:
             return
         except Empty:
             pass
-        if self.pet.action:
+        if self.pet.action or self.pet.pointer_active:
             return
         config = self.settings.snapshot()
         # Browser tickets receive the same animation acknowledgement as native windows.

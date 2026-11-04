@@ -37,6 +37,7 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [0.1.0 release history](en/RELEASE-v0.1.0.md)
 - [Third-party licenses and notices](en/THIRD-PARTY-NOTICES.md)
 - [MIT licensing](en/LICENSE.md)
+- [Official artwork policy and designation register](en/ASSET-LICENSING.md)
 
 - [Original GPU artwork and model licenses](en/CREATIVE-ART.md)
 - [Artwork hand/foot motion and pointer interactions](en/ARTWORK-MOTION.md)
@@ -53,3 +54,5 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [Local character library and saved preparation](en/CHARACTER-LIBRARY.md)
 - [0.4.0 directional motion and character storage](en/RELEASE-v0.4.0.md)
 - [0.4.1 browser settings pages and clearer setup](en/RELEASE-v0.4.1.md)
+
+- [0.5.0 pin and drag controls](en/RELEASE-v0.5.0.md)

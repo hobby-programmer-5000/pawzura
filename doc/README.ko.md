@@ -40,6 +40,7 @@
 - [0.1.0 이전 버전 기록](ko/RELEASE-v0.1.0.md)
 - [제3자 라이선스와 고지](ko/THIRD-PARTY-NOTICES.md)
 - [MIT 라이선스](ko/LICENSE.md)
+- [공식 그림 정책과 지정 목록](ko/ASSET-LICENSING.md)
 
 - [GPU 창작 그림과 모델 라이선스](ko/CREATIVE-ART.md)
 
@@ -54,3 +55,5 @@
 - [로컬 캐릭터 보관함과 중간 결과 저장](ko/CHARACTER-LIBRARY.md)
 - [0.4.0 방향별 모션과 캐릭터 보관](ko/RELEASE-v0.4.0.md)
 - [0.4.1 브라우저 설정 페이지와 사용 안내](ko/RELEASE-v0.4.1.md)
+
+- [0.5.0 캐릭터 고정과 드래그](ko/RELEASE-v0.5.0.md)

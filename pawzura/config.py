@@ -125,11 +125,20 @@ def prepare_profiles(data: dict):
     profiles[active] = profile_lists(data)
 
 
+def safe_pet_position(value):
+    """Only local logical-pixel coordinates; display bounds are checked at use."""
+    if (isinstance(value, dict) and set(value) == {"x", "y"}
+            and all(type(value[k]) is int and abs(value[k]) <= 1_000_000 for k in ("x", "y"))):
+        return {"x": value["x"], "y": value["y"]}
+    return None
+
+
 def defaults() -> dict:
     return {
         "version": 1, "language": "en", "theme": "dark", "start_at_login": False,
         "advanced_models": False, "vram_tier": 0,
         "guard_enabled": False, "preview_only": True, "pet_visible": True, "walk_direction": "right",
+        "pet_pinned": False, "pet_position": None,
         "browser_control_enabled": False,
         "allowed_apps": DEFAULT_APPS.copy(), "startup_apps": [],
         "browsers": {name: {"enabled": False, "allowed_sites": [], "allow_settings_pages": True} for name in BROWSERS},
@@ -165,6 +174,8 @@ class Settings:
             self.data["theme"] = "dark"
         if self.data.get("walk_direction") not in ("left", "right"):
             self.data["walk_direction"] = "right"
+        self.data["pet_pinned"] = self.data.get("pet_pinned") is True
+        self.data["pet_position"] = safe_pet_position(self.data.get("pet_position"))
         self.data["advanced_models"] = self.data.get("advanced_models") is True
         if type(self.data.get("vram_tier")) is not int or self.data["vram_tier"] not in (0, 2, 4, 6, 8):
             self.data["vram_tier"] = 0
@@ -198,6 +209,11 @@ class Settings:
                 raise ValueError("Choose dark or light theme")
             if candidate.get("walk_direction") not in ("left", "right"):
                 raise ValueError("Choose left or right walking direction")
+            if type(candidate.get("pet_pinned")) is not bool:
+                raise ValueError("Choose whether to pin the companion")
+            position = candidate.get("pet_position")
+            if position is not None and safe_pet_position(position) is None:
+                raise ValueError("Invalid companion position")
             from .characters import models_for_vram
             if type(candidate.get("vram_tier")) is not int or candidate["vram_tier"] not in (0, 2, 4, 6, 8) or type(candidate.get("advanced_models")) is not bool:
                 raise ValueError("Choose a supported VRAM guide")

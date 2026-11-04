@@ -41,7 +41,7 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | --- | --- |
 | 실행·한국어 변경·트레이 사용 | [처음 사용하기](doc/ko/GETTING_STARTED.md) |
 | Chrome/Edge/Firefox 연결과 입력 예시 | [브라우저 연결](doc/ko/BROWSERS.md) |
-| 업무·여가 목록 분리·캐릭터 복구 | [프로필과 복구](doc/ko/PROFILES-AND-RECOVERY.md) |
+| 캐릭터 이동·고정·복구와 업무·여가 목록 분리 | [프로필과 복구](doc/ko/PROFILES-AND-RECOVERY.md) |
 | 캐릭터 생성·저장·복원·삭제 | [그림과 라이선스](doc/ko/CREATIVE-ART.md) · [캐릭터 보관함](doc/ko/CHARACTER-LIBRARY.md) |
 | 소스 실행·EXE 빌드 | [설정과 빌드](doc/ko/BUILD.md) |
 | 검사 범위·제한·제작자의 Windows 11 수동 사용 보고 | [검증 기록](doc/ko/VALIDATION.md) |
@@ -51,4 +51,4 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | --- | --- |
 | [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
 
-자체 코드 [MIT](LICENSE). [기여 역할](doc/ko/CONTRIBUTORS.md) · [0.4.1 변경](doc/ko/RELEASE-v0.4.1.md) · [전체 안내](doc/README.ko.md).
+자체 코드 [MIT](LICENSE) · [그림 정책](doc/ko/ASSET-LICENSING.md). [기여 역할](doc/ko/CONTRIBUTORS.md) · [0.5.0 변경](doc/ko/RELEASE-v0.5.0.md) · [전체 안내](doc/README.ko.md).

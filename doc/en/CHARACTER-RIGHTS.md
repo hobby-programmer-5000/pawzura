@@ -11,7 +11,7 @@ The purpose is to document the existing character's origin and the maintainer's 
 - The anti-appropriation request expresses the maintainer's position. It is not a new condition imposed on MIT recipients, an automatic contract with every reader, or a guarantee that a stranger cannot file.
 - A derivative's new protectable contributions can have their own rights. They do not make the modifier the original creator of the pre-existing work. No monopoly is claimed over generic shapes, animal features, colors or an independently created character.
 
-Adding a bespoke “no registration” condition to MIT would change its terms. This project does not relabel such a modified license as MIT or attempt to revoke earlier grants. No CC license or custom character license has been applied to replace the existing permissions.
+Adding a bespoke “no registration” condition to MIT would change its terms. This project does not relabel such a modified license as MIT or attempt to revoke earlier grants. No CC license or custom character license replaces existing permissions. The prospective [official artwork policy](ASSET-LICENSING.md) selects CC BY-NC-SA 4.0 only for future explicitly designated assets; its register currently contains none. The existing default/random/Qwen vector designs and example prompts are not reclassified. Independent user outputs are not automatically designated assets.
 
 ## Recorded origin
 

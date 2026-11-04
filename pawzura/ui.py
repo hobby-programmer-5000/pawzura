@@ -28,7 +28,9 @@ TEXT = {
         "visible": "바탕화면에 캐릭터 표시", "startup": "Windows 로그인 시 자동 실행", "language": "언어",
         "theme": "화면 테마", "theme_dark": "다크", "theme_light": "라이트 (화이트)",
         "walk_direction": "걷기 방향", "walk_right": "오른쪽", "walk_left": "왼쪽",
-        "walk_help": "설정 저장 후 모든 캐릭터에 적용됩니다. 깨물 때는 대상을 향하고, 끝나면 선택한 방향으로 다시 걷습니다.",
+        "pin": "현재 위치에 캐릭터 고정",
+        "pin_help": "저장하면 걷기를 멈춥니다. 좌클릭으로 끌어 놓으면 이동·고정 위치를 즉시 저장합니다. 고정을 해제하고 저장하면 작업표시줄 위를 다시 걷습니다. 차단 동작 후에는 고정 위치로 돌아옵니다.",
+        "walk_help": "설정 저장 후 모든 캐릭터에 적용됩니다. 고정하지 않은 경우 깨물기가 끝나면 작업표시줄 위에서 선택한 방향으로 다시 걷습니다.",
         "theme_help": "선택하면 바로 미리 봅니다. 다음 실행에도 유지하려면 설정 저장을 누르세요.",
         "advanced": "고급", "advanced_models": "큰 도형 해석 모델 사용 (외형 틀은 동일)",
         "creative_art": "창작 그림 만들기… (GPU · 별도 모델)",
@@ -110,7 +112,9 @@ TEXT = {
         "visible": "Show desktop companion", "startup": "Run when I sign in to Windows", "language": "Language",
         "theme": "Theme", "theme_dark": "Dark", "theme_light": "Light (white)",
         "walk_direction": "Walking direction", "walk_right": "Right", "walk_left": "Left",
-        "walk_help": "Save settings to apply to every character type. Bites face their target, then resume your chosen walking direction.",
+        "pin": "Pin companion at its current position",
+        "pin_help": "Save to stop roaming. Left-drag and release to move, pin and save immediately. Uncheck and save to resume walking above the taskbar. Guardian actions return to the pinned position.",
+        "walk_help": "Save settings to apply to every character type. When unpinned, bites return to the taskbar and resume your chosen walking direction.",
         "theme_help": "Preview immediately. Save settings to keep your choice for next launch.",
         "advanced": "Advanced", "advanced_models": "Enable larger trait interpreters (same shapes)",
         "creative_art": "Create original artwork… (GPU · separate models)",
@@ -335,7 +339,7 @@ class SettingsDialog(QDialog):
     demo_requested = Signal()
     recovery_requested = Signal()
 
-    def __init__(self, settings, parent=None, connection_check=None):
+    def __init__(self, settings, parent=None, connection_check=None, position_provider=None):
         super().__init__(parent)
         self.settings = settings
         self.library_root = settings.path.parent / "character-library"
@@ -343,6 +347,7 @@ class SettingsDialog(QDialog):
         self.t = TEXT.get(self.config["language"], TEXT["en"])
         self.worker = None
         self.connection_check = connection_check or (lambda _: False)
+        self.position_provider = position_provider
         self.setup_dialog = None
         self.setWindowTitle("Pawzura")
         self.resize(920, 720)
@@ -500,6 +505,11 @@ class SettingsDialog(QDialog):
     def build_general(self):
         layout = self.page("general")
         layout.addWidget(self.label(self.t["intro"]))
+        self.pin = QCheckBox(self.t["pin"])
+        self.pin.setChecked(self.config["pet_pinned"])
+        self.pin.setToolTip(self.t["pin_help"])
+        layout.addWidget(self.pin)
+        layout.addWidget(self.label(self.t["pin_help"]))
         self.guard = QCheckBox(self.t["guard"])
         self.preview = QCheckBox(self.t["preview"])
         self.visible = QCheckBox(self.t["visible"])
@@ -1102,7 +1112,12 @@ class SettingsDialog(QDialog):
     def _save_settings(self):
         try:
             self.store_profile()
+            position = None
+            if self.pin.isChecked():
+                position = self.position_provider() if self.position_provider else self.settings.snapshot()["pet_position"]
             updates = {"guard_enabled": self.guard.isChecked(), "preview_only": self.preview.isChecked(),
+                       "pet_pinned": self.pin.isChecked(),
+                       "pet_position": position,
                        "browser_control_enabled": self.website_control.isChecked(),
                        "pet_visible": self.visible.isChecked(), "start_at_login": self.startup.isChecked(),
                        "language": self.language.currentData(), "allowed_apps": self.config["allowed_apps"],

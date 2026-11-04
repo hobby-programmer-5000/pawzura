@@ -7,7 +7,20 @@ import time
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPolygonF, QCursor
 from PySide6.QtWidgets import QApplication, QWidget
-from .config import safe_character
+from .config import safe_character, safe_pet_position
+
+
+def fit_pet_position(point, size, areas):
+    """Fit in the nearest logical work area; never clamp to a virtual bounding box."""
+    if not areas:
+        return None, QPointF(0, 0)
+    candidates = []
+    for index, area in enumerate(areas):
+        x = max(area.left(), min(point.x(), max(area.left(), area.right() - size.width() + 1)))
+        y = max(area.top(), min(point.y(), max(area.top(), area.bottom() - size.height() + 1)))
+        candidates.append(((x - point.x()) ** 2 + (y - point.y()) ** 2, index, QPointF(x, y)))
+    _, index, fitted = min(candidates, key=lambda candidate: candidate[0])
+    return index, fitted
 
 
 def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=False, pose="walk", motion_clip=None, motion_time=None):
@@ -334,6 +347,8 @@ class TabTarget(QWidget):
 
 class Pet(QWidget):
     settings_requested = Signal()
+    drag_started = Signal()
+    placement_changed = Signal(dict)
 
     def __init__(self, spec, language="en", walk_direction="right"):
         super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool | Qt.WindowType.WindowDoesNotAcceptFocus)
@@ -347,6 +362,11 @@ class Pet(QWidget):
         self.direction = self.walk_direction
         self.last_tick = time.monotonic()
         self.action = None
+        self.pinned = False
+        self._press_global = None
+        self._press_offset = QPointF()
+        self.dragging = False
+        self._suppress_click = False
         self.reaction = None
         self.hovered = False
         self.look_direction = 1
@@ -374,8 +394,35 @@ class Pet(QWidget):
         QApplication.instance().screenAdded.connect(self.watch_screen)
 
     def set_language(self, language):
-        self.setToolTip("커서: 인사 · 클릭: 인사/점프/환호 · 더블 클릭/우클릭: 설정" if language == "ko" else
-                        "Hover: greet · Click: wave / hop / cheer · Double-click / right-click: settings")
+        self.setToolTip("드래그: 옮기고 고정 · 클릭: 인사/점프/환호 · 더블 클릭/우클릭: 설정" if language == "ko" else
+                        "Drag: move and pin · Click: wave / hop / cheer · Double-click / right-click: settings")
+
+    @property
+    def pointer_active(self):
+        return self._press_global is not None
+
+    def resting_position(self):
+        point = self.action["from"] if self.action else QPointF(self.px, self.py)
+        return {"x": round(point.x()), "y": round(point.y())}
+
+    def place_at(self, point):
+        screens = self.screens()
+        index, fitted = fit_pet_position(point, self.size(), [s.availableGeometry() for s in screens])
+        if index is not None:
+            self.use_screen(screens[index])
+        self.px, self.py = fitted.x(), fitted.y()
+        self.move(round(self.px), round(self.py))
+
+    def set_placement(self, pinned, position=None):
+        self.pinned = pinned is True
+        position = safe_pet_position(position)
+        self.place_at(QPointF(position["x"], position["y"]) if self.pinned and position else QPointF(self.px, self.py))
+        if not self.pinned:
+            screen = QApplication.screenAt(self.geometry().center()) or QApplication.primaryScreen()
+            if screen:
+                self.py = float(max(screen.availableGeometry().top(), screen.availableGeometry().bottom() - self.height() + 1))
+                self.move(round(self.px), round(self.py))
+        self.update()
 
     def set_walk_direction(self, direction):
         self.walk_direction = -1 if direction == "left" else 1
@@ -399,13 +446,57 @@ class Pet(QWidget):
 
     def mouseMoveEvent(self, event):
         self.look_direction = -1 if event.position().x() < self.width() / 2 else 1
+        if not self.pointer_active:
+            return
+        if not event.buttons() & Qt.MouseButton.LeftButton:
+            self.reset_pointer()
+            return
+        if not self.dragging and (event.globalPosition() - self._press_global).manhattanLength() >= QApplication.startDragDistance():
+            self.cancel_bite(recover=False, reset_pointer=False)
+            self.dragging = True
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            self.drag_started.emit()
+        if self.dragging:
+            self.place_at(event.globalPosition() - self._press_offset)
+            self.update()
+        event.accept()
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton and not self.action:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._press_global = event.globalPosition()
+            self._press_offset = event.globalPosition() - QPointF(self.pos())
+            self.dragging = False
+            self._suppress_click = False
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() != Qt.MouseButton.LeftButton:
+            return
+        active, dragged = self.pointer_active, self.dragging
+        if dragged:
+            self.place_at(event.globalPosition() - self._press_offset)
+            self.pinned = True
+        self.reset_pointer()
+        if dragged:
+            self.placement_changed.emit(self.resting_position())
+        elif active and not self._suppress_click and not self.action:
             kind = ("wave", "hop", "cheer")[self.click_count % 3]
             self.click_count += 1
             self.react(kind)
-            event.accept()
+        self._suppress_click = False
+        event.accept()
+
+    def reset_pointer(self):
+        self._press_global = None
+        self.dragging = False
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def event(self, event):
+        # A lost mouse grab or hiding the pet must not leave a stuck held gesture.
+        from PySide6.QtCore import QEvent
+        if event.type() in (QEvent.Type.UngrabMouse, QEvent.Type.Hide) and getattr(self, "_press_global", None) is not None:
+            self.reset_pointer()
+        return super().event(event)
 
     def watch_screen(self, screen):
         screen.availableGeometryChanged.connect(self.screen_changed)
@@ -464,7 +555,7 @@ class Pet(QWidget):
         return self._motion_available
 
     def bite(self, point: QPointF, callback, label="", tab=False):
-        if self.action:
+        if self.action or self.pointer_active:
             return False
         # Pointer reactions never replace or complete a guardian action.
         self.reaction = None
@@ -496,7 +587,9 @@ class Pet(QWidget):
         # Even when the pet is hidden, preserve the timing for browser close acknowledgements.
         return True
 
-    def cancel_bite(self):
+    def cancel_bite(self, recover=True, reset_pointer=True):
+        if not recover and self.action:
+            self.px, self.py = self.action["from"].x(), self.action["from"].y()
         self.clear_marker()
         self.action = None
         self.reaction = None
@@ -506,7 +599,12 @@ class Pet(QWidget):
         self.motion_player = MotionPlayer()
         self.motion_clip = "idle_front"
         self.motion_time = 0.0
-        self.home()
+        if reset_pointer:
+            self.reset_pointer()
+        if recover:
+            self.home()
+        else:
+            self.move(round(self.px), round(self.py))
 
     def clear_marker(self):
         marker = self.action.get("marker") if self.action else None
@@ -516,6 +614,7 @@ class Pet(QWidget):
 
     def dispose(self):
         self.timer.stop()
+        self.reset_pointer()
         self.reaction = None
         self.hovered = False
         self.clear_marker()
@@ -544,6 +643,9 @@ class Pet(QWidget):
         dt = min(0.1, now - self.last_tick)
         self.last_tick = now
         self.phase += dt * 9
+        if self.pointer_active:
+            self.update()
+            return
         if self.reaction and now - self.reaction["start"] >= self.reaction["duration"]:
             self.reaction = None
         if not self.action and not self.reaction and not self.hovered and now >= self.next_idle:
@@ -595,7 +697,8 @@ class Pet(QWidget):
                 if screen:
                     area = screen.availableGeometry()
                     pos.setX(max(area.left(), min(pos.x(), area.right() - self.width() + 1)))
-                    pos.setY(max(area.top(), area.bottom() - self.height() + 1))
+                    pos.setY(max(area.top(), min(pos.y(), area.bottom() - self.height() + 1)) if self.pinned else
+                             max(area.top(), area.bottom() - self.height() + 1))
             self.px, self.py = pos.x(), pos.y()
         elif self.isVisible():
             screens = self.screens()
@@ -606,7 +709,7 @@ class Pet(QWidget):
                 self.home()
                 screen = QApplication.primaryScreen()
             area = screen.availableGeometry()
-            travel = not self.hovered and self.reaction is None
+            travel = not self.pinned and not self.hovered and self.reaction is None
             if self.has_motion():
                 if now >= self.next_pause and now >= self.pause_until:
                     self.pause_until = now + random.uniform(1.5, 2.5)
@@ -627,9 +730,12 @@ class Pet(QWidget):
                 area = screens[index].availableGeometry()
                 self.use_screen(screens[index])
                 self.px = float(area.right() - 72)
-            self.py = float(max(area.top(), area.bottom() - self.height() + 1))
+            if self.pinned:
+                self.place_at(QPointF(self.px, self.py))
+            else:
+                self.py = float(max(area.top(), area.bottom() - self.height() + 1))
         display_y = self.py
-        if not self.action and self.reaction and self.reaction["kind"] == "hop":
+        if not self.pinned and not self.action and self.reaction and self.reaction["kind"] == "hop":
             elapsed = max(0, min(1, (now - self.reaction["start"]) / self.reaction["duration"]))
             screen = QApplication.screenAt(QPointF(self.px + 72, self.py + 72).toPoint()) or QApplication.primaryScreen()
             display_y = max(screen.availableGeometry().top(), self.py - math.sin(elapsed * math.pi) * 28) if screen else self.py
@@ -642,7 +748,7 @@ class Pet(QWidget):
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
         p.fillRect(self.rect(), Qt.GlobalColor.transparent)
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-        pose = "walk" if self.action else self.reaction["kind"] if self.reaction else "hover" if self.hovered else "walk"
+        pose = "walk" if self.action else self.reaction["kind"] if self.reaction else "hover" if self.hovered else "idle_front" if self.pinned or self.pointer_active else "walk"
         facing = self.look_direction if self.hovered and not self.action else self.direction
         draw_character(p, self.spec, self.phase, facing, bool(self.action and self.action["hit"]), pose,
                        self.motion_clip if self.has_motion() else None, self.motion_time)
@@ -655,6 +761,8 @@ class Pet(QWidget):
                 p.drawEllipse(QPointF(x, y), 2.5, 2.5)
 
     def mouseDoubleClickEvent(self, _):
+        self.reset_pointer()
+        self._suppress_click = True
         self.reaction = None
         self.settings_requested.emit()
 

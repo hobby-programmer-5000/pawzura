@@ -75,6 +75,10 @@ Vector appearance options cannot recolor an image. Regenerate to repaint it; Ran
 
 NSFW content and identifiable existing character/logo replication requests are prohibited. The app uses a lexical request filter, local Qwen description review, a separate CPU NSFW classifier and local Qwen3-VL image review. Unavailable/invalid reviews reject the operation instead of applying unchecked output. Checks can miss content and can reject safe artwork; this is **not copyright clearance or a perfect safety filter**. Inspect every output before using/sharing it. Model licenses do not guarantee exclusive rights, trademark clearance, or freedom from third-party rights in generated images. Keep the applicable terms if redistributing models; Pawzura's MIT does not replace them.
 
+### Official samples and your own outputs
+
+Existing example prompts are not designated noncommercial assets. Using **Insert example** does not automatically license your generated image under CC BY-NC-SA. Future official sample images will need an explicit file/version entry in the [asset licensing register](ASSET-LICENSING.md), which currently contains none. Reusing protected content from a designated sample can require compliance with that sample's terms; independent outputs remain subject to model terms and any underlying rights. Existing MIT grants are preserved.
+
 ## When something fails
 
 | Symptom | Next step |
