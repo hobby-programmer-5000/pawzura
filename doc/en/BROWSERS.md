@@ -85,6 +85,8 @@ Expand **See an example / import old JSON**. Paste the complete copied text into
 
 ### Browser settings pages
 
+**Availability:** this control is in the current source version. The published 0.4.0 EXE needs a newer build to show it; [source setup](BUILD.md) can use it now.
+
 The separate **Browser settings pages** box follows the selected browser. **Allow this browser's settings pages** is ON by default, including when older settings are loaded. The addresses are filled automatically and read-only; ordinary websites belong in the site list below. Change the checkbox and **Save settings** to apply it. Each browser and allowlist profile retains its own choice.
 
 | Browser | Settings addresses recognized |
