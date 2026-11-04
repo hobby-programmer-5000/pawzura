@@ -6,6 +6,9 @@ A small SD desktop companion that walks across monitors above the Windows taskba
 
 Windows 10 (1809+) / Windows 11 · x64 · Python 3.12–3.15 for source use · MIT
 
+> [!WARNING]
+> **Start with preview mode ON.** We do not recommend disabling it until your application allowlist and the site allowlists for every browser you control are complete and tested. Turning preview off can close unlisted windows/tabs and lose unsaved work. **Proceed at your own risk. The authors and maintainers disclaim liability for any resulting loss, damage or other consequences, to the extent permitted by law.**
+
 ## Start here
 
 1. Download the latest **Windows ZIP** from [Releases](https://github.com/hobby-programmer-5000/pawzura/releases).
@@ -20,7 +23,7 @@ The app starts in English. Switch with **General → Language → 한국어 → 
 
 ## Browser control is optional
 
-**Website control requires the Pawzura browser extension.** For applications only, leave **Browsers → Website control OFF**; no extension is needed.
+**Website control requires the Pawzura browser extension.** For applications only, leave **Browsers → Website control OFF**; no extension is needed. Blocked tabs close after navigation; their animations use a separate marker near the taskbar.
 
 For websites, choose your browser and click **Install/connect extension…**. On the extensions page it opens, enable **Developer mode** (Chrome: upper-right switch on `chrome://extensions`), then **Load unpacked** using the copied folder. **Ctrl+Shift+I opens Developer Tools, not this switch.** Finish loading before opening the connection page. [Steps and button locations](doc/en/BROWSERS.md).
 
@@ -41,12 +44,8 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | Separate work/leisure lists or recover the companion | [Profiles and recovery](doc/en/PROFILES-AND-RECOVERY.md) |
 | Create, save, restore or delete characters | [Artwork and licenses](doc/en/CREATIVE-ART.md) · [Character library](doc/en/CHARACTER-LIBRARY.md) |
 | Run source or build an EXE | [Setup and builds](doc/en/BUILD.md) |
-| Check test results and current limits | [Validation](doc/en/VALIDATION.md) |
+| Check test coverage, limits and the maintainer's Windows 11 manual report | [Validation](doc/en/VALIDATION.md) |
 | Review library/model licenses | [Third-party notices](doc/en/THIRD-PARTY-NOTICES.md) |
-
-**Browser behavior:** monitoring closes tabs after navigation; tab animations use a separate marker near the taskbar.
-
-**Validation:** the maintainer reports a manual usage check on Windows 11. See [test results and remaining coverage](doc/en/VALIDATION.md) for the scope of that report and automated checks.
 
 | Product direction and maintenance | AI implementation assistance |
 | --- | --- |
