@@ -93,7 +93,22 @@ def profile_lists(data: dict) -> dict:
     return copy.deepcopy({"allowed_apps": data["allowed_apps"], "browsers": data["browsers"]})
 
 
+def prepare_browser_lists(browsers: dict):
+    if not isinstance(browsers, dict):
+        raise ValueError("Invalid browser lists")
+    for browser in BROWSERS:
+        entry = browsers.setdefault(browser, {"enabled": False, "allowed_sites": []})
+        if (not isinstance(entry, dict) or not isinstance(entry.get("enabled"), bool)
+                or not isinstance(entry.get("allowed_sites"), list)
+                or not all(isinstance(rule, str) for rule in entry["allowed_sites"])):
+            raise ValueError("Invalid profile site rules")
+        if not isinstance(entry.get("allow_settings_pages", True), bool):
+            raise ValueError("Invalid browser settings-page option")
+        entry.setdefault("allow_settings_pages", True)
+
+
 def prepare_profiles(data: dict):
+    prepare_browser_lists(data["browsers"])
     profiles = data.setdefault("profiles", {})
     active = data.setdefault("active_profile", "Default")
     if not isinstance(profiles, dict) or len(profiles) > 32 or not isinstance(active, str):
@@ -103,14 +118,7 @@ def prepare_profiles(data: dict):
             raise ValueError("Invalid profile name or lists")
         if not isinstance(profile.get("allowed_apps"), list) or not all(isinstance(app, str) for app in profile["allowed_apps"]):
             raise ValueError("Invalid profile applications")
-        browsers = profile.get("browsers")
-        if not isinstance(browsers, dict):
-            raise ValueError("Invalid profile browsers")
-        for browser in BROWSERS:
-            browsers.setdefault(browser, {"enabled": False, "allowed_sites": []})
-            entry = browsers[browser]
-            if not isinstance(entry, dict) or not isinstance(entry.get("enabled"), bool) or not isinstance(entry.get("allowed_sites"), list) or not all(isinstance(rule, str) for rule in entry["allowed_sites"]):
-                raise ValueError("Invalid profile site rules")
+        prepare_browser_lists(profile.get("browsers"))
     if not active.strip() or len(active) > 64 or (profiles and active not in profiles):
         raise ValueError("Invalid active profile")
     # The existing live lists are authoritative during migration and ordinary saves.
@@ -124,7 +132,7 @@ def defaults() -> dict:
         "guard_enabled": False, "preview_only": True, "pet_visible": True, "walk_direction": "right",
         "browser_control_enabled": False,
         "allowed_apps": DEFAULT_APPS.copy(), "startup_apps": [],
-        "browsers": {name: {"enabled": False, "allowed_sites": []} for name in BROWSERS},
+        "browsers": {name: {"enabled": False, "allowed_sites": [], "allow_settings_pages": True} for name in BROWSERS},
         "bridge_token": secrets.token_urlsafe(32), "bridge_port": 47831,
         "character": default_character(),
         "character_history": [],

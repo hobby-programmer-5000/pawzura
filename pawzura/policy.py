@@ -15,6 +15,38 @@ INTERNAL_PAGES = {
     "opera://extensions", "about:addons", "about:debugging",
 }
 
+BROWSER_SETTINGS_PAGES = {
+    "chrome": ("chrome://settings",),
+    "edge": ("edge://settings", "chrome://settings"),
+    "firefox": ("about:preferences",),
+    "brave": ("brave://settings", "chrome://settings"),
+    "opera": ("opera://settings", "chrome://settings"),
+    "vivaldi": ("vivaldi://settings", "chrome://settings"),
+    "arc": ("chrome://settings",),
+    "zen": ("about:preferences",),
+}
+
+
+def allowed_settings_page(url: str, browser: str) -> bool:
+    """Known browser settings namespaces only; no arbitrary internal URL prefixes."""
+    try:
+        if not isinstance(url, str) or re.search(r"[\x00-\x20\x7f\\]", url):
+            return False
+        parsed = urlsplit(url)
+        for address in BROWSER_SETTINGS_PAGES.get(browser, ()):
+            base = urlsplit(address)
+            if parsed.scheme != base.scheme or parsed.netloc.casefold() != base.netloc:
+                continue
+            if base.scheme == "about":
+                if parsed.path == base.path:
+                    return True
+            else:
+                _path(parsed.path)  # Reject dot/encoded separator tricks.
+                return True
+    except (ValueError, UnicodeError, TypeError):
+        pass
+    return False
+
 
 def normalize_app(value: str) -> str:
     return PureWindowsPath(value.strip().strip('"')).name.casefold()
@@ -111,8 +143,10 @@ def site_rule(value: str) -> str:
     return urlunsplit((parsed.scheme, authority, path, query, ""))
 
 
-def allowed_url(url: str, rules: list[str]) -> bool:
+def allowed_url(url: str, rules: list[str], *, browser: str | None = None, allow_settings: bool = False) -> bool:
     try:
+        if allow_settings is True and allowed_settings_page(url, browser):
+            return True
         # Internal new-tab pages are exact matches, never trust arbitrary internal URLs.
         if url.split("#", 1)[0].split("?", 1)[0].rstrip("/") in INTERNAL_PAGES:
             return True

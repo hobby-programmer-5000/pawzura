@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import hashlib
 import hmac
 import json
-from queue import Queue
+from queue import Empty, Queue
 import re
 import secrets
 import threading
@@ -21,6 +21,7 @@ class Bridge:
         self.lock = threading.Lock()
         self.tickets = {}
         self.preview_seen = {}
+        self.policy = None
         self.peers = {}
         self.pairing_events = Queue(maxsize=4)
         self.pairings = {}
@@ -89,14 +90,28 @@ class Bridge:
             raise ValueError("Unknown browser")
         with self.lock:
             self.peers[browser] = time.monotonic()
+            self._sync_policy_locked(config)
         return {"enabled": bool(config["guard_enabled"] and config.get("browser_control_enabled", False) and config["browsers"][browser]["enabled"]), "preview": config["preview_only"]}
 
     def invalidate_tickets(self):
         with self.lock:
-            self.tickets.clear()
-            self.preview_seen.clear()
-            while not self.events.empty():
+            self._invalidate_tickets_locked()
+
+    def _invalidate_tickets_locked(self):
+        self.tickets.clear()
+        self.preview_seen.clear()
+        while True:
+            try:
                 self.events.get_nowait()
+            except Empty:
+                break
+
+    def _sync_policy_locked(self, config):
+        policy = json.dumps([config["guard_enabled"], config.get("browser_control_enabled", False),
+                             config["preview_only"], config.get("active_profile"), config["browsers"]], sort_keys=True)
+        if self.policy != policy:
+            self._invalidate_tickets_locked()
+            self.policy = policy
 
     def evaluate(self, data: dict) -> dict:
         config = self.settings.snapshot()
@@ -108,6 +123,7 @@ class Bridge:
             raise ValueError("Invalid tabs")
         now = time.monotonic()
         with self.lock:
+            self._sync_policy_locked(config)
             # Setup completion requires the new status handshake, not an older
             # extension's URL-evaluation traffic from a different installation.
             self.tickets = {k: v for k, v in self.tickets.items() if now - v["created"] < 20}
@@ -120,7 +136,9 @@ class Bridge:
                 if not isinstance(tab, dict) or not isinstance(tab.get("id"), int) or not isinstance(tab.get("url"), str):
                     continue
                 url = tab["url"][:8192]
-                allowed = not enabled or allowed_url(url, config["browsers"][browser]["allowed_sites"])
+                browser_rules = config["browsers"][browser]
+                allowed = not enabled or allowed_url(url, browser_rules["allowed_sites"], browser=browser,
+                                                    allow_settings=browser_rules.get("allow_settings_pages", True))
                 entry = {"id": tab["id"], "url": url, "allowed": allowed, "close": False}
                 if not allowed:
                     policy = json.dumps([config.get("active_profile"), config["preview_only"], config["browsers"][browser]], sort_keys=True)

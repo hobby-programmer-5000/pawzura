@@ -83,6 +83,26 @@ Firefox·Zen은 도우미에서 **임시 부가 기능 로드 → manifest.json*
 
 ## 허용 사이트를 추가하고 감시 켜기
 
+### 브라우저 내부 설정 페이지
+
+별도의 **브라우저 내부 설정 페이지** 칸은 선택한 브라우저에 맞춰 바뀝니다. **이 브라우저의 설정 페이지 허용**은 이전 설정을 불러올 때를 포함해 기본으로 켜져 있습니다. 주소는 자동 표시하며 직접 편집하지 않습니다. 일반 웹사이트는 아래 사이트 목록에 입력하세요. 체크 상태를 바꾼 뒤 **설정 저장**을 누르면 적용하며 브라우저·허용 목록 프로필마다 선택을 보관합니다.
+
+| 브라우저 | 인식하는 설정 주소 |
+| --- | --- |
+| Chrome | `chrome://settings` |
+| Edge | `edge://settings`, `chrome://settings` |
+| Firefox / Zen | `about:preferences` |
+| Brave | `brave://settings`, `chrome://settings` |
+| Opera | `opera://settings`, `chrome://settings` |
+| Vivaldi | `vivaldi://settings`, `chrome://settings` |
+| Arc | `chrome://settings` (Chromium 호환 주소) |
+
+`chrome://settings/privacy`, `about:preferences#privacy` 같은 하위 설정과 설정 검색 쿼리도 포함합니다. `chrome://history`·`chrome://flags`·`about:config` 같은 다른 내부 페이지, 비슷하게 꾸민 주소, 미허용 웹사이트까지 허용하지는 않습니다. 일부 Chromium 브라우저는 `chrome://settings` 별칭을 사용하며 Arc·Zen 연동의 별도 검증 제한은 위 설명을 따릅니다. [Chromium 설정 참고](https://chromium.googlesource.com/chromium/src.git/+/f1bb6e7acafff4116f8f6100f9612c93930c2ecc/docs/chrome_settings.md) · [Firefox 설정 참고](https://support.mozilla.org/en-US/kb/firefox-options-preferences-and-settings).
+
+사이트 제어를 끄면 계속 자유롭게 탐색할 수 있습니다. 기존 확장 연결을 그대로 사용하므로 이 옵션을 위해 확장을 업데이트할 필요는 없습니다. 브리지가 설정 변경을 확인하면 대기 중인 탭 닫기 승인을 취소하지만 이미 전송 중인 응답을 소급해 회수하지는 않습니다.
+
+### 일반 웹사이트
+
 0.1.8부터 **주소 추가** 입력란에 `https://console.example.com` 같은 주소를 넣을 수 있습니다. **이 주소의 하위 도메인도 포함**을 끄면 해당 호스트만, 켜면 입력한 호스트와 그 아래 `*.` 규칙을 함께 추가합니다. 마지막에 **설정 저장**을 누르세요. 주소 추가만으로 감시를 켜지는 않습니다.
 
 ![일반 예시 규칙을 사용한 주소 추가 도우미](../../artifacts/subdomain-rules-ko.png)
@@ -99,7 +119,7 @@ Firefox·Zen은 도우미에서 **임시 부가 기능 로드 → manifest.json*
 2. **이 브라우저의 사이트 허용 목록 적용 → 설정 저장**을 누른 뒤 전체 **사이트 제어** 스위치를 켜세요.
 3. **일반**에서 **집중 지킴이 켜기**를 선택하고 미리보기는 켜 둔 채 저장하세요. 동작을 확인한 다음 미리보기를 해제하세요.
 
-내장 새 탭·홈 화면·빈 페이지와 확장 설치에 필요한 제한된 내부 페이지를 기본 허용합니다. 일반 브라우저 설정·사용자 지정 시작 URL은 **자동 허용하지 않으므로** 필요한 주소를 직접 추가하세요. 사이트 감시를 켜기 전에 확장을 설치·연결하세요.
+내장 새 탭·홈 화면·빈 페이지와 확장 설치에 필요한 제한된 내부 페이지는 설정 페이지 체크와 관계없이 계속 허용합니다. 브라우저 설정 주소는 위의 별도 옵션을 사용하고, 사용자 지정 시작 웹사이트는 직접 추가하세요. 사이트 감시를 켜기 전에 확장을 설치·연결하세요.
 
 | 규칙 | 허용 | 허용하지 않음 |
 | --- | --- | --- |

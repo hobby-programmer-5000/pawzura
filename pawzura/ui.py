@@ -11,14 +11,14 @@ from PySide6.QtCore import QUrl
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout,
     QHBoxLayout, QLabel, QLineEdit, QListWidget, QMessageBox, QPushButton,
-    QPlainTextEdit, QTabWidget, QVBoxLayout, QWidget, QInputDialog, QGridLayout, QScrollArea, QFrame, QColorDialog, QLayout,
+    QPlainTextEdit, QTabWidget, QVBoxLayout, QWidget, QInputDialog, QGridLayout, QScrollArea, QFrame, QColorDialog, QLayout, QGroupBox,
 )
 from . import __version__, windows
 from .characters import COLORS, DETAIL_MODEL, FEATURES, GPU_MODELS, MAX_PROMPT, MODEL, custom_options, generate_character, models_for_vram, random_character
 from .config import BROWSERS, default_character, profile_lists, safe_character
 from .pet import CharacterPreview
 from .browser_setup import BrowserSetupDialog
-from .policy import SiteRuleError, address_rules, normalize_app, site_rule
+from .policy import BROWSER_SETTINGS_PAGES, SiteRuleError, address_rules, normalize_app, site_rule
 
 TEXT = {
     "ko": {
@@ -55,7 +55,10 @@ TEXT = {
         "intro": "먼저 미리보기로 허용 목록을 확인하세요.\n프로그램을 제어하며, 사이트 제어도 켜고 확장을 연결한 경우에만 미허용 탭을 닫습니다.",
         "apps_help": "허용할 실행 파일 이름을 한 줄에 하나씩 입력하세요. 경로를 붙여넣으면 파일명만 사용합니다.\nWindows·그래픽/오버레이 보조 창과 이 앱은 항상 보호합니다. 같은 이름의 실행 파일은 모두 허용됩니다.",
         "browse": "실행 파일 추가…", "running": "열려 있는 프로그램 추가…", "startup_scan": "시작프로그램 다시 탐색",
-        "browser_help": "브라우저마다 확장을 설치하고 연결해야 합니다. 기본 허용은 새 탭/기본 홈 화면뿐입니다.\n도메인은 사이트 전체를, 경로를 넣은 주소는 해당 구역만 허용합니다. http://와 https:// 모두 입력할 수 있습니다.",
+        "browser_help": "브라우저마다 확장을 설치하고 연결해야 합니다. 새 탭·기본 홈·설정 페이지를 기본 허용합니다.\n도메인은 사이트 전체를, 경로를 넣은 주소는 해당 구역만 허용합니다. http://와 https:// 모두 입력할 수 있습니다.",
+        "settings_pages_title": "브라우저 내부 설정 페이지",
+        "allow_settings_pages": "이 브라우저의 설정 페이지 허용",
+        "settings_pages_help": "선택한 브라우저의 설정 주소와 하위 설정을 허용합니다. 이 프로필에 적용하려면 설정 저장을 누르세요. 일반 웹사이트는 아래 목록에 입력하세요.",
         "browser_on": "이 브라우저의 사이트 허용 목록 적용", "pair": "연결 코드 복사", "extension": "확장 폴더 열기",
         "website_control": "사이트 제어 ON/OFF — 변경 즉시 적용",
         "website_help": "OFF이면 프로그램만 제어하고 브라우저 탭은 건드리지 않습니다. 사이트 제어에는 별도 확장이 필수입니다.",
@@ -134,7 +137,10 @@ TEXT = {
         "intro": "Check your allowlist in preview mode first.\nApps are controlled; tabs close only when website control is also on and the extension is connected.",
         "apps_help": "Enter one executable filename per line. Pasted paths are reduced to filenames.\nWindows, graphics/overlay helpers and this app are always protected. All files with the same name are allowed.",
         "browse": "Add executable…", "running": "Add open application…", "startup_scan": "Rescan startup apps",
-        "browser_help": "Install and pair the extension in each browser. Only built-in new-tab/home pages are allowed initially.\nDomains allow whole sites; a URL path limits access to that section. Both http:// and https:// URLs work.",
+        "browser_help": "Install and pair the extension in each browser. Built-in new-tab/home and settings pages are allowed initially.\nDomains allow whole sites; a URL path limits access to that section. Both http:// and https:// URLs work.",
+        "settings_pages_title": "Browser settings pages",
+        "allow_settings_pages": "Allow this browser's settings pages",
+        "settings_pages_help": "Allows the selected browser's settings addresses and subpages. Save settings to apply in this profile. Add ordinary websites to the list below.",
         "browser_on": "Apply website allowlist to this browser", "pair": "Copy connection code", "extension": "Open extension folder",
         "website_control": "Website control ON/OFF — applies immediately",
         "website_help": "OFF controls applications only and leaves browser tabs alone. Website control requires the separate extension.",
@@ -606,6 +612,18 @@ class SettingsDialog(QDialog):
         row.addWidget(self.connection_status, 1)
         layout.addLayout(row)
         self.browser_on = QCheckBox(self.t["browser_on"])
+        self.settings_pages_group = QGroupBox(self.t["settings_pages_title"])
+        self.settings_pages_group.setToolTip(self.t["settings_pages_help"])
+        settings_pages_layout = QVBoxLayout(self.settings_pages_group)
+        self.allow_settings_pages = QCheckBox(self.t["allow_settings_pages"])
+        self.allow_settings_pages.setToolTip(self.t["settings_pages_help"])
+        self.allow_settings_pages.setAccessibleDescription(self.t["settings_pages_help"])
+        settings_pages_layout.addWidget(self.allow_settings_pages)
+        self.settings_pages_addresses = QLineEdit()
+        self.settings_pages_addresses.setReadOnly(True)
+        self.settings_pages_addresses.setAccessibleName(self.t["settings_pages_title"])
+        settings_pages_layout.addWidget(self.settings_pages_addresses)
+        layout.addWidget(self.settings_pages_group)
         layout.addWidget(self.browser_on)
         add_row = QHBoxLayout()
         self.site_entry = QLineEdit()
@@ -681,7 +699,8 @@ class SettingsDialog(QDialog):
                 rules.append(site_rule(line))
             except SiteRuleError as error:
                 raise ValueError(self.t["site_line"].format(line=number, message=self.t[error.code])) from error
-        self.config["browsers"][self.current_browser] = {"enabled": self.browser_on.isChecked(), "allowed_sites": sorted(set(rules))}
+        self.config["browsers"][self.current_browser] = {"enabled": self.browser_on.isChecked(), "allowed_sites": sorted(set(rules)),
+                                                        "allow_settings_pages": self.allow_settings_pages.isChecked()}
         self.sites.setPlainText("\n".join(sorted(set(rules))))
 
     def add_site(self):
@@ -707,6 +726,8 @@ class SettingsDialog(QDialog):
     def load_browser(self):
         entry = self.config["browsers"][self.current_browser]
         self.browser_on.setChecked(entry["enabled"])
+        self.allow_settings_pages.setChecked(entry.get("allow_settings_pages", True))
+        self.settings_pages_addresses.setText(" · ".join(BROWSER_SETTINGS_PAGES[self.current_browser]))
         self.sites.setPlainText("\n".join(entry["allowed_sites"]))
         self.site_entry.clear()
         self.include_subdomains.setChecked(False)

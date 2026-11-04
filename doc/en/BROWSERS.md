@@ -83,6 +83,26 @@ Expand **See an example / import old JSON**. Paste the complete copied text into
 
 ## Add allowed sites and enable monitoring
 
+### Browser settings pages
+
+The separate **Browser settings pages** box follows the selected browser. **Allow this browser's settings pages** is ON by default, including when older settings are loaded. The addresses are filled automatically and read-only; ordinary websites belong in the site list below. Change the checkbox and **Save settings** to apply it. Each browser and allowlist profile retains its own choice.
+
+| Browser | Settings addresses recognized |
+| --- | --- |
+| Chrome | `chrome://settings` |
+| Edge | `edge://settings`, `chrome://settings` |
+| Firefox / Zen | `about:preferences` |
+| Brave | `brave://settings`, `chrome://settings` |
+| Opera | `opera://settings`, `chrome://settings` |
+| Vivaldi | `vivaldi://settings`, `chrome://settings` |
+| Arc | `chrome://settings` (Chromium compatibility address) |
+
+This includes settings subpages such as `chrome://settings/privacy` and `about:preferences#privacy`, plus settings search queries. It does not allow other internal pages such as `chrome://history`, `chrome://flags` or `about:config`, lookalike addresses, or unlisted websites. Some Chromium browsers expose the `chrome://settings` alias; Arc/Zen integration retains the separate testing limitations above. [Chromium settings reference](https://chromium.googlesource.com/chromium/src.git/+/f1bb6e7acafff4116f8f6100f9612c93930c2ecc/docs/chrome_settings.md) · [Firefox settings reference](https://support.mozilla.org/en-US/kb/firefox-options-preferences-and-settings).
+
+Turning website control OFF still leaves browsing unrestricted. Internal settings support uses the existing extension connection; no extension update is needed for this option. Configuration changes observed by the bridge cancel pending tab-close approvals; an already in-flight response cannot be recalled.
+
+### Ordinary websites
+
 In 0.1.8+, use **Add address** for entries such as `https://console.example.com`. Leave **Include subdomains of this address** unchecked to allow that host only. Check it to add the entered host and `*.` beneath that same host together, then click **Save settings**. Adding an address does not turn monitoring on.
 
 ![Address helper with generic example rules](../../artifacts/subdomain-rules-en.png)
@@ -99,7 +119,7 @@ Paths, query constraints, scheme and port stay the same on both generated entrie
 2. Check **Apply website allowlist to this browser** and click **Save settings**, then turn on the global **Website control** switch.
 3. In **General**, check **Enable focus guardian**, leave preview on, and save. Verify the behavior before turning preview off.
 
-Built-in new-tab/home pages, blank pages and the narrow extension-installation pages are initially allowed. General browser settings and custom startup URLs are **not** automatically allowed. Add custom home URLs yourself. Install and connect the extension before enabling site monitoring.
+Built-in new-tab/home pages, blank pages and the narrow extension-installation pages remain allowed independently of the settings-page checkbox. Browser settings addresses use the separate option above; custom startup websites must be added explicitly. Install and connect the extension before enabling site monitoring.
 
 | Rule | Allows | Does not allow |
 | --- | --- | --- |

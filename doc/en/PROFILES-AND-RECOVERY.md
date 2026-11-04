@@ -4,7 +4,7 @@
 
 ## Make separate allowlists
 
-The **Allowlist profile** selector is at the top of settings. Each profile contains its application allowlist and all browsers' site rules and enabled switches together. Browser pairing, language, character, guardian, preview and detected startup apps are shared.
+The **Allowlist profile** selector is at the top of settings. Each profile contains its application allowlist and all browsers' site rules, enabled switches and [internal settings-page choices](BROWSERS.md#browser-settings-pages) together. Browser pairing, language, character, guardian, preview and detected startup apps are shared.
 
 The global **Website control** switch (0.1.5+) is also shared. Turn it OFF for apps-only use without changing lists or pausing application monitoring; it applies immediately.
 
