@@ -6,6 +6,8 @@ import re
 from urllib.parse import parse_qsl, quote, unquote, urlencode, urlsplit, urlunsplit
 from .config import BROWSER_EXECUTABLES, PROTECTED_HELPERS, expand_app_aliases
 
+LOOPBACK_RULE = "127.0.0.1"
+
 INTERNAL_PAGES = {
     "about:blank", "about:newtab", "about:home", "about:privatebrowsing",
     "chrome://newtab", "chrome://new-tab-page", "chrome://welcome",
@@ -125,6 +127,8 @@ def _path(path: str) -> str:
 
 
 def site_rule(value: str) -> str:
+    if isinstance(value, str) and value.strip() == LOOPBACK_RULE:
+        return LOOPBACK_RULE
     parsed, host, port, wildcard = _split(value, allow_wildcard=True)
     suffix = f":{port}" if port is not None else ""
     host = f"[{host}]" if ":" in host else host
@@ -151,7 +155,11 @@ def allowed_url(url: str, rules: list[str], *, browser: str | None = None, allow
         if url.split("#", 1)[0].split("?", 1)[0].rstrip("/") in INTERNAL_PAGES:
             return True
         parsed, host, port, _ = _split(url)
+        if host == LOOPBACK_RULE and LOOPBACK_RULE in rules and url.lower().startswith(("http://", "https://")):
+            return True
         for rule in rules:
+            if rule == LOOPBACK_RULE:
+                continue
             try:
                 base, base_host, base_port, wildcard = _split(site_rule(rule), allow_wildcard=True)
                 if parsed.scheme != base.scheme or port != base_port:

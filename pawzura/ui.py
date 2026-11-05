@@ -67,7 +67,7 @@ TEXT = {
         "setup": "확장 설치·연결…", "connected": "확장 연결됨", "not_connected": "확장 미연결 — 설치·연결 버튼을 누르세요",
         "website_saved": "사이트 제어를 즉시 저장했습니다. 프로그램 감시 설정은 유지됩니다.",
         "connection_code": "연결 코드", "port": "포트", "startup_list": "시작프로그램",
-        "rules": "허용 주소 · 한 줄에 하나 (example.com/* 또는 example.com/section/*)",
+        "rules": "허용 주소를 한 줄에 하나씩 입력하세요. HTTP와 HTTPS는 따로 허용해야 합니다. 포트를 생략하면 HTTP는 80, HTTPS는 443만 일치합니다. 다른 포트를 허용하려면 http://127.0.0.1:3000처럼 포트까지 입력하세요.\n127.0.0.1만 입력하면 이 IP의 모든 HTTP·HTTPS 포트를 허용합니다.",
         "site_line": "허용 주소 {line}번째 줄: {message}",
         "invalid_url": "도메인 또는 호스트가 포함된 완전한 http://·https:// 주소를 넣으세요.",
         "invalid_port": "포트는 1부터 65535 사이여야 합니다.",
@@ -151,7 +151,7 @@ TEXT = {
         "setup": "Install/connect extension…", "connected": "Extension connected", "not_connected": "Extension not connected — use Install/connect",
         "website_saved": "Website control saved immediately. Application guardian settings are unchanged.",
         "connection_code": "Connection code", "port": "Port", "startup_list": "Startup applications",
-        "rules": "Allowed addresses · one per line (example.com/* or example.com/section/*)",
+        "rules": "Enter one allowed address per line. HTTP and HTTPS match separately. Without a port, HTTP matches port 80 and HTTPS matches port 443. To allow another port, include it as in http://127.0.0.1:3000.\nEnter just 127.0.0.1 to allow all HTTP and HTTPS ports on that IP.",
         "site_line": "Allowed address, line {line}: {message}",
         "invalid_url": "Enter a domain or a complete http:// or https:// URL including its hostname.",
         "invalid_port": "Enter a port between 1 and 65535.",
@@ -652,7 +652,7 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.label(self.t["rules"]))
         self.sites = QPlainTextEdit()
         self.sites.setMinimumHeight(130)
-        self.sites.setPlaceholderText("https://console.example.com\nexample.com/*\n*.example.com\nexample.org/courses/*\nhttp://localhost:3000")
+        self.sites.setPlaceholderText("https://console.example.com\nexample.com/*\n*.example.com\nexample.org/courses/*\n127.0.0.1")
         layout.addWidget(self.sites, 1)
         self.current_browser = BROWSERS[0]
         self.load_browser()

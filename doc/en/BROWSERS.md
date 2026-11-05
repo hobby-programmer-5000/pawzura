@@ -134,8 +134,11 @@ Built-in new-tab/home pages, blank pages and the narrow extension-installation p
 | `example.com/ko?viewMode=svod` | HTTPS `/ko` and children with `viewMode=svod` | Missing/different `viewMode` values |
 | `*.example.com` | HTTPS subdomains such as `help.example.com` | The root `example.com` |
 | `http://localhost:3000` | That exact HTTP origin | A different port |
+| `127.0.0.1` | HTTP and HTTPS on that exact IP at any port | Other IPs and hostnames, including localhost |
 
-You can paste a domain, a URL path, or a URL with query parameters. Without a scheme, HTTPS is assumed; explicit `http://` and `https://` URLs both work and remain separate. **A bare `http://` or `https://` is incomplete and is not a rule that allows every site.**
+For a local app whose port changes, enter `127.0.0.1` without a scheme, leave **Include subdomains** off, click **Add address**, then **Save settings** for the selected browser and profile. To allow just one local server, enter its full origin, such as `http://127.0.0.1:3000`. An explicit URL with no port uses its scheme's default port.
+
+You can paste a domain, a URL path, or a URL with query parameters. Outside the bare `127.0.0.1` exception, omitting the scheme selects HTTPS. Explicit `http://` and `https://` URLs are separate rules. **A bare `http://` or `https://` is incomplete and is not a rule that allows every site.**
 
 A domain without a path allows the whole site. A path allows that section and children on slash boundaries: `/home` does not allow `/home-other`. Query values in the rule must match; extra keys such as tracking parameters are allowed, but extra values for a constrained key are rejected. `#fragment` parts are ignored and cannot restrict SPA hash routes. Internationalized names, Unicode paths and default ports are normalized. Dot segments, backslashes and encoded path separators are rejected for path-scoped rules.
 

@@ -169,6 +169,27 @@ class BridgeTests(unittest.TestCase):
         self.assertTrue(self.bridge.events.empty())
         self.assertFalse(self.send(url="https://example.com.evil.test/team")["decisions"][0]["allowed"])
 
+    def test_explicit_loopback_exception_allows_local_ports_without_close_tickets(self):
+        from pawzura.policy import address_rules
+        self.enable()
+        urls = ("http://127.0.0.1:3000/dev", "https://127.0.0.1:8443/")
+        self.settings.data["browsers"]["chrome"]["allowed_sites"] = ["http://127.0.0.1", "https://127.0.0.1"]
+        for url in urls:
+            self.assertFalse(self.send(url=url)["decisions"][0]["allowed"])
+        pending = self.bridge.events.get_nowait()
+        self.bridge.complete(pending["ticket"])
+        browsers = self.settings.snapshot()["browsers"]
+        browsers["chrome"]["allowed_sites"] = address_rules("127.0.0.1")
+        self.settings.save({"browsers": browsers})
+        self.assertEqual(Settings(self.settings.path).snapshot()["browsers"]["chrome"]["allowed_sites"], ["127.0.0.1"])
+        for url in urls:
+            decision = self.send(url=url)["decisions"][0]
+            self.assertTrue(decision["allowed"])
+            self.assertFalse(decision["close"])
+        self.assertTrue(self.bridge.events.empty())
+        for url in ("http://localhost:3000", "http://127.0.0.2:3000", "https://127.0.0.1.example:8443", "ftp://127.0.0.1"):
+            self.assertFalse(self.send(url=url)["decisions"][0]["allowed"])
+
     def pair_post(self, path, data, origin="chrome-extension://testextension"):
         request = Request(self.url.removesuffix("/evaluate") + path, json.dumps(data).encode(),
                           {"Content-Type":"application/json", "Origin":origin})

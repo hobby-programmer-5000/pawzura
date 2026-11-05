@@ -24,6 +24,7 @@ The app starts in English. Switch with **General → Language → 한국어 → 
 ## Browser control is optional
 
 **Website control requires the Pawzura browser extension.** For applications only, leave **Browsers → Website control OFF**; no extension is needed. Blocked tabs close after navigation; their animations use a separate marker near the taskbar.
+**Allowlist entries match the protocol and port.** HTTP and HTTPS are separate rules. Omitted ports use 80 for HTTP or 443 for HTTPS. To allow a different port, enter it explicitly, for example `http://127.0.0.1:3000`. Enter just `127.0.0.1` to allow HTTP and HTTPS on all ports of that IP.
 
 For websites, choose your browser and click **Install/connect extension…**. On the extensions page it opens, enable **Developer mode** (Chrome: upper-right switch on `chrome://extensions`), then **Load unpacked** using the copied folder. **Ctrl+Shift+I opens Developer Tools, not this switch.** Finish loading before opening the connection page. [Steps and button locations](doc/en/BROWSERS.md).
 
