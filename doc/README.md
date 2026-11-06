@@ -56,3 +56,4 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [0.4.1 browser settings pages and clearer setup](en/RELEASE-v0.4.1.md)
 
 - [0.5.0 pin and drag controls](en/RELEASE-v0.5.0.md)
+- [0.5.1 local browser addresses](en/RELEASE-v0.5.1.md)

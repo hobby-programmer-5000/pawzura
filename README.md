@@ -52,4 +52,4 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | --- | --- |
 | [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
 
-App code: [MIT](LICENSE) · [Artwork policy](doc/en/ASSET-LICENSING.md). [Roles](doc/en/CONTRIBUTORS.md) · [0.5.0 changes](doc/en/RELEASE-v0.5.0.md) · [All guides](doc/README.md).
+App code: [MIT](LICENSE) · [Artwork policy](doc/en/ASSET-LICENSING.md). [Roles](doc/en/CONTRIBUTORS.md) · [0.5.1 changes](doc/en/RELEASE-v0.5.1.md) · [All guides](doc/README.md).
