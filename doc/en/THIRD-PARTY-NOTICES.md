@@ -85,7 +85,7 @@ Model license: [Qwen original license text](../../licenses/upstream/Qwen-LICENSE
 
 ## Qt source and user replacement
 
-This build uses **dynamic** Qt/PySide/Shiboken libraries in a portable folder. Recipients may replace the compatible LGPL libraries and debug/reverse-engineer the application to exercise their rights under LGPL. Pawzura imposes no additional restriction on those activities. Preserve the EXE folder and its `_internal` DLL/plugin structure; a single self-extracting EXE is deliberately not the default.
+This build uses **dynamic** Qt/PySide/Shiboken libraries in a portable folder. Recipients may replace the compatible LGPL libraries and debug/reverse-engineer the application to exercise their rights under LGPL. Pawzura imposes no additional restriction on those activities. Preserve the ZIP build's `_internal` DLL/plugin structure. The optional self-extracting EXE is distributed with corresponding source and rebuild instructions under the LGPLv3 section 4(d)(0) route. See [standalone rebuilding](SINGLE-EXE.md). Releases provide matching Qt Base, Qt SVG and PySide/Shiboken source archives alongside the application source tag.
 
 Unmodified corresponding upstream sources and build instructions:
 

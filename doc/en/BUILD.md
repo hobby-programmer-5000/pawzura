@@ -52,3 +52,5 @@ After changing shared extension files, run `python scripts/sync_extensions.py` t
 Optional real-browser probe: install the `test-browser` extra (Playwright), then run `python tests/browser_probe.py --chromium C:\path\to\chrome.exe`. Use a Chromium build that supports unpacked extension loading. The probe uses a new temporary profile and test-only bridge; it acknowledges approval and animation events itself, without altering user settings. Playwright is a test tool and is not bundled with the EXE.
 
 The optional [creative artwork runtime](CREATIVE-ART.md) is installed separately by its own setup flow, using Python 3.12.14 even when the main app uses 3.14. The EXE ships only its trusted scripts/catalog; do not add PyTorch to the main requirements or copy prepared runtime/model/artwork folders into a release.
+
+For both the folder ZIP and standalone EXE, run `python scripts/build.py --dist-dir dist/0.6.0 --onefile` with the project environment, or `build.ps1 -OneFile`. [Standalone packaging and rebuilding](SINGLE-EXE.md).

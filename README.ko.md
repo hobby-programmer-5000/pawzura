@@ -11,8 +11,8 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 
 ## 바로 시작
 
-1. [Releases](https://github.com/hobby-programmer-5000/pawzura/releases)에서 최신 **Windows ZIP**을 내려받으세요.
-2. **ZIP 전체를 압축 해제**하고 `Pawzura` 폴더의 **Pawzura.exe**를 실행하세요. `_internal` 폴더를 함께 두세요. Python·모델 설치는 필요 없습니다.
+1. [Releases](https://github.com/hobby-programmer-5000/pawzura/releases)에서 **Windows 단일 EXE** 또는 **Windows ZIP**을 내려받으세요.
+2. 단일 EXE를 더블 클릭하거나 **ZIP 전체를 풀고** `Pawzura/Pawzura.exe`를 실행하세요. [배포 형식과 중복 실행 안내](doc/ko/SINGLE-EXE.md).
 3. **General → Preview bite animation**으로 체험하세요. 처음에는 **감시 OFF·미리보기 ON**입니다.
 
 앱 기본 언어는 영어입니다. **General → Language → 한국어 → Save settings**로 바꾸세요. 소스로 쓰려면 빌드 대신 **run.bat**를 더블 클릭하세요.
@@ -52,4 +52,4 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | --- | --- |
 | [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
 
-자체 코드 [MIT](LICENSE) · [그림 정책](doc/ko/ASSET-LICENSING.md). [기여 역할](doc/ko/CONTRIBUTORS.md) · [0.5.1 변경](doc/ko/RELEASE-v0.5.1.md) · [전체 안내](doc/README.ko.md).
+자체 코드 [MIT](LICENSE) · [그림 정책](doc/ko/ASSET-LICENSING.md). [기여 역할](doc/ko/CONTRIBUTORS.md) · [0.6.0 변경](doc/ko/RELEASE-v0.6.0.md) · [전체 안내](doc/README.ko.md).

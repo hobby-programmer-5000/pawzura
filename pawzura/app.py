@@ -8,7 +8,7 @@ from pathlib import Path
 from queue import Empty
 import sys
 import time
-from PySide6.QtCore import QCoreApplication, QEvent, QLockFile, QPointF, QTimer, Qt
+from PySide6.QtCore import QCoreApplication, QEvent, QPointF, QTimer, Qt
 from PySide6.QtGui import QFontDatabase, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
@@ -18,6 +18,7 @@ from .pet import Pet, draw_character
 from .policy import allowed_app, is_browser
 from .ui import SettingsDialog, TEXT
 from . import windows
+from .instance import AlreadyRunningError, acquire_instance_lock
 
 
 class Companion:
@@ -257,6 +258,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Pawzura · Windows SD desktop companion")
     parser.add_argument("--settings", action="store_true", help="Open settings on launch")
     parser.add_argument("--tray", action="store_true", help="Start quietly in the system tray (Windows sign-in)")
+    parser.add_argument("--settings-file", type=Path, help="Use an explicit settings file for isolated testing")
     parser.add_argument("--smoke-check", action="store_true", help="Render offscreen and exit; no monitoring or settings writes")
     parser.add_argument("--capture", type=Path, help="Capture settings PNG during --smoke-check")
     args = parser.parse_args(argv)
@@ -282,6 +284,16 @@ def main(argv=None):
     if args.smoke_check:
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as temporary:
+            from . import __version__
+            from .art_client import catalog, source_dir
+            from .browser_setup import FILES, prepare_extension
+            from .resources import resource_path
+            catalog()
+            staged = prepare_extension("chrome", Path(temporary) / "extensions")
+            assert {p.name for p in staged.iterdir()} == set(FILES)
+            for name in ("setup.ps1", "runner.py", "motion_catalog.json", "three_d.py"):
+                assert (source_dir() / name).is_file(), name
+            assert (resource_path("licenses") / "installed").is_dir() or not getattr(sys, "frozen", False)
             settings = Settings(Path(temporary) / "settings.json")
             dialog = SettingsDialog(settings)
             dialog.show()
@@ -306,17 +318,14 @@ def main(argv=None):
             dialog.deleteLater()
             QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
             app.processEvents()
-            print(json.dumps({"smoke_check": "passed", "qt": "6.12.0", "tabs": tab_count}))
+            print(json.dumps({"smoke_check": "passed", "version": __version__, "frozen": bool(getattr(sys, "frozen", False)),
+                              "qt": "6.12.0", "tabs": tab_count, "bundled_resources": "passed"}))
             return 0
+    lock = None
     try:
-        directory = data_dir()
-        directory.mkdir(parents=True, exist_ok=True)
-        lock = QLockFile(str(directory / "instance.lock"))
-        lock.setStaleLockTime(0)
-        if not lock.tryLock(50):
-            QMessageBox.information(None, "Pawzura", "이미 실행 중입니다. 트레이 아이콘을 확인하세요. / Already running; check the system tray.")
-            return 0
-        settings = Settings()
+        settings_file = args.settings_file or data_dir() / "settings.json"
+        lock = acquire_instance_lock(settings_file)
+        settings = Settings(settings_file)
         first_run = not settings.path.exists()
         if first_run:
             settings.save({"startup_apps": windows.startup_apps()})
@@ -324,9 +333,15 @@ def main(argv=None):
         if first_run or args.settings or not args.tray:
             companion.show_settings()
         return app.exec()
+    except AlreadyRunningError:
+        QMessageBox.information(None, "Pawzura", "Already running. Check the Pawzura system tray icon.\n이미 실행 중입니다. Pawzura 트레이 아이콘을 확인하세요.")
+        return 0
     except Exception as error:
         QMessageBox.critical(None, "Pawzura", str(error))
         return 1
+    finally:
+        if lock is not None:
+            lock.unlock()
 
 
 if __name__ == "__main__":

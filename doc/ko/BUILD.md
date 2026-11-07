@@ -52,3 +52,5 @@ node --test tests/*.test.cjs
 선택적 실제 브라우저 검사: `test-browser` 추가 의존성(Playwright)을 설치한 뒤 `python tests/browser_probe.py --chromium C:\path\to\chrome.exe`를 실행하세요. 압축 해제 확장 로딩을 지원하는 Chromium을 사용하세요. 새 임시 프로필과 테스트용 브리지만 사용하며 승인·애니메이션 이벤트는 테스트가 직접 처리합니다. 사용자 설정을 변경하지 않고 Playwright를 EXE에 포함하지 않습니다.
 
 선택형 [창작 그림 실행환경](CREATIVE-ART.md)은 자체 준비 흐름으로 별도 설치하며 본 앱이 3.14여도 Python 3.12.14를 사용합니다. EXE는 검토한 스크립트·카탈로그만 동봉합니다. 본 앱 requirements에 PyTorch를 넣거나 준비된 개인 실행환경·모델·그림 폴더를 배포본에 복사하지 마세요.
+
+폴더 ZIP과 단일 EXE를 함께 만들려면 프로젝트 환경으로 `python scripts/build.py --dist-dir dist/0.6.0 --onefile` 또는 `build.ps1 -OneFile`을 실행하세요. [단일 EXE와 재빌드 안내](SINGLE-EXE.md).

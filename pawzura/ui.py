@@ -760,10 +760,8 @@ class SettingsDialog(QDialog):
         self.message.setText(self.t["pair_help"])
 
     def open_extension(self):
-        root = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent.parent
-        folder = root / "extensions"
-        if not folder.exists():
-            folder = Path(getattr(sys, "_MEIPASS", root)) / "extensions"
+        from .browser_setup import prepare_extension
+        folder = prepare_extension(self.current_browser)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
 
     def build_character(self):
@@ -1097,6 +1095,10 @@ class SettingsDialog(QDialog):
         language = "ko" if self.config["language"] == "ko" else "en"
         layout.addWidget(self.label(f"Qwen2.5 / Qwen3 / Qwen3-VL · Apache-2.0\nSD 1.5 / SDXL · OpenRAIL (optional)\nhttps://huggingface.co/Qwen\n\nREADME.md · doc/{language}/MODELS.md\nTHIRD-PARTY-NOTICES.md · CONTRIBUTORS.md"))
         layout.addWidget(self.label("https://github.com/hobby-programmer-5000/pawzura"))
+        notices = QPushButton("라이선스 문서 열기" if language == "ko" else "Open license notices")
+        from .resources import resource_path
+        notices.clicked.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(resource_path("licenses")))))
+        layout.addWidget(notices)
         layout.addStretch()
 
     def save(self):

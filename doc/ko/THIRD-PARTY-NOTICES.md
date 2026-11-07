@@ -85,7 +85,7 @@ CPython 표준 바이너리 확장의 구성은 버전과 import 그래프에 �
 
 ## Qt 소스와 교체 권리
 
-Qt/PySide/Shiboken은 포터블 폴더에서 **동적**으로 사용합니다. 수령자는 LGPL 권리 행사를 위해 호환 라이브러리를 교체하거나 앱을 디버깅·역공학할 수 있으며, Pawzura가 이를 추가 제한하지 않습니다. `_internal`의 DLL/플러그인 구조를 유지하세요. 단일 self-extracting EXE를 기본 배포로 사용하지 않습니다.
+Qt/PySide/Shiboken은 포터블 폴더에서 **동적**으로 사용합니다. 수령자는 LGPL 권리 행사를 위해 호환 라이브러리를 교체하거나 앱을 디버깅·역공학할 수 있으며, Pawzura가 이를 추가 제한하지 않습니다. ZIP의 `_internal` DLL/플러그인 구조를 유지하세요. 선택형 단일 EXE는 LGPLv3 제4조 (d)(0)의 대응 소스·재빌드 경로로 제공합니다. [단일 EXE 재빌드](SINGLE-EXE.md)를 참고하세요. 릴리스에는 앱 소스 태그와 같은 버전의 Qt Base·Qt SVG·PySide/Shiboken 원본 소스 압축 파일을 제공합니다.
 
 수정하지 않은 대응 소스와 빌드 안내:
 

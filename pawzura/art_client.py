@@ -43,9 +43,8 @@ def progress_event(line):
 
 
 def source_dir():
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).parent / "art_runtime"
-    return Path(__file__).resolve().parent.parent / "art_runtime"
+    from .resources import resource_path
+    return resource_path("art_runtime")
 
 
 def catalog():

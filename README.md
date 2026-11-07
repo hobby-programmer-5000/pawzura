@@ -11,8 +11,8 @@ Windows 10 (1809+) / Windows 11 · x64 · Python 3.12–3.15 for source use · M
 
 ## Start here
 
-1. Download the latest **Windows ZIP** from [Releases](https://github.com/hobby-programmer-5000/pawzura/releases).
-2. **Extract the entire ZIP**, open the `Pawzura` folder and double-click **Pawzura.exe**. Keep `_internal` beside it. No Python or model is needed.
+1. Download the **standalone Windows EXE** or **Windows ZIP** from [Releases](https://github.com/hobby-programmer-5000/pawzura/releases).
+2. Double-click the standalone EXE, or extract the **entire ZIP** and run `Pawzura/Pawzura.exe`. [Formats and single-instance behavior](doc/en/SINGLE-EXE.md).
 3. Try **General → Preview bite animation**. The guardian is **off** and preview is **on** until you choose otherwise.
 
 The app starts in English. Switch with **General → Language → 한국어 → Save settings**. Source users can double-click **run.bat** instead of building.
@@ -52,4 +52,4 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | --- | --- |
 | [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
 
-App code: [MIT](LICENSE) · [Artwork policy](doc/en/ASSET-LICENSING.md). [Roles](doc/en/CONTRIBUTORS.md) · [0.5.1 changes](doc/en/RELEASE-v0.5.1.md) · [All guides](doc/README.md).
+App code: [MIT](LICENSE) · [Artwork policy](doc/en/ASSET-LICENSING.md). [Roles](doc/en/CONTRIBUTORS.md) · [0.6.0 changes](doc/en/RELEASE-v0.6.0.md) · [All guides](doc/README.md).

@@ -58,3 +58,5 @@
 
 - [0.5.0 캐릭터 고정과 드래그](ko/RELEASE-v0.5.0.md)
 - [0.5.1 로컬 브라우저 주소](ko/RELEASE-v0.5.1.md)
+- [단일 EXE와 중복 실행 방지](ko/SINGLE-EXE.md)
+- [0.6.0](ko/RELEASE-v0.6.0.md)

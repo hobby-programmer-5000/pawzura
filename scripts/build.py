@@ -12,7 +12,7 @@ import sys
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def main(dist_dir: Path | None = None):
+def main(dist_dir: Path | None = None, onefile: bool = False):
     dist_dir = (dist_dir or ROOT / "dist").resolve()
     if sys.platform != "win32":
         raise SystemExit("Build Windows executables on Windows")
@@ -101,6 +101,14 @@ def main(dist_dir: Path | None = None):
     check_distribution(output)
     archive = shutil.make_archive(str(dist_dir / f"Pawzura-{__version__}-windows-x64"), "zip", output.parent, output.name)
     print(f"Built: {output / 'Pawzura.exe'}\nArchive: {archive}")
+    if onefile:
+        environment["PAWZURA_BUNDLE_DIR"] = str(output)
+        subprocess.run([
+            sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean",
+            "--distpath", str(dist_dir), "--workpath", str(ROOT / "build/onefile"),
+            str(ROOT / "scripts/onefile.spec"),
+        ], cwd=ROOT, env=environment, check=True)
+        print(f"Standalone: {dist_dir / f'Pawzura-{__version__}-windows-x64.exe'}")
 
 
 if __name__ == "__main__":
@@ -108,4 +116,6 @@ if __name__ == "__main__":
     sys.path.insert(0, str(ROOT))
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dist-dir", type=Path, help="Separate output directory for preserving earlier builds")
-    main(parser.parse_args().dist_dir)
+    parser.add_argument("--onefile", action="store_true", help="Also build a standalone self-extracting EXE")
+    options = parser.parse_args()
+    main(options.dist_dir, options.onefile)

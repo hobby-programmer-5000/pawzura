@@ -25,8 +25,8 @@ FIREFOX = {"firefox", "zen"}
 def extension_source(browser: str) -> Path:
     if browser not in BROWSERS:
         raise ValueError("Unknown browser")
-    root = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent.parent
-    return root / "extensions" / ("firefox" if browser in FIREFOX else "chromium")
+    from .resources import resource_path
+    return resource_path("extensions") / ("firefox" if browser in FIREFOX else "chromium")
 
 
 def prepare_extension(browser: str, destination: Path | None = None, source: Path | None = None) -> Path:

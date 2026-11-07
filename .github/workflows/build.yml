@@ -11,9 +11,18 @@ jobs:
           python-version: '3.14'
       - run: python -m pip install -r requirements.txt PyInstaller==6.22.3
       - run: python -m unittest discover -s tests -v
-      - run: python scripts/build.py
-      - run: Start-Process -FilePath dist/Pawzura/Pawzura.exe -ArgumentList '--smoke-check' -Wait -NoNewWindow
+      - run: python scripts/build.py --onefile
+      - name: Smoke check both executable formats
+        run: |
+          $executables = @('dist/Pawzura/Pawzura.exe') + @(Get-ChildItem dist/Pawzura-*-windows-x64.exe | ForEach-Object { $_.FullName })
+          if ($executables.Count -ne 2) { throw 'Expected folder and standalone executables' }
+          foreach ($executable in $executables) {
+            $process = Start-Process -FilePath $executable -ArgumentList '--smoke-check' -Wait -NoNewWindow -PassThru
+            if ($process.ExitCode -ne 0) { throw "Smoke check failed: $executable ($($process.ExitCode))" }
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: Pawzura-windows-x64
-          path: dist/Pawzura-*-windows-x64.zip
+          path: |
+            dist/Pawzura-*-windows-x64.zip
+            dist/Pawzura-*-windows-x64.exe
