@@ -6,6 +6,9 @@ A small SD desktop companion that walks across monitors above the Windows taskba
 
 Windows 10 (1809+) / Windows 11 · x64 · Python 3.12–3.15 for source use · MIT
 
+[![Pawzura demo: close distractions while allowed work stays open](artifacts/demo/pawzura-demo-en.gif)](artifacts/demo/pawzura-demo-en.mp4)
+*Close distracting app windows and tabs while keeping your allowed work open. [Watch MP4](artifacts/demo/pawzura-demo-en.mp4) · [How this demo was made](doc/en/DEMO.md).*
+
 > [!WARNING]
 > **Start with preview mode ON.** We do not recommend disabling it until your application allowlist and the site allowlists for every browser you control are complete and tested. Turning preview off can close unlisted windows/tabs and lose unsaved work. **Proceed at your own risk. The authors and maintainers disclaim liability for any resulting loss, damage or other consequences, to the extent permitted by law.**
 
@@ -36,16 +39,13 @@ For websites, choose your browser and click **Install/connect extension…**. On
 2. **Scroll inside that window, below the picture and “Edit hand/foot motion…”**. Click **Prepare 3D motion · 8 GB · pose-assisted**. This is separate from **1. Prepare runtime and selected models** near the top.
 3. Wait for completion, then click **Use this character → Save settings** in the main window. Preparation alone does not change the desktop character. [Full 3D guide and troubleshooting](doc/en/3D-MOTION.md).
 
-## Guides
-
 | I want to… | Read this |
 | --- | --- |
 | Run the app, change language, use the tray | [Getting started](doc/en/GETTING_STARTED.md) |
 | Connect Chrome/Edge/Firefox, with examples | [Browser setup](doc/en/BROWSERS.md) |
 | Move/pin the companion, recover it or separate work/leisure lists | [Profiles and recovery](doc/en/PROFILES-AND-RECOVERY.md) |
 | Create, save, restore or delete characters | [Artwork and licenses](doc/en/CREATIVE-ART.md) · [Character library](doc/en/CHARACTER-LIBRARY.md) |
-| Run source or build an EXE | [Setup and builds](doc/en/BUILD.md) |
-| Check test coverage, limits and the maintainer's Windows 11 manual report | [Validation](doc/en/VALIDATION.md) |
+| Run source, build an EXE or check coverage and limits | [Setup and builds](doc/en/BUILD.md) · [Validation](doc/en/VALIDATION.md) |
 | Review library/model licenses | [Third-party notices](doc/en/THIRD-PARTY-NOTICES.md) |
 
 | Product direction and maintenance | AI implementation assistance |

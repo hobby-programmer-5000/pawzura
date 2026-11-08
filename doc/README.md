@@ -10,6 +10,7 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [Consistent frames and sequential model preparation](en/STAGED-CHARACTER-PIPELINE.md)
 
 - [Getting started](en/GETTING_STARTED.md)
+- [README demo and offscreen reproduction](en/DEMO.md)
 - [Local settings and privacy](en/PRIVACY.md)
 - [Browser connection and examples](en/BROWSERS.md)
 - [0.1.8 subdomain address helper](en/RELEASE-v0.1.8.md)

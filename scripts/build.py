@@ -73,6 +73,12 @@ def main(dist_dir: Path | None = None, onefile: bool = False):
     (output / "artifacts").mkdir(exist_ok=True)
     for name in ("model-provenance.json", "model-provenance-1.5B.json", "model-catalog.json", "qwen-character.json", "browser-setup-en.png", "browser-setup-ko.png", "character-custom-en.png", "character-custom-ko.png", "subdomain-rules-en.png", "subdomain-rules-ko.png"):
         shutil.copy2(ROOT / "artifacts" / name, output / "artifacts" / name)
+    # Keep the bundled README's staged-demo links usable. Only public assets,
+    # never renderer working frames, profiles or diagnostics, may be copied.
+    demo = output / "artifacts/demo"
+    demo.mkdir(exist_ok=True)
+    for name in ("pawzura-demo-en.gif", "pawzura-demo-en.mp4", "pawzura-demo-ko.gif", "pawzura-demo-ko.mp4", "manifest.json", "NOTICE.md"):
+        shutil.copy2(ROOT / "artifacts/demo" / name, demo / name)
     bundled = output / "licenses/installed"
     bundled.mkdir(parents=True, exist_ok=True)
     dependencies = []

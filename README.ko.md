@@ -6,6 +6,9 @@ Windows 작업표시줄 위에서 모니터를 오가며 걷고 커서·클릭�
 
 Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MIT
 
+[![딴짓 프로그램과 탭을 닫고 허용한 작업은 유지하는 Pawzura 동작 데모](artifacts/demo/pawzura-demo-ko.gif)](artifacts/demo/pawzura-demo-ko.mp4)
+*집중을 방해하는 프로그램 창과 탭은 정리하고, 허용한 작업은 그대로 유지합니다. [MP4 보기](artifacts/demo/pawzura-demo-ko.mp4) · [제작 방식](doc/ko/DEMO.md).*
+
 > [!WARNING]
 > **처음에는 미리보기 모드를 켜고 사용하세요.** 프로그램 허용 목록과 제어할 각 브라우저의 사이트 허용 목록을 완전히 채우고 검증하기 전까지는 미리보기 모드 해제를 권장하지 않습니다. 해제하면 미허용 창·탭이 닫혀 저장하지 않은 작업이 손실될 수 있습니다. **해제 후 발생하는 위험은 사용자가 부담하며, 법률이 허용하는 범위에서 작성자와 관리자는 그로 인한 손실·손해 및 기타 결과에 책임을 지지 않습니다.**
 
@@ -36,16 +39,13 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 2. **창 안쪽을 아래로 내려 그림과 ‘그림 손발 움직임 설정…’ 아래**의 **3D 움직임 준비 · 8GB · 포즈 추정 보조**를 누르세요. 위쪽 **1. 실행환경·선택 모델 준비**와 다른 버튼입니다.
 3. 완료 후 **이 캐릭터 사용 → 메인 창에서 설정 저장**을 누르세요. 준비만 마쳐서는 바탕화면 캐릭터가 바뀌지 않습니다. [자세한 3D 사용법·문제 해결](doc/ko/3D-MOTION.md).
 
-## 필요한 안내 찾기
-
 | 할 일 | 문서 |
 | --- | --- |
 | 실행·한국어 변경·트레이 사용 | [처음 사용하기](doc/ko/GETTING_STARTED.md) |
 | Chrome/Edge/Firefox 연결과 입력 예시 | [브라우저 연결](doc/ko/BROWSERS.md) |
 | 캐릭터 이동·고정·복구와 업무·여가 목록 분리 | [프로필과 복구](doc/ko/PROFILES-AND-RECOVERY.md) |
 | 캐릭터 생성·저장·복원·삭제 | [그림과 라이선스](doc/ko/CREATIVE-ART.md) · [캐릭터 보관함](doc/ko/CHARACTER-LIBRARY.md) |
-| 소스 실행·EXE 빌드 | [설정과 빌드](doc/ko/BUILD.md) |
-| 검사 범위·제한·제작자의 Windows 11 수동 사용 보고 | [검증 기록](doc/ko/VALIDATION.md) |
+| 소스 실행·EXE 빌드·검사 범위와 제한 | [설정과 빌드](doc/ko/BUILD.md) · [검증 기록](doc/ko/VALIDATION.md) |
 | 라이브러리·모델 라이선스 | [제3자 고지](doc/ko/THIRD-PARTY-NOTICES.md) |
 
 | 제품 기획·관리 | AI 구현 지원 |

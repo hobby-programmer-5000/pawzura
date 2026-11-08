@@ -13,6 +13,7 @@
 - [0.3.0 그림 움직임](ko/RELEASE-v0.3.0.md)
 
 - [처음 사용하기](ko/GETTING_STARTED.md)
+- [README 데모와 offscreen 재현](ko/DEMO.md)
 - [로컬 설정과 개인정보](ko/PRIVACY.md)
 - [브라우저 연결과 예시](ko/BROWSERS.md)
 - [0.1.8 하위 도메인 주소 추가](ko/RELEASE-v0.1.8.md)

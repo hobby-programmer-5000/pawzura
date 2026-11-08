@@ -1,0 +1,90 @@
+{
+  "description": "Pawzura app and tab control demo. Offscreen production methods and scene callbacks are documented in doc/en/DEMO.md and doc/ko/DEMO.md.",
+  "date": "2026-11-08",
+  "app_source_version": "0.6.0",
+  "base_revision": "e5aa81e5989c3e442cb11d5436649d6c0f31ef98",
+  "original_material_license": "MIT; see ../../LICENSE and NOTICE.md",
+  "product_direction": "hobby-programmer-5000",
+  "implementation_composition_validation_assistance": "ChatGPT (Codex, OpenAI)",
+  "renderer": "scripts/render_demo.py",
+  "source_hashes": {
+    "scripts/render_demo.py": "d8a8bcf9e3dc54a342ba116634a23ad2b6b0421e848abf60bfac2acaebaac419",
+    "pawzura/pet.py": "9a33157592a1f8e7f2bcda1be1b77e9be4d5781b1be1c62b9981b3fb323f1595",
+    "pawzura/config.py": "51f38650ba1acaf47f12935d28ad50c53220ab2ab14a00b05ddfdddea63a8bee"
+  },
+  "tools": {
+    "PySide6": "6.12.0",
+    "Qt": "6.12.0",
+    "FFmpeg": "9.0.2-essentials_build-www.gyan.dev; GPL-3.0-or-later; development encoder only, not redistributed"
+  },
+  "fonts": {
+    "system_only": [
+      "Segoe UI",
+      "Malgun Gothic"
+    ],
+    "font_files_distributed": false,
+    "rights_reference": "https://learn.microsoft.com/en-us/typography/fonts/font-faq"
+  },
+  "desktop_capture": false,
+  "native_close_calls": 0,
+  "browser_connections": 0,
+  "scene_events_seconds": {
+    "app_bite_callback": 3.9583333333333335,
+    "tab_bite_callback": 9.958333333333334,
+    "allowed_tab_survives": true
+  },
+  "assets": [
+    {
+      "file": "pawzura-demo-en.mp4",
+      "language": "en",
+      "format": "mp4",
+      "bytes": 402506,
+      "sha256": "437c844f700f521ccc803a5be28dfa217b3e987c1f0da4731ca5d4b629ef5285",
+      "width": 1120,
+      "height": 700,
+      "frames": 384,
+      "duration_seconds": 16.0,
+      "audio": false,
+      "decode_exit_status": 0
+    },
+    {
+      "file": "pawzura-demo-en.gif",
+      "language": "en",
+      "format": "gif",
+      "bytes": 995690,
+      "sha256": "8164148392301c80abf316a1faf3e77789b5bd5c6b8cf5f63ad544d14bca399a",
+      "width": 896,
+      "height": 560,
+      "frames": 192,
+      "duration_seconds": 16.0,
+      "audio": false,
+      "decode_exit_status": 0
+    },
+    {
+      "file": "pawzura-demo-ko.mp4",
+      "language": "ko",
+      "format": "mp4",
+      "bytes": 401489,
+      "sha256": "5a712d358f415a9f0bd303c316cc8e7fc3be4037d3bba7cd613434850ceda166",
+      "width": 1120,
+      "height": 700,
+      "frames": 384,
+      "duration_seconds": 16.0,
+      "audio": false,
+      "decode_exit_status": 0
+    },
+    {
+      "file": "pawzura-demo-ko.gif",
+      "language": "ko",
+      "format": "gif",
+      "bytes": 989385,
+      "sha256": "e7a89d04da5698a50ca1620b6560e870619d7fd5d6358e05fe9910e1b7f00f78",
+      "width": 896,
+      "height": 560,
+      "frames": 192,
+      "duration_seconds": 16.0,
+      "audio": false,
+      "decode_exit_status": 0
+    }
+  ]
+}
