@@ -2,7 +2,7 @@
 
 # Windows 단일 EXE
 
-Releases에서 **Pawzura-0.6.0-windows-x64.exe**를 받아 더블 클릭하세요. 시작할 때 포함된 라이브러리·지원 파일을 임시 폴더에 풉니다. 첫 실행은 ZIP 방식보다 오래 걸릴 수 있습니다. 설정과 생성 캐릭터는 기존 사용자 로컬 Pawzura 데이터 폴더에 저장합니다. 서명되지 않아 SmartScreen이 표시될 수 있습니다.
+Releases에서 `Pawzura-<버전>-windows-x64.exe`를 받아 더블 클릭하세요. 시작할 때 포함된 라이브러리·지원 파일을 임시 폴더에 풉니다. 첫 실행은 ZIP 방식보다 오래 걸릴 수 있습니다. 설정과 생성 캐릭터는 기존 사용자 로컬 Pawzura 데이터 폴더에 저장합니다. 서명되지 않아 SmartScreen이 표시될 수 있습니다.
 
 압축을 직접 푸는 **Windows ZIP**도 제공합니다. ZIP 전체를 풀고 `Pawzura/Pawzura.exe`를 실행하세요.
 

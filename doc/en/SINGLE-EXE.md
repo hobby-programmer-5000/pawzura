@@ -2,7 +2,7 @@
 
 # Standalone Windows EXE
 
-Download **Pawzura-0.6.0-windows-x64.exe** from Releases and double-click it. It expands its bundled libraries and support files into a temporary directory during startup. First launch can take longer than the ZIP build. Settings and generated characters are stored in the user's existing local Pawzura data directory. Unsigned builds can trigger SmartScreen.
+Download `Pawzura-<version>-windows-x64.exe` from Releases and double-click it. It expands its bundled libraries and support files into a temporary directory during startup. First launch can take longer than the ZIP build. Settings and generated characters are stored in the user's existing local Pawzura data directory. Unsigned builds can trigger SmartScreen.
 
 The **Windows ZIP** remains available for users who want an extracted folder. Extract that entire ZIP and run `Pawzura/Pawzura.exe`.
 

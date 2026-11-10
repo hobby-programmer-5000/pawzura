@@ -25,6 +25,8 @@ TEXT = {
         "subtitle": "작은 발걸음으로 지키는 나만의 집중 시간",
         "general": "일반", "apps": "프로그램", "web": "브라우저", "character": "캐릭터", "about": "정보",
         "guard": "집중 지킴이 켜기", "preview": "미리보기 모드 · 애니메이션만 표시하고 닫지 않기",
+        "application_control": "프로그램 제어 켜기",
+        "application_control_help": "브라우저 탭만 제어하려면 집중 지킴이를 켜고 프로그램 제어를 해제한 뒤 저장하세요. 사이트 제어는 브라우저 탭에서 설정할 수 있습니다.",
         "visible": "바탕화면에 캐릭터 표시", "startup": "Windows 로그인 시 자동 실행", "language": "언어",
         "theme": "화면 테마", "theme_dark": "다크", "theme_light": "라이트 (화이트)",
         "walk_direction": "걷기 방향", "walk_right": "오른쪽", "walk_left": "왼쪽",
@@ -54,7 +56,7 @@ TEXT = {
         "model_service_error": "Ollama가 모델 실행에 실패했습니다. Ollama 상태·지원 버전·가용 메모리를 확인하고 다시 시도하세요.",
         "ollama_unavailable": "Ollama에 연결할 수 없거나 생성 시간이 초과되었습니다. Ollama를 실행하고, 느리면 더 작은 모델로 다시 시도하세요.",
         "save": "설정 저장", "close": "트레이로 돌아가기", "saved": "설정을 저장했습니다.",
-        "intro": "먼저 미리보기로 허용 목록을 확인하세요.\n프로그램을 제어하며, 사이트 제어도 켜고 확장을 연결한 경우에만 미허용 탭을 닫습니다.",
+        "intro": "사용할 제어 기능의 허용 목록을 먼저 미리보기로 확인하세요.",
         "apps_help": "허용할 실행 파일 이름을 한 줄에 하나씩 입력하세요. 경로를 붙여넣으면 파일명만 사용합니다.\nWindows·그래픽/오버레이 보조 창과 이 앱은 항상 보호합니다. 같은 이름의 실행 파일은 모두 허용됩니다.",
         "browse": "실행 파일 추가…", "running": "열려 있는 프로그램 추가…", "startup_scan": "시작프로그램 다시 탐색",
         "browser_help": "브라우저마다 확장을 설치하고 연결해야 합니다. 새 탭·기본 홈·설정 페이지를 기본 허용합니다.\n도메인은 사이트 전체를, 경로를 넣은 주소는 해당 구역만 허용합니다. http://와 https:// 모두 입력할 수 있습니다.",
@@ -109,6 +111,8 @@ TEXT = {
         "subtitle": "A little companion for a more focused desktop",
         "general": "General", "apps": "Applications", "web": "Browsers", "character": "Character", "about": "About",
         "guard": "Enable focus guardian", "preview": "Preview mode · animate without closing anything",
+        "application_control": "Enable application control",
+        "application_control_help": "For tab-only control, keep the focus guardian enabled, clear application control and save. Set up website control on the Browsers tab.",
         "visible": "Show desktop companion", "startup": "Run when I sign in to Windows", "language": "Language",
         "theme": "Theme", "theme_dark": "Dark", "theme_light": "Light (white)",
         "walk_direction": "Walking direction", "walk_right": "Right", "walk_left": "Left",
@@ -138,7 +142,7 @@ TEXT = {
         "model_service_error": "Ollama could not run the model. Check Ollama status, supported version and available memory, then retry.",
         "ollama_unavailable": "Ollama is unreachable or generation timed out. Start Ollama; if generation is slow, try a smaller model.",
         "save": "Save settings", "close": "Back to tray", "saved": "Settings saved.",
-        "intro": "Check your allowlist in preview mode first.\nApps are controlled; tabs close only when website control is also on and the extension is connected.",
+        "intro": "Use preview mode to check the allowlists for the controls you enable.",
         "apps_help": "Enter one executable filename per line. Pasted paths are reduced to filenames.\nWindows, graphics/overlay helpers and this app are always protected. All files with the same name are allowed.",
         "browse": "Add executable…", "running": "Add open application…", "startup_scan": "Rescan startup apps",
         "browser_help": "Install and pair the extension in each browser. Built-in new-tab/home and settings pages are allowed initially.\nDomains allow whole sites; a URL path limits access to that section. Both http:// and https:// URLs work.",
@@ -505,18 +509,26 @@ class SettingsDialog(QDialog):
     def build_general(self):
         layout = self.page("general")
         layout.addWidget(self.label(self.t["intro"]))
+        self.guard = QCheckBox(self.t["guard"])
+        self.application_control = QCheckBox(self.t["application_control"])
+        self.preview = QCheckBox(self.t["preview"])
+        self.visible = QCheckBox(self.t["visible"])
+        self.startup = QCheckBox(self.t["startup"])
+        for widget, key in (
+            (self.guard, "guard_enabled"),
+            (self.application_control, "application_control_enabled"),
+            (self.preview, "preview_only"),
+            (self.visible, "pet_visible"),
+            (self.startup, "start_at_login"),
+        ):
+            widget.setChecked(self.config[key])
+            layout.addWidget(widget)
+        layout.addWidget(self.label(self.t["application_control_help"]))
         self.pin = QCheckBox(self.t["pin"])
         self.pin.setChecked(self.config["pet_pinned"])
         self.pin.setToolTip(self.t["pin_help"])
         layout.addWidget(self.pin)
         layout.addWidget(self.label(self.t["pin_help"]))
-        self.guard = QCheckBox(self.t["guard"])
-        self.preview = QCheckBox(self.t["preview"])
-        self.visible = QCheckBox(self.t["visible"])
-        self.startup = QCheckBox(self.t["startup"])
-        for widget, key in ((self.guard, "guard_enabled"), (self.preview, "preview_only"), (self.visible, "pet_visible"), (self.startup, "start_at_login")):
-            widget.setChecked(self.config[key])
-            layout.addWidget(widget)
         form = QFormLayout()
         self.language = QComboBox()
         self.language.addItem("English", "en")
@@ -535,7 +547,7 @@ class SettingsDialog(QDialog):
         self.walk_direction.setCurrentIndex(self.walk_direction.findData(self.config["walk_direction"]))
         self.walk_direction.setToolTip(self.t["walk_help"])
         form.addRow(self.t["walk_direction"], self.walk_direction)
-        layout.insertLayout(1, form)
+        layout.addLayout(form)
         self.theme.setToolTip(self.t["theme_help"])
         layout.addWidget(self.label(self.t["walk_help"]))
         demo = QPushButton(self.t["demo"])
@@ -1118,6 +1130,7 @@ class SettingsDialog(QDialog):
             if self.pin.isChecked():
                 position = self.position_provider() if self.position_provider else self.settings.snapshot()["pet_position"]
             updates = {"guard_enabled": self.guard.isChecked(), "preview_only": self.preview.isChecked(),
+                       "application_control_enabled": self.application_control.isChecked(),
                        "pet_pinned": self.pin.isChecked(),
                        "pet_position": position,
                        "browser_control_enabled": self.website_control.isChecked(),

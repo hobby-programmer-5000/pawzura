@@ -79,6 +79,20 @@ class LanguageTests(unittest.TestCase):
         self.assertTrue(self.settings.snapshot()["guard_enabled"])
         self.assertEqual(self.settings.snapshot()["browsers"]["chrome"]["allowed_sites"], [])
 
+    def test_application_control_persists_without_disabling_the_browser(self):
+        self.settings.save({"guard_enabled": True, "browser_control_enabled": True})
+        dialog = self.make_dialog()
+        self.assertTrue(dialog.application_control.isChecked())
+        dialog.application_control.setChecked(False)
+        self.assertTrue(self.settings.snapshot()["application_control_enabled"])
+        dialog.save()
+        loaded = Settings(self.settings.path).snapshot()
+        self.assertFalse(loaded["application_control_enabled"])
+        self.assertTrue(loaded["guard_enabled"])
+        self.assertTrue(loaded["browser_control_enabled"])
+        self.assertTrue(loaded["preview_only"])
+        self.assertFalse(self.make_dialog().application_control.isChecked())
+
     def test_korean_save_notifies_and_persists(self):
         dialog = self.make_dialog()
         events = []

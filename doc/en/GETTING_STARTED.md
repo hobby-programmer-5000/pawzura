@@ -26,11 +26,13 @@ On **General**, click **Preview bite animation**. This demonstration does not cl
 
 Open **Applications**. Codex can run as `ChatGPT.exe`; listing `codex.exe` protects both names, including older saved settings. Known browser windows are always protected from native closing. Add the other programs you want to keep open using **Add executable…** or **Add open application…**, then save. Names such as `code.exe` are used, rather than window titles. Standard allowed apps and detected startup apps are already included. System windows and Pawzura itself are protected.
 
-Return to **General**, leave **Preview mode** checked, enable **Enable focus guardian**, and save. Unlisted windows now receive an animation, but stay open. Once the list looks right, uncheck **Preview mode** and save to allow normal close requests. Save prompts are not bypassed.
+Return to **General**, check **Enable focus guardian** and **Enable application control**, leave **Preview mode** checked, and save. Unlisted windows now receive an animation, but stay open. Once the list looks right, uncheck **Preview mode** and save to allow normal close requests. Save prompts are not bypassed.
 
 ## 5. Connect a browser (optional)
 
 **Website control requires the extension.** Start with **Browsers → choose browser → Install/connect extension…**. The helper opens installation, copies the correct folder and opens connection without code copying. [Short Chrome/Edge steps](BROWSERS.md). For applications only, leave **Website control OFF**; this applies immediately and needs no extension. Opening `options.html` from Explorer only previews a file.
+
+For tab-only control, connect the extension and enable **Website control** and **Apply website allowlist to this browser** for your browser. In **General**, keep **Enable focus guardian** checked, clear **Enable application control**, and click **Save settings**. The application control setting applies across allowlist profiles. Keep **Preview mode** checked while testing the browser's allowlist.
 
 ## Everyday controls
 
@@ -53,7 +55,7 @@ The settings window's close button returns to the tray. **Hide companion** keeps
 ## If something does not work
 
 - **Missing DLLs:** extract the complete ZIP and keep `_internal` beside `Pawzura.exe`.
-- **Nothing closes:** verify that the guardian is enabled and preview is off. For websites, the browser setting and extension connection must also be enabled.
+- **Nothing closes:** check that the guardian is on and preview is off. For application windows, check **Enable application control**. For tabs, check **Website control**, the selected browser's site filtering, and the extension connection.
 - **Browser connection fails:** keep the app running, click Connect automatically and approve in the app. Check the port if it cannot connect. The extension now explains rejected codes and unreachable apps directly.
 - **A previous version is running:** choose Quit from its tray icon before starting the updated EXE.
 - **Qt fails in Conda:** use the [standard CPython setup](BUILD.md).

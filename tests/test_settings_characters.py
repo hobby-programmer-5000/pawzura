@@ -41,6 +41,7 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(settings.snapshot()["profiles"]["Default"]["allowed_apps"], ["custom.exe"])
             self.assertEqual(settings.snapshot()["browsers"]["chrome"]["allowed_sites"], ["example.com/*"])
             self.assertTrue(settings.snapshot()["browser_control_enabled"])
+            self.assertTrue(settings.snapshot()["application_control_enabled"])
             self.assertNotIn("profiles", json.loads(path.read_text(encoding="utf-8")))
             settings.save()
             self.assertEqual(Settings(path).snapshot()["profiles"]["Default"]["browsers"]["chrome"]["allowed_sites"], ["example.com/*"])

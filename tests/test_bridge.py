@@ -77,9 +77,13 @@ class BridgeTests(unittest.TestCase):
         self.assertTrue(self.bridge.events.empty())
         self.assertEqual(self.bridge.tickets, {})
 
-    def test_close_waits_for_bite(self):
+    def test_tab_only_control_still_closes_an_unlisted_tab_after_bite(self):
         self.enable()
-        self.assertFalse(self.send()["decisions"][0]["close"])
+        self.settings.save({"application_control_enabled": False})
+        result = self.send()
+        self.assertTrue(result["enabled"])
+        self.assertFalse(result["decisions"][0]["allowed"])
+        self.assertFalse(result["decisions"][0]["close"])
         event = self.bridge.events.get_nowait()
         self.bridge.complete(event["ticket"])
         self.assertTrue(self.send()["decisions"][0]["close"])

@@ -139,7 +139,7 @@ def defaults() -> dict:
         "advanced_models": False, "vram_tier": 0,
         "guard_enabled": False, "preview_only": True, "pet_visible": True, "walk_direction": "right",
         "pet_pinned": False, "pet_position": None,
-        "browser_control_enabled": False,
+        "application_control_enabled": True, "browser_control_enabled": False,
         "allowed_apps": DEFAULT_APPS.copy(), "startup_apps": [],
         "browsers": {name: {"enabled": False, "allowed_sites": [], "allow_settings_pages": True} for name in BROWSERS},
         "bridge_token": secrets.token_urlsafe(32), "bridge_port": 47831,
@@ -174,6 +174,7 @@ class Settings:
             self.data["theme"] = "dark"
         if self.data.get("walk_direction") not in ("left", "right"):
             self.data["walk_direction"] = "right"
+        self.data["application_control_enabled"] = self.data["application_control_enabled"] is True
         self.data["pet_pinned"] = self.data.get("pet_pinned") is True
         self.data["pet_position"] = safe_pet_position(self.data.get("pet_position"))
         self.data["advanced_models"] = self.data.get("advanced_models") is True
@@ -209,6 +210,8 @@ class Settings:
                 raise ValueError("Choose dark or light theme")
             if candidate.get("walk_direction") not in ("left", "right"):
                 raise ValueError("Choose left or right walking direction")
+            if type(candidate.get("application_control_enabled")) is not bool:
+                raise ValueError("Choose whether to enable application control")
             if type(candidate.get("pet_pinned")) is not bool:
                 raise ValueError("Choose whether to pin the companion")
             position = candidate.get("pet_position")

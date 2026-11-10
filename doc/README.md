@@ -59,4 +59,5 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [0.5.0 pin and drag controls](en/RELEASE-v0.5.0.md)
 - [0.5.1 local browser addresses](en/RELEASE-v0.5.1.md)
 - [Standalone EXE and one active companion](en/SINGLE-EXE.md)
+- [0.7.0](en/RELEASE-v0.7.0.md)
 - [0.6.0](en/RELEASE-v0.6.0.md)

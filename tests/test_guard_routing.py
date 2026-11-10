@@ -91,6 +91,37 @@ class RoutingTests(unittest.TestCase):
             fake.pet.bite.call_args.args[1]()
             close.assert_called_once_with(window)
 
+    def test_tab_only_mode_skips_native_inspection_and_dispatches_browser_bite(self):
+        fake, config = self.harness()
+        config["application_control_enabled"] = False
+        config["browsers"]["chrome"]["enabled"] = True
+        with patch("pawzura.app.windows.list_windows") as inspect:
+            Companion.tick(fake)
+            fake.pet.bite.assert_not_called()
+            fake.bridge.events.put({"browser": "chrome", "ticket": "test"})
+            Companion.tick(fake)
+            self.assertTrue(fake.pet.bite.call_args.kwargs["tab"])
+            fake.pet.bite.call_args.args[1]()
+            fake.bridge.complete.assert_called_once_with("test")
+            inspect.assert_not_called()
+
+    def test_turning_off_application_control_blocks_pending_close(self):
+        fake, config = self.harness()
+        window = self.window("unlisted.exe")
+        fake.observed[(window.hwnd, window.pid, window.executable, window.title)] = 90
+        with (
+            patch("pawzura.app.time.monotonic", return_value=100),
+            patch("pawzura.app.windows.list_windows", return_value=[window]),
+            patch("pawzura.app.windows.physical_to_logical", return_value=(975, 115)),
+            patch("pawzura.app.QApplication.screens", return_value=[]),
+            patch("pawzura.app.windows.close_window") as close,
+        ):
+            Companion.tick(fake)
+            callback = fake.pet.bite.call_args.args[1]
+            config["application_control_enabled"] = False
+            callback()
+            close.assert_not_called()
+
     def test_browser_actions_use_only_synthetic_tab_target_in_preview_and_live(self):
         for active in (False, True):
             for preview in (False, True):

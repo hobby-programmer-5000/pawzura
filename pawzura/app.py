@@ -217,7 +217,7 @@ class Companion:
             return
         except Empty:
             pass
-        if not config["guard_enabled"]:
+        if not config["guard_enabled"] or not config["application_control_enabled"]:
             return
         now = time.monotonic()
         candidates = windows.list_windows()
@@ -240,7 +240,9 @@ class Companion:
                 if was_preview:
                     return  # A preview callback can never become a live close request.
                 current = self.settings.snapshot()
-                if current["guard_enabled"] and not current["preview_only"] and not is_browser(target.executable) and not allowed_app(target.executable, current):
+                if (current["guard_enabled"] and current["application_control_enabled"]
+                        and not current["preview_only"] and not is_browser(target.executable)
+                        and not allowed_app(target.executable, current)):
                     windows.close_window(target)
             if self.pet.bite(QPointF(x, y), complete) and config["preview_only"]:
                 self.previewed.add(key)
