@@ -1,4 +1,4 @@
-[English](../en/STAGED-CHARACTER-PIPELINE.md) | [한국어](../ko/STAGED-CHARACTER-PIPELINE.md) · [방향성 애니메이션](DIRECTIONAL-ANIMATION.md)
+[English](../en/STAGED-CHARACTER-PIPELINE.md) | [한국어](../ko/STAGED-CHARACTER-PIPELINE.md) · [방향성 애니메이션](DIRECTIONAL-ANIMATION.md) · [3D 리깅·모션 참고 문헌](3D-RIGGING-AND-MOTION-REFERENCES.md)
 
 # 일관된 프레임과 순차 모델 준비
 

@@ -3,9 +3,10 @@ import time
 import threading
 from PySide6.QtCore import QThread, Signal, Qt, QUrl, QTimer
 from PySide6.QtGui import QDesktopServices, QPainter, QColor, QPen
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel,
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QHBoxLayout, QLabel,
                                QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget, QLayout, QProgressBar, QSizePolicy)
 from .art_client import TIERS, catalog, generate_artwork, prepare_artwork, source_dir
+from .artwork import store_artwork, validate_png
 from .characters import GenerationError, MAX_PROMPT
 from .art_policy import review_error_info
 from .config import default_character, safe_character
@@ -18,7 +19,19 @@ TEXT = {
         "motion_missing": "The saved 3D motion pack is missing or corrupt; the original 2D artwork is shown. Prepare motion again or return to the original.",
         "motion_mouth": "3D frames contain their own mouth anchors. To adjust the original bite point, return to 2D, click the mouth, then prepare again.",
         "motion_3d": "Prepare 3D motion · 8 GB · pose-assisted",
-        "motion_help": "Experimental: first use downloads ~1.7 GB of MIT TripoSR weights and small runtime libraries. One shared 3D reconstruction provides consistent views, then a separate CPU ViTPose stage estimates humanoid joints and computed skin weights. This is pose-assisted rigging, not UniRig; unusual anatomy may fail. Each worker exits before the next. Inspect the views, limbs, face and bite before using the result.",
+        "motion_quality_label": "3D snapshots and staged refinement",
+        "motion_quality_standard": "Standard · 24 multi-elevation snapshots + 128³ mesh + geodesic/DQS rig",
+        "motion_quality_high": "High detail · 36 multi-elevation snapshots + 128³ mesh (slower)",
+        "motion_quality_sdxl": "Staged SDXL multi-view · TripoSR → sequential SDXL side/back polish (slowest)",
+        "motion_extra_label": "Optional angle snapshots (leave blank to auto-build from the front view; attach extra PNGs only if you have them)",
+        "motion_extra_left": "Add left view…",
+        "motion_extra_right": "Add right view…",
+        "motion_extra_back": "Add back view…",
+        "motion_extra_clear": "Clear extra views",
+        "motion_extra_status": "Extra angle views attached: {views}",
+        "motion_extra_invalid": "Could not attach image: select a valid PNG up to 1024×1024 px and 8 MB.",
+        "motion_refining": "Refining side/back snapshots sequentially with SDXL · {completed}/{total}",
+        "motion_help": "Experimental: first use downloads ~1.7 GB of MIT TripoSR weights and small runtime libraries. Multi-elevation snapshots + crisp source projection build a 128³ mesh, then VRAM-matched ViTPose (base / large / huge) + mesh-graph geodesic bone heat + Dual Quaternion Skinning animate a 22+ bone articulated rig with spring secondary motion. Each heavy worker exits before the next.",
         "motion_view": "Preview motion", "motion_original": "Return to original 2D artwork",
         "motion_cancel": "Cancel preparation", "motion_stopping": "Stopping this preparation worker… your previous character is retained.",
         "motion_done": "Pose-assisted 3D clips prepared. Inspect each preview, then Use this character → Save settings. Facial corrections are procedural; quality is not guaranteed.",
@@ -44,17 +57,19 @@ TEXT = {
         "read": 'Before using this advanced model, read its <a href="{url}">original license and use restrictions</a>. App code is MIT; model weights are not MIT or OSI-approved open source. No weights are bundled. Commercial use remains subject to the model license; this is not legal clearance for an output.',
         "agree": "I have reviewed the selected model's license and will request only original, family-friendly characters.",
         "prepare": "1. Prepare runtime and selected models (large download)",
-        "setup": "Install/start Ollama first. Preparation installs an isolated Python 3.12/CUDA runtime and downloads the selected image model, CPU safety/cutout/joint models, Qwen2.5 1.5B and Qwen3-VL 2B. Internet is needed for setup; descriptions and images stay local. No administrator rights or global PATH change needed. Retry Preparation after a failed download.",
+        "setup": "Install/start Ollama first. Preparation installs an isolated Python 3.12/CUDA runtime and downloads the selected image model, CPU safety/cutout models, a VRAM-matched ViTPose joint helper (base on <8 GB / CPU, large on 8 GB+, huge on 12 GB+), Qwen2.5 1.5B and Qwen3-VL 2B. Internet is needed for setup; descriptions and images stay local. No administrator rights or global PATH change needed. Retry Preparation after a failed download.",
         "prompt": "2. Describe an original character (required, at most 2,000 characters)",
-        "example": "Original chibi astronomer, front view, full body standing, both hands clearly visible beside the hips, two separate copper boots. Short turquoise hair, cream shirt, navy vest, crescent brooch. Friendly watercolor illustration, white background.",
+        "example": "Solo single chibi astronomer, upright full-body front view centered on plain white background. Short turquoise hair, smiling face, cream long sleeves, cropped navy vest with crescent brooch, slate pants, copper boots. Arms held apart with visible empty hands, separated legs, wide white margins.",
         "examples": "Motion-friendly drawing examples",
         "example_astronomer": "Chibi astronomer",
         "example_courier": "Woodland courier",
         "example_gardener": "Clockwork gardener",
         "example_mechanic": "Cloud mechanic",
-        "mechanic_prompt": 'One original chibi cloud-station mechanic, full-body front view, standing upright in the center. Oversized rounded head, short fluffy ivory curls, dark expressive eyes, lavender eyebrows and a small clearly visible smiling mouth. A saffron cropped vest over a cream long-sleeved shirt, muted plum trousers and two chunky turquoise ankle boots. Two arms slightly away from the torso, both elbows and wrists visible, empty open hands separated from the vest. Two distinct legs with a clear gap between the boots; visible knees and ankles. One small mint hexagonal fabric patch stitched at the center of the chest, no logo. Friendly clean painted illustration with simple rounded volumes and readable facial features. The whole figure including hair, hands and soles fits inside the image with generous white margins. Plain white background. Only one character, no held tools, hat, bag, floating objects, pedestal, text or additional views.',
-        "courier_prompt": "Original chibi woodland courier, front view, entire body visible with space around it. Two arms relaxed beside the body, both hands visible and separated from the jacket. Two separate short legs and clearly visible boots. Apricot jacket, teal trousers, small leaf-shaped collar pin, short chestnut hair, expressive eyes and a small friendly mouth. Clean soft illustration, plain white background.",
-        "gardener_prompt": "Original chibi clockwork gardener, front view, complete body standing upright. Two separate arms and hands beside the torso, two distinct legs and boots. Rounded brass face with visible eyes and a small expressive mouth, moss-green overalls, cream sleeves, short copper hair, a tiny flower-shaped pocket decoration. Friendly painted illustration with a clear silhouette and plain white background.",
+        "example_otter": "Forest otter explorer",
+        "mechanic_prompt": "Solo single chibi cloud mechanic, upright full-body front view centered on plain white background. Short fluffy ivory curls, lavender brows, smiling face, cream long sleeves, saffron vest, plum pants, turquoise boots. Arms held apart with visible empty hands, separated legs, wide white margins.",
+        "courier_prompt": "Solo single chibi woodland courier, upright full-body front view centered on plain white background. Short chestnut hair, smiling face, cream sleeves, short apricot coat with leaf pin, dark teal pants, brown boots. Arms held apart with visible empty hands, separated legs, wide margins.",
+        "gardener_prompt": "Solo single chibi clockwork gardener, upright full-body front view centered on plain white background. Short copper hair, smiling face, cream sleeves, cropped moss-green overalls with flower pin, olive pants, russet boots. Arms held apart with visible empty hands, separated legs, wide white margins.",
+        "otter_prompt": "Solo single chibi otter explorer, upright full-body front view standing on two feet on plain white background. Round ears, cream muzzle, smiling face, light brown fur, mint vest, short cream sleeves, dark brown empty paws apart, separated legs in teal boots, short tail, wide margins.",
         "example_help": "Choose an example, then Insert example. Visible, separated hands and feet help 2D motion and experimental pose-assisted 3D preparation. You can edit the text; generated results vary.",
         "sample": "Insert example", "generate": "Generate artwork", "use": "Use this character", "close": "Close", "guide": "Open detailed setup/license guide",
         "limits": "NSFW and recognizable character/logo replication requests are prohibited. Local prompt review, an image classifier and vision review must all pass. Checks can miss content or reject safe requests; they do not guarantee copyright clearance. Inspect the result before using or publishing it. The 2D editor moves cutout limbs. Optional pose-assisted 3D preparation below infers hidden geometry; inspect its directional clips. Neither route is learned AI video. Trait options cannot repaint this bitmap.",
@@ -63,8 +78,8 @@ TEXT = {
         "mouth": "Click the mouth in the preview to adjust the bite point (cross). The automatic estimate can be inaccurate.",
         "motion": "Edit hand/foot motion…",
         "done_no_motion": "Artwork passed content checks. A reliable limb rig was not found. Open Edit hand/foot motion to prepare the helper or adjust the four areas manually before applying.",
-        "art_rigging": "Estimating editable hand/foot motion on the CPU…",
-        "art_pose_downloading": "Downloading the CPU joint-estimation model…",
+        "art_rigging": "Estimating editable hand/foot motion…",
+        "art_pose_downloading": "Downloading the VRAM-matched ViTPose model…",
         "art_pose_unavailable": "The CPU motion helper is unavailable or uncertain. Prepare it in the motion editor or adjust the limb areas manually.",
         "art_installing": "Preparing isolated image runtime… first setup can take tens of minutes.",
         "art_downloading": "Downloading selected image, safety and cutout models… keep this window open.",
@@ -78,7 +93,17 @@ TEXT = {
         "art_scanning": "Checking image safety on the CPU…",
         "art_cutting": "Removing the background on the CPU…",
         "progress_download": "Downloading model groups · {completed}/{total} complete",
+        "progress_download_step": "Downloading model groups [{current}/{total}: {name}]…",
         "progress_review_download": "Downloading Ollama review models · {completed}/{total} complete",
+        "progress_review_step": "Downloading Ollama review models [{current}/{total}: {name}] · {done} / {total_bytes} ({pct}%) · {status}",
+        "progress_review_step_nostat": "Downloading Ollama review models [{current}/{total}: {name}] · {done} / {total_bytes} ({pct}%)",
+        "progress_review_step_prep": "Downloading Ollama review models [{current}/{total}: {name}] · {status}",
+        "ollama_status_pulling_manifest": "verifying manifest…",
+        "ollama_status_downloading": "downloading…",
+        "ollama_status_verifying": "verifying checksum…",
+        "ollama_status_writing": "writing manifest…",
+        "ollama_status_success": "complete",
+        "ollama_status_connecting": "connecting…",
         "art_runtime_tool": "Preparing the runtime bootstrap tool…",
         "art_runtime_python": "Preparing isolated Python…",
         "art_runtime_torch": "Downloading/installing PyTorch and CUDA…",
@@ -116,7 +141,19 @@ TEXT = {
         "motion_missing": "저장한 3D 동작 파일이 없거나 손상되어 원본 2D 그림을 표시합니다. 동작을 다시 준비하거나 원본으로 돌아가세요.",
         "motion_mouth": "3D 프레임에는 자체 입 좌표가 있습니다. 원본 깨물기 위치는 2D로 돌아가 입을 클릭한 뒤 다시 준비해 변경하세요.",
         "motion_3d": "3D 움직임 준비 · 8GB · 포즈 추정 보조",
-        "motion_help": "실험 기능: 처음 사용할 때 MIT TripoSR 가중치 약 1.7GB와 작은 실행 라이브러리를 받습니다. 하나의 3D 복원 결과에서 일관된 시점을 만들고, 별도 CPU ViTPose 단계에서 사람형 관절과 스킨 가중치를 계산합니다. UniRig가 아닌 포즈 추정 보조 리깅이며 특이한 신체는 실패할 수 있습니다. 각 작업 프로세스를 종료한 뒤 다음 단계를 시작합니다. 시점·팔다리·얼굴·깨물기를 확인한 뒤 사용하세요.",
+        "motion_quality_label": "3D 스냅샷 · 분할 보정 단계",
+        "motion_quality_standard": "표준 · 다각도 스냅샷 24장 + 128³ 메시 + 지오데식/DQS 리깅",
+        "motion_quality_high": "고정밀 · 다각도 스냅샷 36장 + 128³ 메시 (더 느림)",
+        "motion_quality_sdxl": "분할 SDXL 멀티뷰 · TripoSR → 순차 SDXL 측면/후면 보정 (가장 느림)",
+        "motion_extra_label": "선택 각도 스냅샷 (비워도 정면 1장만으로 자동 진행 · 좌/우/후면 PNG가 있을 때만 추가)",
+        "motion_extra_left": "왼쪽 시점 추가…",
+        "motion_extra_right": "오른쪽 시점 추가…",
+        "motion_extra_back": "뒷모습 추가…",
+        "motion_extra_clear": "추가 시점 비우기",
+        "motion_extra_status": "추가된 각도 스냅샷: {views}",
+        "motion_extra_invalid": "PNG 이미지를 불러오지 못했습니다 (1024×1024 이하, 8MB 이하 PNG만 가능).",
+        "motion_refining": "SDXL로 측면·후면 스냅샷을 순차 보정 중 · {completed}/{total}",
+        "motion_help": "실험 기능: 처음 사용할 때 MIT TripoSR 가중치 약 1.7GB와 작은 실행 라이브러리를 받습니다. 다각도 스냅샷과 원본 고해상도 투영으로 128³ 메시를 만들고, VRAM 사양에 맞춘 ViTPose(base / large / huge) + 메시 지오데식 본 히트 + 듀얼 쿼터니언 스키닝(DQS)으로 22개 이상 관절과 보조 스프링 본을 움직입니다. 각 무거운 작업 프로세스는 종료 후 다음 단계를 시작합니다.",
         "motion_view": "움직임 미리보기", "motion_original": "원래 2D 그림으로 돌아가기",
         "motion_cancel": "준비 취소", "motion_stopping": "이 준비 작업을 종료하고 있습니다… 이전 캐릭터는 유지됩니다.",
         "motion_done": "포즈 추정 보조 3D 클립을 준비했습니다. 각 미리보기 확인 → 이 캐릭터 사용 → 설정 저장을 누르세요. 표정은 절차적 보정이며 품질을 보장하지 않습니다.",
@@ -142,17 +179,19 @@ TEXT = {
         "read": '고급 모델 사용 전 <a href="{url}">원본 라이선스와 이용 제한</a>을 확인하세요. 앱 코드는 MIT이며 모델은 MIT·OSI 승인 오픈소스가 아닙니다. 가중치는 배포본에 포함하지 않습니다. 상업적 이용도 모델의 조건을 따라야 하며 결과물의 권리 확보를 보증하지 않습니다.',
         "agree": "선택한 모델의 라이선스를 확인했으며 독창적이고 전연령에 적합한 캐릭터만 요청하겠습니다.",
         "prepare": "1. 실행환경·선택 모델 준비 (대용량 다운로드)",
-        "setup": "먼저 Ollama를 설치하고 실행하세요. 준비 버튼은 격리된 Python 3.12/CUDA 환경, 선택 그림 모델, CPU 안전 검사·배경 제거·관절 추정 모델, Qwen2.5 1.5B·Qwen3-VL 2B를 설치합니다. 설치에는 인터넷이 필요하며 설명·그림은 로컬에서 처리합니다. 관리자 권한이나 전역 PATH 변경은 필요 없습니다. 다운로드 실패 시 준비를 다시 누르세요.",
+        "setup": "먼저 Ollama를 설치하고 실행하세요. 준비 버튼은 격리된 Python 3.12/CUDA 환경, 선택 그림 모델, CPU 안전 검사·배경 제거, GPU VRAM 용량에 맞춘 ViTPose 관절 모델(8GB 미만 base · 8GB+ large · 12GB+ huge), Qwen2.5 1.5B·Qwen3-VL 2B를 설치합니다. 설치에는 인터넷이 필요하며 설명·그림은 로컬에서 처리합니다. 관리자 권한이나 전역 PATH 변경은 필요 없습니다. 다운로드 실패 시 준비를 다시 누르세요.",
         "prompt": "2. 독창적인 캐릭터 설명 (필수 · 최대 2,000자)",
-        "example": "독창적인 작은 SD 천문학자. 정면에 가까운 서 있는 전신, 양손은 엉덩이 옆에서 뚜렷하게 보이고 구리 부츠를 신은 양발은 떨어진 자세. 짧은 청록색 머리, 크림색 셔츠, 남색 조끼, 초승달 브로치. 친근한 수채화 표현, 흰색 배경.",
+        "example": "독창적인 작은 SD 천문학자 한 명. 단순한 흰 배경 중앙에 똑바로 선 정면 전신. 짧은 청록색 머리, 웃는 얼굴, 크림색 긴 소매, 짧은 남색 조끼, 초승달 브로치, 슬레이트 바지, 구리색 부츠. 양팔을 벌려 빈 두 손이 보이고 두 다리 사이가 떨어진 넉넉한 여백의 깔끔한 일러스트.",
         "examples": "움직임에 적합한 그림 예시",
         "example_astronomer": "작은 SD 천문학자",
         "example_courier": "숲속 배달부",
         "example_gardener": "태엽 정원사",
         "example_mechanic": "구름 정비사",
-        "mechanic_prompt": '독창적인 작은 SD 구름 정거장 정비사 한 명. 정면을 향해 화면 중앙에 똑바로 서 있는 전신. 크고 둥근 머리, 짧고 풍성한 상아색 곱슬머리, 표정이 잘 보이는 짙은 눈, 연보라 눈썹, 작고 선명한 웃는 입. 크림색 긴팔 셔츠 위 짧은 샛노란 조끼, 차분한 자주색 바지, 두툼한 청록색 발목 부츠 두 짝. 두 팔은 몸통에서 조금 떨어뜨리고 팔꿈치·손목이 보이며 빈 손바닥은 조끼와 겹치지 않는다. 두 다리가 구분되고 부츠 사이에 틈이 있으며 무릎·발목이 보인다. 가슴 중앙에는 작은 민트색 육각형 천 패치 하나, 로고 없음. 단순하고 둥근 부피감과 읽기 쉬운 얼굴을 가진 친근하고 깔끔한 채색 일러스트. 머리·손·신발 밑창까지 전신이 화면 안에 들어오며 주변에 충분한 흰 여백. 단순한 흰색 배경. 캐릭터 한 명만, 손에 든 도구·모자·가방·떠다니는 소품·받침대·글자·다른 시점 없음.',
-        "courier_prompt": "독창적인 작은 SD 숲속 배달부. 정면을 향한 전신과 몸 주변 여백. 두 팔은 몸 옆에 편안하게 두고 양손은 재킷과 떨어져 뚜렷하게 보이게 한다. 짧은 두 다리와 부츠도 각각 분리되어 보인다. 살구색 재킷, 청록색 바지, 작은 나뭇잎 모양 옷깃 핀, 짧은 밤색 머리, 표정이 잘 보이는 눈과 작고 친근한 입. 깔끔하고 부드러운 그림, 단순한 흰색 배경.",
-        "gardener_prompt": "독창적인 작은 SD 태엽 정원사. 정면을 향해 똑바로 서 있는 전신. 두 팔과 손은 몸통 옆에 각각 떨어져 있고 두 다리와 부츠가 뚜렷하게 구분된다. 눈과 작고 표정 있는 입이 보이는 둥근 황동색 얼굴, 이끼색 멜빵바지, 크림색 소매, 짧은 구릿빛 머리, 주머니의 작은 꽃 모양 장식. 실루엣이 명확한 친근한 채색 그림, 단순한 흰색 배경.",
+        "example_otter": "숲 탐험가 수달",
+        "mechanic_prompt": "독창적인 작은 SD 구름 정비사 한 명. 단순한 흰 배경 중앙에 똑바로 선 정면 전신. 짧고 풍성한 상아색 곱슬머리, 연보라 눈썹, 웃는 얼굴, 크림색 긴 소매, 짧은 샛노란 조끼, 자주색 바지, 청록색 부츠. 양팔을 벌려 빈 두 손이 보이고 두 다리 사이가 떨어진 넉넉한 여백의 깔끔한 일러스트.",
+        "courier_prompt": "독창적인 작은 SD 숲속 배달부 한 명. 단순한 흰 배경 중앙에 똑바로 선 정면 전신. 짧은 밤색 머리, 웃는 얼굴, 크림색 긴 소매, 짧은 살구색 코트, 나뭇잎 핀, 진한 청록색 바지, 갈색 부츠. 양팔을 벌려 빈 두 손이 보이고 두 다리 사이가 떨어진 넉넉한 여백의 깔끔한 일러스트.",
+        "gardener_prompt": "독창적인 작은 SD 태엽 정원사 한 명. 단순한 흰 배경 중앙에 똑바로 선 정면 전신. 짧은 구릿빛 머리, 웃는 얼굴, 크림색 긴 소매, 짧은 이끼색 멜빵바지, 꽃 장식, 올리브 바지, 적갈색 부츠. 양팔을 벌려 빈 두 손이 보이고 두 다리 사이가 떨어진 넉넉한 여백의 깔끔한 일러스트.",
+        "otter_prompt": "독창적인 작은 SD 수달 탐험가 한 마리. 단순한 흰 배경 중앙에 두 발로 똑바로 선 정면 전신. 둥근 귀, 크림색 주둥이, 웃는 얼굴, 연한 갈색 털, 민트색 조끼, 크림색 짧은 소매, 짙은 갈색 빈 양손, 청록색 둥근 부츠, 옆으로 살짝 보이는 짧은 꼬리. 다리 사이가 떨어진 넉넉한 여백의 깔끔한 일러스트.",
         "example_help": "예시 선택 후 ‘예시 넣기’를 누르세요. 손발이 가려지지 않고 떨어져 있으면 2D 움직임과 실험용 포즈 추정 보조 3D 준비에 도움이 됩니다. 설명은 자유롭게 고칠 수 있으며 생성 결과는 달라질 수 있습니다.",
         "sample": "예시 넣기", "generate": "그림 생성", "use": "이 캐릭터 사용", "close": "닫기", "guide": "자세한 설치·라이선스 안내 열기",
         "limits": "NSFW 및 식별 가능한 기존 캐릭터·로고 복제 요청은 금지합니다. 로컬 요청 검사·이미지 분류·비전 검사를 모두 통과해야 합니다. 검사 누락이나 정상 요청의 오차단이 있을 수 있으며 저작권 검증을 보장하지 않습니다. 사용·공개 전에 직접 확인하세요. 2D 편집기는 손발 그림 조각을 움직입니다. 아래 선택형 포즈 추정 보조 3D 준비는 가려진 형상을 추정하므로 방향별 클립을 확인하세요. 두 방식 모두 학습된 AI 영상은 아니며 도형 옵션으로 그림을 다시 칠할 수는 없습니다.",
@@ -161,8 +200,8 @@ TEXT = {
         "mouth": "미리보기의 입을 클릭하면 깨물기 위치(십자)를 조정합니다. 자동 추정에는 오차가 있을 수 있습니다.",
         "motion": "그림 손발 움직임 설정…",
         "done_no_motion": "그림 검사는 통과했지만 손발 영역을 확실히 추정하지 못했습니다. 손발 움직임 설정에서 도우미를 준비하거나 네 영역을 직접 조정한 뒤 사용하세요.",
-        "art_rigging": "CPU에서 조정 가능한 손발 움직임 추정 중…",
-        "art_pose_downloading": "CPU 관절 추정 모델 다운로드 중…",
+        "art_rigging": "조정 가능한 손발 움직임 추정 중…",
+        "art_pose_downloading": "VRAM 사양에 맞는 ViTPose 관절 모델 다운로드 중…",
         "art_pose_unavailable": "CPU 움직임 도우미가 없거나 추정이 불확실합니다. 움직임 설정에서 준비하거나 손발 영역을 직접 조정하세요.",
         "art_installing": "격리된 그림 실행환경 준비 중… 최초 설치는 수십 분 걸릴 수 있습니다.",
         "art_downloading": "선택한 그림·안전 검사·배경 제거 모델 다운로드 중… 창을 열어 두세요.",
@@ -176,7 +215,17 @@ TEXT = {
         "art_scanning": "CPU에서 그림 안전성 검사 중…",
         "art_cutting": "CPU에서 배경 제거 중…",
         "progress_download": "모델 그룹 다운로드 · {completed}/{total}개 완료",
+        "progress_download_step": "모델 그룹 다운로드 [{current}/{total}: {name}]…",
         "progress_review_download": "Ollama 검사 모델 다운로드 · {completed}/{total}개 완료",
+        "progress_review_step": "Ollama 검사 모델 다운로드 [{current}/{total}: {name}] · {done} / {total_bytes} ({pct}%) · {status}",
+        "progress_review_step_nostat": "Ollama 검사 모델 다운로드 [{current}/{total}: {name}] · {done} / {total_bytes} ({pct}%)",
+        "progress_review_step_prep": "Ollama 검사 모델 다운로드 [{current}/{total}: {name}] · {status}",
+        "ollama_status_pulling_manifest": "매니페스트 확인 중…",
+        "ollama_status_downloading": "다운로드 중…",
+        "ollama_status_verifying": "체크섬 검증 중…",
+        "ollama_status_writing": "매니페스트 저장 중…",
+        "ollama_status_success": "완료",
+        "ollama_status_connecting": "연결 중…",
         "art_runtime_tool": "실행환경 준비 도구 설치 중…",
         "art_runtime_python": "격리된 Python 준비 중…",
         "art_runtime_torch": "PyTorch·CUDA 다운로드·설치 중…",
@@ -211,6 +260,37 @@ TEXT = {
 }
 
 
+def format_bytes(num_bytes):
+    if num_bytes is None or num_bytes < 0:
+        return ""
+    if num_bytes >= 1024 ** 3:
+        return f"{num_bytes / (1024 ** 3):.2f} GB"
+    if num_bytes >= 1024 ** 2:
+        return f"{num_bytes / (1024 ** 2):.1f} MB"
+    if num_bytes >= 1024:
+        return f"{num_bytes / 1024:.0f} KB"
+    return f"{num_bytes} B"
+
+
+def friendly_ollama_status(status_raw, text_dict):
+    if not status_raw:
+        return ""
+    s = status_raw.lower()
+    if "manifest" in s and ("pull" in s or "read" in s or "check" in s):
+        return text_dict.get("ollama_status_pulling_manifest", "매니페스트 확인 중…")
+    if "verif" in s:
+        return text_dict.get("ollama_status_verifying", "체크섬 검증 중…")
+    if "writing" in s:
+        return text_dict.get("ollama_status_writing", "매니페스트 저장 중…")
+    if "success" in s or "complete" in s:
+        return text_dict.get("ollama_status_success", "완료")
+    if "connect" in s:
+        return text_dict.get("ollama_status_connecting", "연결 중…")
+    if "pull" in s or "download" in s:
+        return text_dict.get("ollama_status_downloading", "다운로드 중…")
+    return status_raw
+
+
 class ArtworkWorker(QThread):
     progress = Signal(object)
     succeeded = Signal(dict)
@@ -239,15 +319,23 @@ class MotionWorker(QThread):
     succeeded = Signal(dict)
     failed = Signal(str)
 
-    def __init__(self, spec, parent=None):
+    def __init__(self, spec, parent=None, quality_mode="standard", extra_views=None):
         super().__init__(parent)
         self.spec = safe_character(spec)
+        self.quality_mode = quality_mode
+        self.extra_views = dict(extra_views or {})
         self.cancel_event = threading.Event()
 
     def run(self):
         from .motion_client import prepare_animation
         try:
-            result = prepare_animation(self.spec, self.progress.emit, self.cancel_event)
+            result = prepare_animation(
+                self.spec,
+                self.progress.emit,
+                self.cancel_event,
+                quality_mode=self.quality_mode,
+                extra_views=self.extra_views,
+            )
             if self.cancel_event.is_set():
                 raise GenerationError("art_cancelled")
             self.succeeded.emit(result)
@@ -328,7 +416,8 @@ class ArtworkDialog(QDialog):
         for label, key in (("example_astronomer", "example"),
                            ("example_courier", "courier_prompt"),
                            ("example_gardener", "gardener_prompt"),
-                           ("example_mechanic", "mechanic_prompt")):
+                           ("example_mechanic", "mechanic_prompt"),
+                           ("example_otter", "otter_prompt")):
             self.example_choice.addItem(self.t[label], key)
         example_row = QHBoxLayout()
         example_row.addWidget(self.example_choice, 1)
@@ -365,7 +454,28 @@ class ArtworkDialog(QDialog):
         self.motion_button = QPushButton(self.t["motion"])
         self.motion_button.clicked.connect(self.open_motion)
         layout.addWidget(self.motion_button)
+        self.extra_views = {}
         layout.addWidget(self.label(self.t["motion_help"]))
+        layout.addWidget(self.label(self.t["motion_quality_label"]))
+        self.motion_quality = QComboBox()
+        self.motion_quality.addItem(self.t["motion_quality_standard"], "standard")
+        self.motion_quality.addItem(self.t["motion_quality_high"], "high_multiview")
+        self.motion_quality.addItem(self.t["motion_quality_sdxl"], "sdxl_multiview")
+        layout.addWidget(self.motion_quality)
+        layout.addWidget(self.label(self.t["motion_extra_label"]))
+        extra_row = QHBoxLayout()
+        self.extra_buttons = {}
+        for angle_key, text_key in (("facing_left", "motion_extra_left"), ("facing_right", "motion_extra_right"), ("back", "motion_extra_back")):
+            btn = QPushButton(self.t[text_key])
+            btn.clicked.connect(lambda _=False, k=angle_key: self.attach_extra_view(k))
+            extra_row.addWidget(btn)
+            self.extra_buttons[angle_key] = btn
+        self.extra_clear = QPushButton(self.t["motion_extra_clear"])
+        self.extra_clear.clicked.connect(self.clear_extra_views)
+        extra_row.addWidget(self.extra_clear)
+        layout.addLayout(extra_row)
+        self.extra_status = self.label("")
+        layout.addWidget(self.extra_status)
         self.motion_3d = QPushButton(self.t["motion_3d"])
         self.motion_3d.clicked.connect(self.start_motion)
         layout.addWidget(self.motion_3d)
@@ -458,6 +568,10 @@ class ArtworkDialog(QDialog):
         self.library_button.setEnabled(not busy)
         self.use.setEnabled(not busy and self.result_spec is not None)
         self.motion_button.setEnabled(not busy and self.result_spec is not None and not self.result_spec.get("animation_id"))
+        self.motion_quality.setEnabled(not busy)
+        for btn in self.extra_buttons.values():
+            btn.setEnabled(not busy)
+        self.extra_clear.setEnabled(not busy and bool(self.extra_views))
         self.motion_3d.setEnabled(not busy and self.result_spec is not None and self.agree.isChecked())
         animated = bool(self.result_spec and self.result_spec.get("animation_id"))
         from .motion_pack import load_pack
@@ -506,6 +620,30 @@ class ArtworkDialog(QDialog):
             saved = try_save(self.result_spec, self.library_root)
             self.status.setText(self.status.text() + "\n" + LIBRARY_TEXT[self.language]["auto_saved" if saved else "auto_failed"])
 
+    def attach_extra_view(self, angle_key):
+        if self.worker is not None:
+            return
+        path, _ = QFileDialog.getOpenFileName(self, self.t[f"motion_extra_{'left' if angle_key == 'facing_left' else 'right' if angle_key == 'facing_right' else 'back'}"], "", "PNG (*.png)")
+        if not path:
+            return
+        try:
+            with open(path, "rb") as stream:
+                data = stream.read(8 * 1024 * 1024 + 1)
+            validate_png(data)
+            digest = store_artwork(data)
+            self.extra_views[angle_key] = digest
+            self.extra_status.setText(self.t["motion_extra_status"].format(views=", ".join(sorted(self.extra_views))))
+            self.controls()
+        except Exception:
+            self.status.setText(self.t["motion_extra_invalid"])
+
+    def clear_extra_views(self):
+        if self.worker is not None:
+            return
+        self.extra_views.clear()
+        self.extra_status.clear()
+        self.controls()
+
     def start_motion(self):
         if self.worker is not None or self.result_spec is None or not self.agree.isChecked():
             return
@@ -516,7 +654,12 @@ class ArtworkDialog(QDialog):
         self.status.clear()
         self.progress_timer.start()
         self.set_progress("motion_reconstructing")
-        self.worker = MotionWorker(self.result_spec, self)
+        self.worker = MotionWorker(
+            self.result_spec,
+            self,
+            quality_mode=self.motion_quality.currentData(),
+            extra_views=self.extra_views,
+        )
         if self.parent():
             self.parent().worker = self.worker
         self.worker.progress.connect(self.set_progress)
@@ -608,7 +751,62 @@ class ArtworkDialog(QDialog):
             self.stage_started_at = now
             self.current_stage = stage
         self.last_report_at = now
-        if "completed" in event:
+
+        bytes_done = event.get("bytes_completed")
+        bytes_tot = event.get("bytes_total")
+        model_name = event.get("model_name")
+        item_name = event.get("item_name")
+        status_raw = event.get("status_text")
+
+        if stage == "art_review_models" and "completed" in event:
+            completed, total = event["completed"], event["total"]
+            current_idx = min(completed + 1, total)
+
+            if bytes_tot and bytes_done is not None and bytes_tot > 0:
+                pct = min(100, max(0, int(bytes_done * 100 / bytes_tot)))
+                overall_pct = min(100, max(0, int(((completed + (bytes_done / bytes_tot)) / total) * 100)))
+                self.progress_bar.setRange(0, 100)
+                self.progress_bar.setValue(overall_pct)
+                self.progress_bar.setFormat(f"{overall_pct}%")
+
+                name = model_name or f"Model {current_idx}"
+                done_str = format_bytes(bytes_done)
+                tot_str = format_bytes(bytes_tot)
+                status_str = friendly_ollama_status(status_raw, self.t)
+                if status_str:
+                    msg = self.t.get("progress_review_step", "{name} · {done}/{total_bytes}").format(
+                        current=current_idx, total=total, name=name, done=done_str, total_bytes=tot_str, pct=pct, status=status_str)
+                else:
+                    msg = self.t.get("progress_review_step_nostat", "{name} · {done}/{total_bytes}").format(
+                        current=current_idx, total=total, name=name, done=done_str, total_bytes=tot_str, pct=pct)
+                self.stage_label.setText(msg)
+            elif model_name and status_raw:
+                self.progress_bar.setRange(0, 100)
+                overall_pct = int((completed / total) * 100)
+                self.progress_bar.setValue(overall_pct)
+                self.progress_bar.setFormat(f"{overall_pct}%")
+                status_str = friendly_ollama_status(status_raw, self.t)
+                msg = self.t.get("progress_review_step_prep", "{name} · {status}").format(
+                    current=current_idx, total=total, name=model_name, status=status_str)
+                self.stage_label.setText(msg)
+            else:
+                self.progress_bar.setRange(0, total)
+                self.progress_bar.setValue(completed)
+                self.progress_bar.setFormat("%p%")
+                self.stage_label.setText(self.t["progress_review_download"].format(completed=completed, total=total))
+
+        elif stage == "art_downloading" and "completed" in event:
+            completed, total = event["completed"], event["total"]
+            self.progress_bar.setRange(0, total)
+            self.progress_bar.setValue(completed)
+            self.progress_bar.setFormat("%p%")
+            if item_name and completed < total:
+                msg = self.t.get("progress_download_step", "Downloading {name}…").format(
+                    current=completed + 1, total=total, name=item_name)
+                self.stage_label.setText(msg)
+            else:
+                self.stage_label.setText(self.t["progress_download"].format(completed=completed, total=total))
+        elif "completed" in event:
             completed, total = event["completed"], event["total"]
             self.progress_bar.setRange(0, total)
             self.progress_bar.setValue(completed)

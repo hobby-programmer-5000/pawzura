@@ -113,7 +113,7 @@ def layers(spec):
     return result
 
 
-def draw_rig(painter, spec, phase, pose="walk"):
+def draw_rig(painter, spec, phase, pose="walk", facing=1):
     cached = layers(spec)
     if cached is None:
         return False
@@ -122,6 +122,97 @@ def draw_rig(painter, spec, phase, pose="walk"):
     painter.scale(.5, .5)
     painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
     swing = math.sin(phase)
+
+    is_parallax = spec.get("representation") == "2.5d_parallax"
+    if is_parallax:
+        # Step 2: 2.5D Multiplane Parallax Representation (Live2D / Spine style)
+        # Separates the flat 2D artwork into 4 depth planes (Far limbs -> Torso -> Head -> Near limbs)
+        # with subtle spine breathing, follow-through head tilt, and depth-scale perspective shift.
+        neck_y = max(80.0, min(200.0, (float(spec.get("mouth_y", 0.38)) + 0.05) * 288.0))
+        neck_x = max(70.0, min(218.0, float(spec.get("mouth_x", 0.50)) * 288.0))
+
+        # 1. Background limbs (far plane, Z = -1)
+        for name in ("left_foot", "left_hand"):
+            image, pivot = pieces[name]
+            hand = name.endswith("hand")
+            angle = swing * (22 if hand else 12)
+            lift = max(0, math.cos(phase)) * 6 if not hand else 0
+            if pose in ("wave", "hover"):
+                angle = 5 if hand else 0
+                lift = 0
+            elif pose in ("hop", "cheer"):
+                angle = (62 + math.sin(phase * 2) * 12) if hand else -swing * 16
+            elif pose == "bite":
+                angle, lift = 0, 0
+
+            painter.save()
+            painter.translate(pivot.x() - 1.5, pivot.y() - lift)
+            painter.scale(0.97, 0.97)
+            painter.rotate(angle)
+            painter.translate(-pivot.x(), -pivot.y())
+            painter.drawImage(0, 0, image)
+            painter.restore()
+
+        # 2. Torso core (mid plane, Z = 0)
+        torso_sway = math.sin(phase) * 1.2
+        torso_tilt = math.sin(phase) * 1.5
+        torso_breath = math.sin(phase * 2.0) * 1.2
+        if pose in ("hop", "cheer"):
+            torso_breath += math.sin(phase * 2.5) * 3.5
+
+        painter.save()
+        painter.translate(144.0 + torso_sway, 240.0 - torso_breath)
+        painter.rotate(torso_tilt)
+        painter.translate(-144.0, -240.0)
+        painter.save()
+        painter.setClipRect(QRectF(0, neck_y - 2.0, 288, 288 - neck_y + 2.0))
+        painter.drawImage(0, 0, core)
+        painter.restore()
+        painter.restore()
+
+        # 3. Head core (near-mid plane, Z = +0.5) with follow-through lag
+        head_lag = phase - 0.35
+        head_sway = math.sin(head_lag) * 1.5
+        head_tilt = math.sin(head_lag) * 2.6
+        if pose == "hover":
+            head_tilt = math.sin(phase * 1.5) * 3.5 + 2.0
+            head_sway = math.sin(phase * 1.5) * 2.0
+
+        painter.save()
+        painter.translate(neck_x + head_sway, neck_y - torso_breath * 0.7)
+        painter.rotate(head_tilt)
+        painter.translate(-neck_x, -neck_y)
+        painter.save()
+        painter.setClipRect(QRectF(0, 0, 288, neck_y + 2.0))
+        painter.drawImage(0, 0, core)
+        painter.restore()
+        painter.restore()
+
+        # 4. Foreground limbs (near plane, Z = +1)
+        for name in ("right_foot", "right_hand"):
+            image, pivot = pieces[name]
+            hand = name.endswith("hand")
+            angle = -swing * (22 if hand else 12)
+            lift = max(0, math.cos(phase + math.pi)) * 6 if not hand else 0
+            if pose in ("wave", "hover"):
+                angle = -(50 + math.sin(phase * 2) * 22) if hand else 0
+                lift = 0
+            elif pose in ("hop", "cheer"):
+                angle = -(62 + math.sin(phase * 2) * 12) if hand else swing * 16
+            elif pose == "bite":
+                angle, lift = 0, 0
+
+            painter.save()
+            painter.translate(pivot.x() + 1.5, pivot.y() - lift)
+            painter.scale(1.03, 1.03)
+            painter.rotate(angle)
+            painter.translate(-pivot.x(), -pivot.y())
+            painter.drawImage(0, 0, image)
+            painter.restore()
+
+        painter.restore()
+        return True
+
     for name in ("left_foot", "right_foot", "core", "left_hand", "right_hand"):
         if name == "core":
             painter.drawImage(0, 0, core)

@@ -52,6 +52,7 @@
 - [0.2.2 로컬 검사 수정](ko/RELEASE-v0.2.2.md)
 
 - [실험용 8GB 포즈 추정 보조 3D 움직임](ko/3D-MOTION.md)
+- [3D 복원·리깅·스타일화 동작 참고 문헌 및 구현 안내](ko/3D-RIGGING-AND-MOTION-REFERENCES.md)
 
 - [로컬 캐릭터 보관함과 중간 결과 저장](ko/CHARACTER-LIBRARY.md)
 - [0.4.0 방향별 모션과 캐릭터 보관](ko/RELEASE-v0.4.0.md)
@@ -60,5 +61,6 @@
 - [0.5.0 캐릭터 고정과 드래그](ko/RELEASE-v0.5.0.md)
 - [0.5.1 로컬 브라우저 주소](ko/RELEASE-v0.5.1.md)
 - [단일 EXE와 중복 실행 방지](ko/SINGLE-EXE.md)
+- [0.8.0](ko/RELEASE-v0.8.0.md)
 - [0.7.0](ko/RELEASE-v0.7.0.md)
 - [0.6.0](ko/RELEASE-v0.6.0.md)

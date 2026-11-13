@@ -264,6 +264,29 @@ class RigTests(unittest.TestCase):
         pet.cancel_bite()
         self.assertIsNone(pet.reaction)
 
+    def test_2_5d_multiplane_parallax_animates_head_and_torso_with_depth(self):
+        spec = safe_character({**self.spec, "representation": "2.5d_parallax"})
+        self.assertEqual(spec.get("representation"), "2.5d_parallax")
+
+        def render(phase, pose="walk"):
+            image = QImage(144, 144, QImage.Format.Format_ARGB32)
+            image.fill(0)
+            painter = QPainter(image)
+            draw_character(painter, spec, phase, pose=pose)
+            painter.end()
+            return image
+
+        walk_a = render(0.5, "walk")
+        walk_b = render(2.1, "walk")
+        hover = render(1.0, "hover")
+
+        # In 2.5D parallax mode, head and torso tilt/sway across phases, moving silhouette boundaries
+        self.assertNotEqual(walk_a, walk_b)
+        # Head boundary at (38, 8, 10, 20) shifts due to head sway/tilt
+        self.assertNotEqual(walk_a.copy(38, 8, 10, 20), walk_b.copy(38, 8, 10, 20))
+        # Hover pose tilts head inquisitively towards viewer
+        self.assertNotEqual(walk_a, hover)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -84,7 +84,10 @@ class ArtReviewTests(unittest.TestCase):
                     art_policy.review_art_prompt("독창적인 캐릭터 설명")
 
     def test_image_invalid_coordinates_and_missing_model_name_are_actionable(self):
-        from test_artwork import png
+        try:
+            from .test_artwork import png
+        except ImportError:
+            from test_artwork import png
         output = {"message": {"content": json.dumps({"verdict": "allow", "identity": "none", "single_character": True, "mouth_x": 50, "mouth_y": .5})}}
         with patch("pawzura.art_policy.build_opener") as opener:
             opener.return_value.open.return_value = response(output)
@@ -99,6 +102,21 @@ class ArtReviewTests(unittest.TestCase):
             self.assertIn("ollama pull qwen3-vl:2b", dialog.status.text())
             dialog.preview.timer.stop()
             dialog.deleteLater()
+
+    def test_translated_prompt_strips_negated_clauses_that_poison_clip(self):
+        description = "독창적인 작은 SD 수달 캐릭터. 모자·배낭·받침대·글자 없음."
+        noisy = "Anthropomorphic furry brown otter mascot with mint green vest, no hat, no backpack, no pedestal, no text."
+        with patch("pawzura.art_policy.build_opener") as opener:
+            opener.return_value.open.side_effect = [
+                response({"response": '{"verdict":"allow"}'}),
+                response({"response": json.dumps({"prompt": noisy})}),
+            ]
+            result = art_policy.review_art_prompt(description)
+            second = json.loads(opener.return_value.open.call_args_list[1].args[0].data)
+            self.assertIn("수달", json.loads(second["prompt"])["subject_pose_hints"])
+        self.assertIn("otter mascot", result)
+        for bad in ("no hat", "no backpack", "no pedestal", "no text"):
+            self.assertNotIn(bad, result.lower())
 
 
 if __name__ == "__main__":

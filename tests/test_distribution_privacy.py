@@ -51,3 +51,14 @@ class DistributionPrivacyTests(unittest.TestCase):
             (root / "export.json").write_text('{"profiles":{"Work":{}}}', encoding="utf-8")
             with self.assertRaises(ValueError):
                 check_distribution(root)
+
+    def test_build_script_copies_all_art_runtime_modules_and_manifests(self):
+        build_text = Path(__file__).resolve().parents[1].joinpath("scripts", "build.py").read_text(encoding="utf-8")
+        runtime_dir = Path(__file__).resolve().parents[1] / "art_runtime"
+        expected = {
+            path.name
+            for path in runtime_dir.iterdir()
+            if path.is_file() and path.name != "__init__.py" and path.suffix.lower() in (".py", ".json", ".txt", ".ps1")
+        }
+        missing = sorted(name for name in expected if f'"{name}"' not in build_text)
+        self.assertEqual(missing, [])

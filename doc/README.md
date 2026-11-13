@@ -51,6 +51,7 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [0.2.2 Local review fixes](en/RELEASE-v0.2.2.md)
 
 - [Experimental 8 GB pose-assisted 3D motion](en/3D-MOTION.md)
+- [3D reconstruction, rigging, and stylized motion references](en/3D-RIGGING-AND-MOTION-REFERENCES.md)
 
 - [Local character library and saved preparation](en/CHARACTER-LIBRARY.md)
 - [0.4.0 directional motion and character storage](en/RELEASE-v0.4.0.md)
@@ -59,5 +60,6 @@ English is the default. Every project-authored guide has a Korean counterpart.
 - [0.5.0 pin and drag controls](en/RELEASE-v0.5.0.md)
 - [0.5.1 local browser addresses](en/RELEASE-v0.5.1.md)
 - [Standalone EXE and one active companion](en/SINGLE-EXE.md)
+- [0.8.0](en/RELEASE-v0.8.0.md)
 - [0.7.0](en/RELEASE-v0.7.0.md)
 - [0.6.0](en/RELEASE-v0.6.0.md)

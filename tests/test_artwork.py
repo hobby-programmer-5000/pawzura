@@ -319,6 +319,29 @@ class ArtworkTests(unittest.TestCase):
         dialog.deleteLater()
         parent.deleteLater()
 
+    def test_pose_tier_selection_matches_vram_and_uses_safe_allow_patterns(self):
+        self.assertEqual(runner.pose_key_for_vram(vram_gb=12.0, tier=8), "pose_huge")
+        self.assertEqual(runner.pose_candidates(vram_gb=12.0, tier=8), ("pose_huge", "pose_large", "pose"))
+        self.assertEqual(runner.pose_key_for_vram(vram_gb=8.0, tier=8), "pose_large")
+        self.assertEqual(runner.pose_candidates(vram_gb=8.0, tier=8), ("pose_large", "pose"))
+        self.assertEqual(runner.pose_key_for_vram(vram_gb=4.0, tier=8), "pose")
+        self.assertEqual(runner.pose_candidates(vram_gb=8.0, tier=6), ("pose",))
+
+        download = Mock(return_value="pose-large-snap")
+        module = SimpleNamespace(snapshot_download=download)
+        with patch.dict(sys.modules, {"huggingface_hub": module}):
+            self.assertEqual(runner.snapshot("pose_large", self.root, True), "pose-large-snap")
+        arguments = download.call_args.kwargs
+        self.assertFalse(arguments["token"])
+        self.assertEqual(arguments["revision"], runner.CATALOG["pose_large"]["revision"])
+        self.assertEqual(arguments["allow_patterns"], ["config.json", "preprocessor_config.json", "model.safetensors"])
+
+        with patch.object(runner, "detected_vram_gb", return_value=12.0), \
+             patch.object(runner, "snapshot", side_effect=[FileNotFoundError("no huge"), "pose-large-local", "pose-base-local"]) as snap_mock:
+            path, key = runner.resolve_pose_snapshot(self.root, tier=8)
+        self.assertEqual((path, key), ("pose-large-local", "pose_large"))
+        self.assertEqual([c.args[0] for c in snap_mock.call_args_list], ["pose_huge", "pose_large"])
+
 
 
 if __name__ == "__main__":

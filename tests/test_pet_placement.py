@@ -12,7 +12,7 @@ from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QApplication
 from pawzura.app import Companion
 from pawzura.config import Settings, default_character
-from pawzura.pet import Pet, fit_pet_position
+from pawzura.pet import Pet, fit_pet_position, logical_to_physical, physical_center_to_logical
 from pawzura.ui import SettingsDialog
 
 
@@ -214,6 +214,35 @@ class PlacementTests(unittest.TestCase):
             dialog.pin.setChecked(False)
             dialog.save()
             self.assertIsNone(self.settings.snapshot()["pet_position"])
+
+    def test_mixed_dpi_bite_leap_avoids_logical_gap_and_switches_owning_screen(self):
+        left = SimpleNamespace(geometry=lambda: QRect(-1920, 0, 1536, 864), availableGeometry=lambda: QRect(-1920, 0, 1536, 824), devicePixelRatio=lambda: 1.25)
+        center = SimpleNamespace(geometry=lambda: QRect(0, 0, 1920, 1080), availableGeometry=lambda: QRect(0, 0, 1920, 1040), devicePixelRatio=lambda: 1.0)
+        screens = [left, center]
+        _, phys = logical_to_physical(QPointF(-420, 200), screens)
+        self.assertAlmostEqual(phys.x(), -45.0, places=3)
+        scr_l, pos_l = physical_center_to_logical(QPointF(-5, 300), 144, 146, screens)
+        self.assertIs(scr_l, left)
+        self.assertLessEqual(pos_l.x() + 72, -385)
+        scr_c, pos_c = physical_center_to_logical(QPointF(5, 300), 144, 146, screens)
+        self.assertIs(scr_c, center)
+        self.assertAlmostEqual(pos_c.x(), -67.0, places=3)
+        with patch.object(self.pet, "screens", return_value=screens), \
+             patch.object(self.pet, "use_screen") as use_screen, \
+             patch.object(self.pet, "move"):
+            self.pet.px, self.pet.py = 1000.0, 894.0
+            with patch("pawzura.pet.time.monotonic", return_value=100.0):
+                self.pet.bite(QPointF(-420, 200), lambda: None)
+            xs = []
+            for ts in (100.2, 100.45, 100.55, 100.70, 100.80, 101.20, 101.50, 101.80):
+                with patch("pawzura.pet.time.monotonic", return_value=ts):
+                    self.pet.tick()
+                chosen = use_screen.call_args.args[0] if use_screen.call_args else None
+                if chosen is left:
+                    self.assertLessEqual(self.pet.px, -456.0)
+                xs.append((chosen, self.pet.px))
+            self.assertTrue(any(c is left for c, _ in xs))
+            self.assertTrue(any(c is center for c, _ in xs))
 
 
 if __name__ == "__main__":

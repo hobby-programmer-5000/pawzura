@@ -23,11 +23,76 @@ def fit_pet_position(point, size, areas):
     return index, fitted
 
 
+def _screen_physical_rect(screen) -> QRectF:
+    """Return screen bounds in physical virtual-desktop pixels."""
+    geometry = screen.geometry()
+    dpr = max(1.0, float(screen.devicePixelRatio()))
+    return QRectF(geometry.x(), geometry.y(), geometry.width() * dpr, geometry.height() * dpr)
+
+
+def _pick_screen(point: QPointF, screens, rect_fn):
+    """Pick the screen enclosing `point`, falling back to the nearest screen."""
+    if not screens:
+        return None
+    px, py = point.x(), point.y()
+    best, best_dist = None, float("inf")
+    for screen in screens:
+        rect = rect_fn(screen)
+        if rect.left() <= px < rect.right() and rect.top() <= py < rect.bottom():
+            return screen
+        cx = max(rect.left(), min(px, rect.right()))
+        cy = max(rect.top(), min(py, rect.bottom()))
+        dist = (cx - px) ** 2 + (cy - py) ** 2
+        if dist < best_dist:
+            best, best_dist = screen, dist
+    return best
+
+
+def logical_to_physical(point: QPointF, screens=None):
+    """Convert a Qt logical point into `(screen, physical_point)`."""
+    screens = QApplication.screens() if screens is None else screens
+    screen = _pick_screen(point, screens, lambda s: QRectF(s.geometry()))
+    if screen is None:
+        return None, QPointF(point)
+    geometry = screen.geometry()
+    dpr = max(1.0, float(screen.devicePixelRatio()))
+    return screen, QPointF(geometry.x() + (point.x() - geometry.x()) * dpr,
+                           geometry.y() + (point.y() - geometry.y()) * dpr)
+
+
+def physical_center_to_logical(phys_center: QPointF, width: float, height: float, screens=None):
+    """Map a physical center to `(target_screen, logical_top_left)` avoiding mixed-DPI gaps."""
+    screens = QApplication.screens() if screens is None else screens
+    screen = _pick_screen(phys_center, screens, _screen_physical_rect)
+    if screen is None:
+        return None, QPointF(phys_center.x() - width / 2, phys_center.y() - height / 2)
+    geometry = screen.geometry()
+    dpr = max(1.0, float(screen.devicePixelRatio()))
+    return screen, QPointF(geometry.x() + (phys_center.x() - geometry.x()) / dpr - width / 2,
+                           geometry.y() + (phys_center.y() - geometry.y()) / dpr - height / 2)
+
+
+def _place_overlay(widget: QWidget, point: QPointF, offset_x: float, offset_y: float):
+    """Attach an overlay window to the screen owning its target before moving."""
+    screens = QApplication.screens()
+    src_screen, phys_point = logical_to_physical(point, screens)
+    dpr = max(1.0, float(src_screen.devicePixelRatio())) if src_screen is not None else 1.0
+    phys_center = phys_point + QPointF((offset_x + widget.width() / 2) * dpr, (offset_y + widget.height() / 2) * dpr)
+    target_screen, pos = physical_center_to_logical(phys_center, widget.width(), widget.height(), screens)
+    handle = widget.windowHandle()
+    if handle is None and widget.testAttribute(Qt.WidgetAttribute.WA_WState_Created) is False:
+        widget.winId()
+        handle = widget.windowHandle()
+    if target_screen is not None and handle is not None and handle.screen() != target_screen:
+        handle.setScreen(target_screen)
+    widget.move(round(pos.x()), round(pos.y()))
+
+
 def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=False, pose="walk", motion_clip=None, motion_time=None):
     p = painter
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
     p.save()
-    if spec.get("kind") == "artwork" and spec.get("animation_id"):
+    if spec.get("kind") == "artwork" and spec.get("animation_id") and spec.get("representation") != "2.5d_parallax":
         from .motion_pack import frame
         clip = motion_clip or (("bite_right" if facing >= 0 else "bite_left") if biting else
                                ("walk_right" if facing >= 0 else "walk_left") if pose == "walk" else
@@ -51,7 +116,7 @@ def draw_character(painter: QPainter, spec: dict, phase=0.0, facing=1, biting=Fa
                 p.rotate(math.sin(phase) * 2)
                 p.translate(-72, -136 - abs(math.sin(phase)) * 3)
             from .art_rig import draw_rig
-            if not draw_rig(p, spec, phase, "bite" if biting else pose):
+            if not draw_rig(p, spec, phase, "bite" if biting else pose, facing=facing):
                 p.drawImage(QRectF(0, 0, 144, 144), image)
             if biting:
                 x, y = 144 * spec["mouth_x"], 144 * spec["mouth_y"]
@@ -271,7 +336,6 @@ class Crack(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.resize(150, 150)
-        self.move(round(point.x()) - 75, round(point.y()) - 75)
         self.born = time.monotonic()
         self.label = label
         self.timer = QTimer(self)
@@ -279,7 +343,7 @@ class Crack(QWidget):
         self.show_at(point, label)
 
     def show_at(self, point, label):
-        self.move(round(point.x()) - 75, round(point.y()) - 75)
+        _place_overlay(self, point, -75, -75)
         self.label = label
         self.born = time.monotonic()
         self.timer.start(30)
@@ -323,12 +387,10 @@ class TabTarget(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.resize(180, 44)
-        self.move(round(point.x()) - 158, round(point.y()) - 22)
-        self.label = label
-        self.show()
+        self.show_at(point, label)
 
     def show_at(self, point, label):
-        self.move(round(point.x()) - 158, round(point.y()) - 22)
+        _place_overlay(self, point, -158, -22)
         self.label = label
         self.show()
         self.update()
@@ -567,8 +629,12 @@ class Pet(QWidget):
             else:
                 self.tab_marker.show_at(point, label)
             marker = self.tab_marker
-        # An action can face its target without changing the saved walking preference.
-        self.direction = 1 if point.x() >= self.px + 72 else -1
+        screens = self.screens()
+        from_pos = QPointF(self.px, self.py)
+        from_screen, from_phys_center = logical_to_physical(from_pos + QPointF(72, 73), screens)
+        point_screen, phys_point = logical_to_physical(point, screens)
+        # Compare in physical pixels so mixed-DPI seams cannot invert facing direction.
+        self.direction = 1 if phys_point.x() >= from_phys_center.x() else -1
         anchor = QPointF(77 if self.direction >= 0 else 144 - 77, 82)
         if self.spec.get("kind") == "artwork":
             from .artwork import load_artwork
@@ -581,9 +647,17 @@ class Pet(QWidget):
             item = frame(self.spec, "bite_right" if self.direction >= 0 else "bite_left", .72)
             if item is not None:
                 anchor = QPointF(144 * item[1][0], 144 * item[1][1])
-        self.action = {"start": time.monotonic(), "from": QPointF(self.px, self.py),
-                       "to": point - anchor, "point": point, "callback": callback, "hit": False, "label": label,
-                       "marker": marker}
+        from_dpr = max(1.0, float(from_screen.devicePixelRatio())) if from_screen is not None else 1.0
+        to_dpr = max(1.0, float(point_screen.devicePixelRatio())) if point_screen is not None else 1.0
+        to_phys_center = phys_point + QPointF((72 - anchor.x()) * to_dpr, (73 - anchor.y()) * to_dpr)
+        _, to_pos = physical_center_to_logical(to_phys_center, 144, 146, screens)
+        self.action = {
+            "start": time.monotonic(), "from": from_pos, "to": to_pos,
+            "from_phys": from_phys_center, "to_phys": to_phys_center,
+            "from_dpr": from_dpr, "to_dpr": to_dpr,
+            "phys_point": phys_point, "point_dpr": to_dpr,
+            "point": point, "callback": callback, "hit": False, "label": label, "marker": marker,
+        }
         # Even when the pet is hidden, preserve the timing for browser close acknowledgements.
         return True
 
@@ -604,6 +678,9 @@ class Pet(QWidget):
         if recover:
             self.home()
         else:
+            screen = _pick_screen(QPointF(self.px + 72, self.py + 73), self.screens(), lambda s: QRectF(s.geometry()))
+            if screen is not None:
+                self.use_screen(screen)
             self.move(round(self.px), round(self.py))
 
     def clear_marker(self):
@@ -651,23 +728,29 @@ class Pet(QWidget):
         if not self.action and not self.reaction and not self.hovered and now >= self.next_idle:
             self.react("wave")
             self.next_idle = now + random.uniform(12, 20)
+        action_screen = None
         action = self.action
         if action:
+            screens = self.screens()
             elapsed = now - action["start"]
             if self.has_motion():
                 self.motion_clip = "bite_right" if self.direction >= 0 else "bite_left"
                 self.motion_time = min(elapsed, .99)
             if elapsed <= 0.72:
                 t = elapsed / 0.72
-                pos = action["from"] * (1 - t) + action["to"] * t
-                pos.setY(pos.y() - math.sin(t * math.pi) * 120)
+                dpr = action["from_dpr"] * (1 - t) + action["to_dpr"] * t
+                phys_c = action["from_phys"] * (1 - t) + action["to_phys"] * t
+                phys_c.setY(phys_c.y() - math.sin(t * math.pi) * 120 * dpr)
+                action_screen, pos = physical_center_to_logical(phys_c, 144, 146, screens)
             elif elapsed < 1.0:
-                pos = action["to"]
+                phys_c = QPointF(action["to_phys"])
                 if self.has_motion():
                     from .motion_pack import frame
                     item = frame(self.spec, self.motion_clip, elapsed)
                     if item is not None:
-                        pos = action["point"] - QPointF(item[1][0] * 144, item[1][1] * 144)
+                        dpr = action["point_dpr"]
+                        phys_c = action["phys_point"] + QPointF((72 - item[1][0] * 144) * dpr, (73 - item[1][1] * 144) * dpr)
+                action_screen, pos = physical_center_to_logical(phys_c, 144, 146, screens)
                 if not action["hit"]:
                     action["hit"] = True
                     if self.isVisible():
@@ -684,18 +767,20 @@ class Pet(QWidget):
                         return  # Cancellation/recovery must not restore the stale jump coordinates.
             elif elapsed < 1.75:
                 t = (elapsed - 1.0) / 0.75
-                pos = action["to"] * (1 - t) + action["from"] * t
-                pos.setY(pos.y() - math.sin(t * math.pi) * 80)
+                dpr = action["to_dpr"] * (1 - t) + action["from_dpr"] * t
+                phys_c = action["to_phys"] * (1 - t) + action["from_phys"] * t
+                phys_c.setY(phys_c.y() - math.sin(t * math.pi) * 80 * dpr)
+                action_screen, pos = physical_center_to_logical(phys_c, 144, 146, screens)
             else:
-                pos = action["from"]
+                pos = QPointF(action["from"])
                 self.clear_marker()
                 self.action = None
                 self.direction = self.walk_direction
                 # Return to the current desktop floor, even if the saved launch
                 # point was stale after a display/overlay geometry transition.
-                screen = QApplication.screenAt((pos + QPointF(72,72)).toPoint()) or QApplication.primaryScreen()
-                if screen:
-                    area = screen.availableGeometry()
+                action_screen = _pick_screen(pos + QPointF(72, 72), screens, lambda s: QRectF(s.geometry())) or QApplication.primaryScreen()
+                if action_screen:
+                    area = action_screen.availableGeometry()
                     pos.setX(max(area.left(), min(pos.x(), area.right() - self.width() + 1)))
                     pos.setY(max(area.top(), min(pos.y(), area.bottom() - self.height() + 1)) if self.pinned else
                              max(area.top(), area.bottom() - self.height() + 1))
@@ -739,6 +824,8 @@ class Pet(QWidget):
             elapsed = max(0, min(1, (now - self.reaction["start"]) / self.reaction["duration"]))
             screen = QApplication.screenAt(QPointF(self.px + 72, self.py + 72).toPoint()) or QApplication.primaryScreen()
             display_y = max(screen.availableGeometry().top(), self.py - math.sin(elapsed * math.pi) * 28) if screen else self.py
+        if action_screen is not None:
+            self.use_screen(action_screen)
         self.move(round(self.px), round(display_y))
         self.update()
 

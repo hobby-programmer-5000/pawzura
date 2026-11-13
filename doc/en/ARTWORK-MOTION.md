@@ -15,7 +15,7 @@ An uncertain estimate does not discard an otherwise approved picture. The comple
 ## Add or correct motion on an existing picture
 
 1. Open **Settings → Character → Edit hand/foot motion…**. This button is available when the selected character is artwork. In the artwork creation dialog, the same button edits the approved preview.
-2. Optional: click **Prepare CPU motion helper (~350 MB)** once, then **Estimate joints automatically**. Internet is needed for preparation. The helper uses local CPU inference, not Ollama or GPU VRAM; imports/model loading can take several seconds. Stage, elapsed time and time since the last report remain visible. Preparation reuses the isolated image runtime and can also install/update its packages; on a fresh machine it downloads much more than the helper's weights. Manual editing needs no helper download.
+2. Optional: click **Prepare motion helper (VRAM-matched)** once, then **Estimate joints automatically**. Internet is needed for preparation. The helper uses FP16 CUDA when a GPU is available (~1.7 GB `vitpose-plus-large` on 8 GB+, ~3.4 GB `vitpose-plus-huge` on 12 GB+) and falls back cleanly to local CPU `vitpose-base-simple` (~350 MB) on smaller cards or CPU-only setups. Stage, elapsed time and time since the last report remain visible. Preparation reuses the isolated image runtime and can also install/update its packages; on a fresh machine it downloads much more than the helper's weights. Manual editing needs no helper download.
 3. Select each of the four parts. **Image-left/right means the side of the picture**, not the character's anatomical left/right. The colored outline selects pixels; the circle is the rotation joint.
 4. Drag inside an outline to move it, a square corner to resize it, or the circle to move its joint. Drag empty space to replace that part with a rectangle. Keep each region around that limb, clear of the head/torso and other limbs. Put an arm joint near its elbow/top and a foot joint near the top of the boot.
 5. Inspect **Walk, Wave, Hop and Cheer** in the live preview. Correct misplaced areas or excessive seams. For difficult artwork, smaller hand regions may look better than including a whole sleeve.
@@ -36,8 +36,18 @@ These reactions do not close anything and do not replace a pending guardian acti
 
 ## Helper, privacy and limits
 
-The optional helper is [usyd-community/vitpose-base-simple](https://huggingface.co/usyd-community/vitpose-base-simple), pinned in [the catalog](../../art_runtime/catalog.json), approximately 350 MB, **Apache-2.0**. Its processor uses **SciPy (BSD-3-Clause)**. Original licenses are in [third-party notices](THIRD-PARTY-NOTICES.md). Pawzura remains MIT. Weights are downloaded separately, not bundled in the app.
+The optional helper automatically picks a ViTPose checkpoint matched to detected GPU VRAM: [usyd-community/vitpose-base-simple](https://huggingface.co/usyd-community/vitpose-base-simple) (~350 MB, under 8 GB/CPU), [usyd-community/vitpose-plus-large](https://huggingface.co/usyd-community/vitpose-plus-large) (~1.7 GB, 8 GB+), or [usyd-community/vitpose-plus-huge](https://huggingface.co/usyd-community/vitpose-plus-huge) (~3.4 GB, 12 GB+), all pinned in [the catalog](../../art_runtime/catalog.json) under **Apache-2.0**. Its processor uses **SciPy (BSD-3-Clause)**. Original licenses are in [third-party notices](THIRD-PARTY-NOTICES.md). Pawzura remains MIT. Weights are downloaded separately, not bundled in the app.
 
 This is editable **2D cutout animation**. The helper estimates human-style landmarks; animals, tiny/hidden limbs, unusual silhouettes and handheld objects can produce bad areas or no estimate. It cannot invent missing fingers, hidden anatomy or new perspectives. Moving a sleeve can reveal gaps; simple edge blending may leave seams, stretched colors or clipped pixels. Adjust the regions/joints, reduce the region to the hand, or disable the feature if needed. Four valid regions are required to enable this version of the rig. This is not an AI-generated walking video or a fully articulated 3D character.
+
+## 2.5D multiplane parallax representation (Live2D / Spine style)
+
+When a character is classified as pure 2D flat cel-shaded (`flat_2d`) or configured with `"representation": "2.5d_parallax"`, Pawzura renders the cutout pieces across 4 depth-ordered planes without 3D polygon warping:
+- **Far limbs ($Z = -1$)**: $0.97\times$ depth scale and negative horizontal parallax offset.
+- **Torso core ($Z = 0$)**: Subtle breathing rhythm ($1.2\sin(2\phi)$) and natural spine tilt ($\pm 1.5^\circ\sin\phi$).
+- **Head core ($Z = +0.5$)**: Disney follow-through lag ($\Delta\phi = 0.35$), gentle sway ($\pm 2.6^\circ$), and curiosity hover tilt ($+3.5^\circ$) when the mouse hovers over the companion. A 4-px smooth neck overlap prevents seams or gaps.
+- **Near limbs ($Z = +1$)**: $1.03\times$ depth scale and forward horizontal parallax offset.
+
+This preserves 100% of the hand-drawn 2D artwork pixels with zero polygon stretching or wafer collapse, providing responsive living depth.
 
 Only bounded polygon/joint coordinates are saved with the local character. Approved pixels are sent to the local helper through stdin; paths/prompts are not exported. The original image's existing safety checks still apply. See [privacy](PRIVACY.md) and [tested coverage](VALIDATION.md).

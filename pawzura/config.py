@@ -77,6 +77,8 @@ def safe_character(raw) -> dict:
             result["rig"] = rig
         if valid_art_id(raw.get("animation_id")):
             result["animation_id"] = raw["animation_id"]
+        if raw.get("representation") in ("2.5d_parallax", "2.5d_volumetric", "3d_mesh"):
+            result["representation"] = raw["representation"]
         return result
     result = validate_character({**default_character(), **raw}, seed)
     result["source"] = raw.get("source") if raw.get("source") in ("qwen", "custom") else "random"

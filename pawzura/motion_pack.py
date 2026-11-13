@@ -48,11 +48,11 @@ def validate_pack(data, source_id):
             manifest = json.loads(raw)
             if (not isinstance(manifest, dict) or manifest.get("version") != 1 or
                     type(manifest.get("version")) is not int or manifest.get("source_art_id") != source_id or
-                    manifest.get("backend") != "triposr-pose-v1" or manifest.get("size") != 256 or
+                    manifest.get("backend") not in ("triposr-pose-v1", "triposr-pose-v2") or manifest.get("size") != 256 or
                     type(manifest.get("fps")) is not int or manifest["fps"] != 30 or
                     not isinstance(manifest.get("clips"), dict) or set(manifest["clips"]) != CLIPS):
                 raise ValueError("Incompatible motion manifest")
-            clean = {"version": 1, "source_art_id": source_id, "backend": "triposr-pose-v1",
+            clean = {"version": 1, "source_art_id": source_id, "backend": manifest["backend"],
                      "size": 256, "fps": 30, "clips": {}}
             expected = {"manifest.json"}
             images = {}

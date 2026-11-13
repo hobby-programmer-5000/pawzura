@@ -44,7 +44,7 @@ CPython 표준 바이너리 확장의 구성은 버전과 import 그래프에 �
 | Qwen3-VL 2B Instruct / Ollama `qwen3-vl:2b` | Apache-2.0 · [공식 모델](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct) · [Ollama 패키지](https://ollama.com/library/qwen3-vl:2b) | 로컬 그림 검사. 위의 Qwen2.5 1.5B는 설명 검사 |
 | Falconsai/nsfw_image_detection | Apache-2.0 · [모델 카드](https://huggingface.co/Falconsai/nsfw_image_detection) · [원문](../../licenses/upstream/Apache-2.0.txt) | CPU ViT 분류기, 완벽한 안전 보장 아님 |
 | U2NetP ONNX | Apache-2.0 · [미러](https://huggingface.co/edgetools/u2netp) · [원본 U-2-Net 라이선스](../../licenses/upstream/creative-models/U2Net-LICENSE.txt) | CPU 배경 제거 |
-| ViTPose base simple | Apache-2.0 · [모델 카드](https://huggingface.co/usyd-community/vitpose-base-simple) · [원문](../../licenses/upstream/creative-models/ViTPose-LICENSE.txt) | 선택형 CPU 손발 관절 추정. revision 고정, 가중치 미동봉 |
+| ViTPose (`vitpose-base-simple`, `vitpose-plus-large`, `vitpose-plus-huge`) | Apache-2.0 · [base](https://huggingface.co/usyd-community/vitpose-base-simple) · [plus-large](https://huggingface.co/usyd-community/vitpose-plus-large) · [plus-huge](https://huggingface.co/usyd-community/vitpose-plus-huge) · [원문](../../licenses/upstream/creative-models/ViTPose-LICENSE.txt) | 선택형 VRAM 자동 맞춤 손발 관절 추정(`base` CPU·8 GB 미만, `plus-large` 8 GB+, `plus-huge` 12 GB+ FP16 CUDA). revision 고정, 가중치 미동봉 |
 | SciPy 1.16.3 | BSD-3-Clause·포함 고지 · [원문](../../licenses/upstream/creative-models/SciPy-LICENSE.txt) | 선택형 자세 모델 전후 처리. 설치 wheel의 포함 의존성 고지 유지 |
 | uv 0.13.6 | MIT OR Apache-2.0 · [MIT](../../licenses/upstream/creative-models/uv-LICENSE-MIT.txt) · [Apache](../../licenses/upstream/creative-models/uv-LICENSE-APACHE.txt) | 공식 파일 체크섬 검증 후 환경 준비 |
 | 별도 CPython 3.12.14 | PSF·포함 고지 · [python-build-standalone](https://github.com/astral-sh/python-build-standalone) | 격리된 그림 인터프리터, 원본 배포의 고지 유지 |
@@ -64,7 +64,7 @@ CPython 표준 바이너리 확장의 구성은 버전과 import 그래프에 �
 | --- | --- | --- |
 | TripoSR 코드·체크포인트 | 소스 `107cefdc244c39106fa830359024f6a2f1c78871`, 가중치 `5b521936b01fbe1890f6f9baed0254ab6351c04a`, **MIT** · [원문](../../licenses/upstream/triposr/LICENSE) · [모델 카드](https://huggingface.co/stabilityai/TripoSR) | 단일 이미지의 공유 장면·시점·형상. 원본 유지, 별도 수정본에서 미사용 rembg/torchmcubes import 지연. 표면 추출·리깅·저장은 앱 코드 |
 | DINO ViT-B/16 설정 | `f205d5d8e640a89a2b8ef0369670dfc37cc07fc2`, **Apache-2.0** · [모델 카드](https://huggingface.co/facebook/dino-vitb16) · [원문](../../licenses/upstream/Apache-2.0.txt) | TripoSR 이미지 인코더 설정. 별도 DINO 사전학습 가중치는 다운로드하지 않음 |
-| ViTPose | 위의 기존 revision 고정 Apache-2.0 모델 | 관절의 표면 투영을 돕는 CPU 포즈 모델. 전문 학습형 3D 리깅 모델은 아님 |
+| ViTPose | 위의 revision 고정 Apache-2.0 등급(`vitpose-base-simple`, `vitpose-plus-large`, `vitpose-plus-huge`) | 관절의 표면 투영을 돕는 VRAM 자동 맞춤 포즈 모델. 전문 학습형 3D 리깅 모델은 아님 |
 | einops | 0.7.0, MIT · [원문](../../licenses/upstream/creative-models/einops-LICENSE.txt) | 텐서 배열 변환 |
 | OmegaConf | 2.3.0, BSD-3-Clause · [원문](../../licenses/upstream/creative-models/omegaconf-LICENSE.txt) | 신뢰하는 공식 모델 설정 |
 | ANTLR4 Python runtime | OmegaConf가 선택한 4.9.3, BSD-3-Clause·포함 조건 · [원문](../../licenses/upstream/creative-models/ANTLR4-LICENSE.txt) | 설정 파서. 설치 구성요소 고지 유지 |

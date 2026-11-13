@@ -62,8 +62,11 @@ class MotionPackTests(unittest.TestCase):
         for data,source in [(self.data,'a'*64),(fixture(self.source,lambda m:m['clips']['walk_left'][0].update(mouth=[float('nan'),.5])),self.source),
                             (fixture(self.source,lambda m:m['clips']['walk_left'][0].update(file='../outside.png')),self.source),
                             (fixture(self.source,extra=('generated.py','raise RuntimeError()')),self.source),
+                            (fixture(self.source,lambda m:m.update(backend='triposr-pose-v99')),self.source),
                             (fixture(self.source,lambda m:m['clips']['walk_left'][0].update(sha256='0'*64)),self.source)]:
             with self.assertRaises(ValueError):motion_pack.validate_pack(data,source)
+        clean_v2, _ = motion_pack.validate_pack(fixture(self.source, lambda m: m.update(backend='triposr-pose-v2')), self.source)
+        self.assertEqual(clean_v2['backend'], 'triposr-pose-v2')
         self.assertIsNone(motion_pack.load_pack(self.digest,'b'*64))
 
     def test_source_bound_pack_persists_and_draws_left_view_without_bitmap_mirroring(self):

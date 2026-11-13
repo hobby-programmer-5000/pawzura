@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pawzura"
-version = "0.7.0"
+version = "0.8.0"
 description = "An original SD desktop companion with an opt-in focus guardian for Windows"
 requires-python = ">=3.12"
 license = "MIT"

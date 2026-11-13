@@ -8,6 +8,8 @@ import subprocess
 import sys
 import threading
 import time
+from urllib.error import HTTPError, URLError
+from urllib.request import ProxyHandler, Request, build_opener
 
 from .characters import DETAIL_MODEL, GenerationError
 from .art_policy import VISION_MODEL, review_art_image, review_art_prompt
@@ -20,7 +22,8 @@ PROGRESS_PREFIX = b"PAWZURA_PROGRESS "
 PROGRESS_STAGES = frozenset({"art_loading", "art_sampling", "art_decoding", "art_scanning",
                              "art_cutting", "art_downloading", "art_runtime_tool", "art_runtime_python",
                              "art_runtime_torch", "art_runtime_packages", "art_runtime_notices", "art_rigging", "art_pose_downloading",
-                             "motion_downloading", "motion_reconstructing", "motion_views", "motion_rigging", "motion_baking", "motion_validating", "motion_cached"})
+                             "art_review_models",
+                             "motion_downloading", "motion_reconstructing", "motion_views", "motion_refining", "motion_rigging", "motion_baking", "motion_validating", "motion_cached"})
 
 
 def progress_event(line):
@@ -37,6 +40,14 @@ def progress_event(line):
             if type(done) is not int or type(total) is not int or not 0 <= done <= total <= 100000 or total == 0:
                 return None
             result.update(completed=done, total=total)
+        for key in ("item_name", "model_name", "status_text"):
+            val = raw.get(key)
+            if isinstance(val, str) and 0 < len(val) <= 128:
+                result[key] = val
+        for key in ("bytes_completed", "bytes_total"):
+            val = raw.get(key)
+            if type(val) is int and 0 <= val <= 200 * 1024 * 1024 * 1024:
+                result[key] = val
         return result
     except (ValueError, TypeError):
         return None
@@ -196,6 +207,90 @@ def worker(action, tier, payload=None, root=None, progress=None):
         raise GenerationError("art_runtime_failed") from None
 
 
+def model_friendly_name(model_id):
+    if "Qwen2.5-1.5B" in model_id or "qwen2.5:1.5b" in model_id:
+        return "Qwen2.5 1.5B"
+    if "qwen3-vl" in model_id:
+        return "Qwen3-VL 2B"
+    return model_id.split("/")[-1].split(":")[0]
+
+
+def _pull_ollama_model(model, index, total, progress):
+    """Pull an Ollama model using local HTTP streaming API with live byte and percent reporting.
+    Falls back to subprocess ollama.exe pull if the local API is unreachable."""
+    friendly = model_friendly_name(model)
+    progress({
+        "stage": "art_review_models",
+        "completed": index,
+        "total": total,
+        "model_name": friendly,
+        "status_text": "connecting",
+    })
+
+    url = "http://127.0.0.1:11434/api/pull"
+    payload = json.dumps({"model": model, "stream": True}).encode("utf-8")
+    req = Request(url, data=payload, headers={"Content-Type": "application/json"})
+    opener = build_opener(ProxyHandler({}))
+
+    pulled_via_http = False
+    try:
+        with opener.open(req, timeout=120) as resp:
+            max_total = 0
+            last_report = 0.0
+            last_completed = -1
+            for raw_line in resp:
+                if not raw_line:
+                    continue
+                try:
+                    data = json.loads(raw_line.decode("utf-8", errors="replace"))
+                except Exception:
+                    continue
+                pulled_via_http = True
+                status = data.get("status", "")
+                tot = data.get("total")
+                done = data.get("completed")
+
+                if tot and isinstance(tot, int) and tot > max_total:
+                    max_total = tot
+
+                now = time.monotonic()
+                reported_done = done if (done and tot and tot >= max_total) else (max_total if max_total > 0 and status in ("verifying sha256 digest", "writing manifest", "success") else None)
+                reported_tot = max_total if max_total > 0 else (tot if isinstance(tot, int) else None)
+
+                should_report = (
+                    now - last_report >= 0.15 or
+                    status == "success" or
+                    (reported_done is not None and reported_done != last_completed and reported_tot and (reported_done == reported_tot or abs(reported_done - (last_completed or 0)) >= 10 * 1024 * 1024))
+                )
+                if should_report:
+                    event = {
+                        "stage": "art_review_models",
+                        "completed": index,
+                        "total": total,
+                        "model_name": friendly,
+                        "status_text": status,
+                    }
+                    if reported_tot is not None:
+                        event["bytes_total"] = reported_tot
+                    if reported_done is not None:
+                        event["bytes_completed"] = reported_done
+                    progress(event)
+                    last_report = now
+                    if reported_done is not None:
+                        last_completed = reported_done
+    except Exception:
+        if not pulled_via_http:
+            _run(["ollama.exe", "pull", model], timeout=3600)
+
+    progress({
+        "stage": "art_review_models",
+        "completed": index + 1,
+        "total": total,
+        "model_name": friendly,
+        "status_text": "success",
+    })
+
+
 @serialized
 def prepare_artwork(tier, progress=lambda code: None, root=None):
     if type(tier) is not int or tier not in TIERS:
@@ -209,8 +304,7 @@ def prepare_artwork(tier, progress=lambda code: None, root=None):
     progress("art_review_models")
     # Fixed public model names only. Ollama must already be installed/running.
     for index, model in enumerate((DETAIL_MODEL, VISION_MODEL)):
-        progress({"stage": "art_review_models", "completed": index, "total": 2})
-        _run(["ollama.exe", "pull", model], timeout=3600)
+        _pull_ollama_model(model, index, 2, progress)
     progress({"stage": "art_review_models", "completed": 2, "total": 2})
 
 

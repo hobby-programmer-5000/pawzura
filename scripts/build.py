@@ -67,7 +67,7 @@ def main(dist_dir: Path | None = None, onefile: bool = False):
     runtime = output / "art_runtime"
     runtime.mkdir(exist_ok=True)
     for name in ("catalog.json", "requirements.txt", "setup.ps1", "runner.py", "inventory.py", "pose.py",
-                 "three_d.py", "motion_geometry.py", "motion_bake.py", "motion_catalog.json", "triposr-sources.json", "motion_cache_legacy.json"):
+                 "three_d.py", "motion_geometry.py", "motion_library.py", "motion_bake.py", "motion_catalog.json", "triposr-sources.json", "motion_cache_legacy.json"):
         shutil.copy2(ROOT / "art_runtime" / name, runtime / name)
     # Only reviewed model evidence is shipped, never an arbitrary artifact folder.
     (output / "artifacts").mkdir(exist_ok=True)
