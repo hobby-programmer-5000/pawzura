@@ -4,7 +4,7 @@
 
 Windows 작업표시줄 위에서 모니터를 오가며 걷고 커서·클릭에 반응하는 작은 SD 캐릭터 앱입니다. 선택형 프로그램·사이트 허용 목록으로 집중을 돕고, 미허용 프로그램 창을 닫기 전에 점프해 깨무는 동작을 보여줍니다.
 
-Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MIT
+Windows 10 (1809+) / Windows 11 · x64 · Python 3.12–3.15 · MIT · [![Antigravity](https://img.shields.io/badge/AI_Rigging-Antigravity-4285F4?logo=google&logoColor=white)](doc/ko/CONTRIBUTORS.md) [![Codex](https://img.shields.io/badge/AI_Assistant-Codex-412991?logo=openai&logoColor=white)](doc/ko/CONTRIBUTORS.md)
 
 [![딴짓 프로그램과 탭을 닫고 허용한 작업은 유지하는 Pawzura 동작 데모](artifacts/demo/pawzura-demo-ko.gif)](artifacts/demo/pawzura-demo-ko.mp4)
 *집중을 방해하는 프로그램 창과 탭은 정리하고, 허용한 작업은 그대로 유지합니다. [MP4 보기](artifacts/demo/pawzura-demo-ko.mp4) · [제작 방식](doc/ko/DEMO.md).*
@@ -48,8 +48,8 @@ Windows 10 (1809+) / Windows 11 · x64 · 소스 실행 Python 3.12–3.15 · MI
 | 소스 실행·EXE 빌드·검사 범위와 제한 | [설정과 빌드](doc/ko/BUILD.md) · [검증 기록](doc/ko/VALIDATION.md) |
 | 라이브러리·모델 라이선스 | [제3자 고지](doc/ko/THIRD-PARTY-NOTICES.md) |
 
-| 제품 기획·관리 | AI 구현 지원 |
-| --- | --- |
-| [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
+| 제품 기획·총괄 관리 | AI 리깅 고도화 | AI 초기 구현 지원 |
+| --- | --- | --- |
+| [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [Antigravity (DeepMind)](doc/ko/CONTRIBUTORS.md) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
 
-자체 코드 [MIT](LICENSE) · [그림 정책](doc/ko/ASSET-LICENSING.md). [기여 역할](doc/ko/CONTRIBUTORS.md) · [0.7.0 변경](doc/ko/RELEASE-v0.7.0.md) · [전체 안내](doc/README.ko.md).
+자체 코드 [MIT](LICENSE) · [그림 정책](doc/ko/ASSET-LICENSING.md). [기여 역할](doc/ko/CONTRIBUTORS.md) · [0.8.0 변경](doc/ko/RELEASE-v0.8.0.md) · [전체 안내](doc/README.ko.md).

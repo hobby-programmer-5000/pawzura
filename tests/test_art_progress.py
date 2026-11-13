@@ -103,6 +103,68 @@ class ArtProgressTests(unittest.TestCase):
             dialog.preview.timer.stop()
             dialog.deleteLater()
 
+    def test_progress_event_accepts_bounded_progress_metadata(self):
+        line = b'PAWZURA_PROGRESS {"stage":"art_review_models","completed":1,"total":2,"model_name":"Qwen2.5 1.5B","bytes_completed":750000000,"bytes_total":1117320736,"status_text":"downloading"}'
+        event = art_client.progress_event(line)
+        self.assertIsNotNone(event)
+        self.assertEqual(event["stage"], "art_review_models")
+        self.assertEqual(event["completed"], 1)
+        self.assertEqual(event["total"], 2)
+        self.assertEqual(event["model_name"], "Qwen2.5 1.5B")
+        self.assertEqual(event["bytes_completed"], 750000000)
+        self.assertEqual(event["bytes_total"], 1117320736)
+        self.assertEqual(event["status_text"], "downloading")
+
+    def test_dialog_progress_displays_model_names_and_bytes_in_both_languages(self):
+        for lang, expected_unit in (("ko", "MB"), ("en", "MB")):
+            dialog = ArtworkDialog(lang)
+            dialog.started_at = dialog.stage_started_at = dialog.last_report_at = 100
+            dialog.progress_timer.start()
+
+            dialog.set_progress({
+                "stage": "art_review_models",
+                "completed": 0,
+                "total": 2,
+                "model_name": "Qwen2.5 1.5B",
+                "bytes_completed": 750000000,
+                "bytes_total": 1117320736,
+                "status_text": "downloading",
+            })
+            self.assertIn("Qwen2.5 1.5B", dialog.stage_label.text())
+            self.assertIn(expected_unit, dialog.stage_label.text())
+            self.assertGreater(dialog.progress_bar.value(), 25)
+            self.assertLess(dialog.progress_bar.value(), 40)
+            self.assertEqual(dialog.progress_bar.maximum(), 100)
+
+            dialog.set_progress({
+                "stage": "art_downloading",
+                "completed": 0,
+                "total": 4,
+                "item_name": "SD 1.5 (sd15)",
+            })
+            self.assertIn("SD 1.5 (sd15)", dialog.stage_label.text())
+            self.assertEqual(dialog.progress_bar.value(), 0)
+            self.assertEqual(dialog.progress_bar.maximum(), 4)
+
+            dialog.preview.timer.stop()
+            dialog.deleteLater()
+
+    def test_pull_ollama_model_streams_events_and_falls_back(self):
+        import io
+        fake_stream = io.BytesIO(b'{"status":"pulling manifest"}\n'
+                                 b'{"status":"downloading","total":100000000,"completed":50000000}\n'
+                                 b'{"status":"success"}\n')
+        events = []
+        with patch("pawzura.art_client.build_opener") as opener:
+            opener.return_value.open.return_value = fake_stream
+            art_client._pull_ollama_model("qwen3-vl:2b", 1, 2, events.append)
+
+        self.assertGreaterEqual(len(events), 2)
+        model_names = [e.get("model_name") for e in events]
+        self.assertTrue(all(name == "Qwen3-VL 2B" for name in model_names))
+        self.assertEqual(events[-1]["completed"], 2)
+        self.assertEqual(events[-1]["status_text"], "success")
+
 
 if __name__ == "__main__":
     unittest.main()

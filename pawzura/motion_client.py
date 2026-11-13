@@ -1,6 +1,6 @@
 """Sequential, cancellable model preparation with source-bound stage caching."""
-import hashlib
 import ast
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -15,8 +15,11 @@ from .model_jobs import model_job
 
 STAGE_FILES = {
     "reconstruct": {"surface.npz", "reference.png", "reconstruction.json", *(f"view-{i}.png" for i in range(8))},
-    "rig": {"rig.npz", "rig.json"}, "bake": {"motion.zip"},
+    "rig": {"rig.npz", "rig.json"},
+    "bake": {"motion.zip"},
 }
+QUALITY_MODES = frozenset({"standard", "high_multiview", "sdxl_multiview"})
+EXTRA_VIEW_KEYS = frozenset({"facing_right", "facing_left", "back", "right_3q", "left_3q"})
 
 
 def _code(path, names, follow_calls=False):
@@ -26,26 +29,32 @@ def _code(path, names, follow_calls=False):
     if follow_calls:
         definitions = {node.name: node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
         while True:
-            dependencies = {node.id for name in names if name in definitions for node in ast.walk(definitions[name])
-                            if isinstance(node, ast.Name) and node.id in definitions}
+            dependencies = {
+                node.id for name in names if name in definitions for node in ast.walk(definitions[name])
+                if isinstance(node, ast.Name) and node.id in definitions
+            }
             if dependencies <= names:
                 break
             names.update(dependencies)
-    selected = [node for node in tree.body if isinstance(node, (ast.Import, ast.ImportFrom, ast.Assign, ast.AnnAssign))
-                or isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name in names]
+    selected = [
+        node for node in tree.body
+        if isinstance(node, (ast.Import, ast.ImportFrom, ast.Assign, ast.AnnAssign))
+        or isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name in names
+    ]
     found = {node.name for node in selected if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
     if not set(names) <= found:
         raise GenerationError("motion_runtime_failed")
+
     def stable(value):
-        # ast.dump's optional empty-field formatting changes across CPython
-        # versions. Serialize meaningful fields explicitly for 3.12+ checkouts.
         if isinstance(value, ast.AST):
-            return {"node": type(value).__name__, "fields": {
-                key: stable(item) for key, item in ast.iter_fields(value)
-                if item is not None and not (isinstance(item, list) and not item)
-                # 3.15 adds is_lazy=0 to ordinary imports. Earlier versions
-                # imply that same eager behavior; a nonzero flag stays hashed.
-                and not (key == "is_lazy" and isinstance(value, (ast.Import, ast.ImportFrom)) and item == 0)}}
+            return {
+                "node": type(value).__name__,
+                "fields": {
+                    key: stable(item) for key, item in ast.iter_fields(value)
+                    if item is not None and not (isinstance(item, list) and not item)
+                    and not (key == "is_lazy" and isinstance(value, (ast.Import, ast.ImportFrom)) and item == 0)
+                },
+            }
         if isinstance(value, (list, tuple)):
             return [stable(item) for item in value]
         if isinstance(value, bytes):
@@ -53,22 +62,31 @@ def _code(path, names, follow_calls=False):
         if value is Ellipsis:
             return {"literal": "Ellipsis"}
         return value
+
     return json.dumps(stable(ast.Module(body=selected, type_ignores=[])), sort_keys=True, separators=(",", ":")).encode()
 
 
 def stage_signatures():
     source = art_client.source_dir()
-    # Git checkouts and Windows editors can differ only in CRLF/LF. Fingerprint
-    # the same trusted text identically without weakening model/output hashes.
     text = lambda name: (source / name).read_text(encoding="utf-8").encode("utf-8")
+    opt_text = lambda name: (source / name).read_text(encoding="utf-8").encode("utf-8") if (source / name).is_file() else b""
     common = b"".join(text(name) for name in ("motion_catalog.json", "triposr-sources.json", "requirements.txt"))
-    geometry = {"reconstruct": {"extract", "projected_colors"}, "rig": {"lift", "fit", "smooth"},
-                "bake": {"pose", "knee_at", "ry", "rz", "smooth"}}
+    mg_text = (source / "motion_geometry.py").read_text(encoding="utf-8")
+    mg_funcs = {node.name for node in ast.parse(mg_text).body if isinstance(node, ast.FunctionDef)}
+    reconstruct_geo = {"extract", "projected_colors"} | ({"compute_vertex_normals", "project_multiview_colors", "bake_texture_atlas", "classify_art_texture", "inflate_2_5d_mesh"} & mg_funcs)
+    rig_geo = {"lift", "fit", "smooth"} | ({"lift_medial", "fit_articulated"} & mg_funcs)
+    bake_geo = {"pose", "knee_at", "ry", "rz", "smooth"} | ({"dual_quaternion_skinning"} & mg_funcs)
+    geometry = {"reconstruct": reconstruct_geo, "rig": rig_geo, "bake": bake_geo}
     result = {}
     for stage in STAGE_FILES:
-        worker = _code(source / "three_d.py", {stage, "model_path", "digest", "report", "main"} if stage != "bake" else {"model_path", "digest", "report", "main"})
+        td_funcs = {stage, "model_path", "digest", "report", "main"} if stage != "bake" else {"model_path", "digest", "report", "main"}
+        if stage == "reconstruct" and "refine_views" in {n.name for n in ast.parse((source / "three_d.py").read_text(encoding="utf-8")).body if isinstance(n, ast.FunctionDef)}:
+            td_funcs.add("refine_views")
+        worker = _code(source / "three_d.py", td_funcs)
         parts = common + worker + _code(source / "motion_geometry.py", geometry[stage], follow_calls=True)
         parts += text("motion_bake.py" if stage == "bake" else "runner.py")
+        if stage == "bake":
+            parts += opt_text("motion_library.py")
         if stage != "reconstruct":
             parts += text("catalog.json")
         result[stage] = hashlib.sha256(parts).hexdigest()
@@ -88,13 +106,14 @@ def _check_cancel(cancel):
 
 
 def _valid_outputs(job, stage, records):
-    if not isinstance(records, list) or len(records) != len(STAGE_FILES[stage]) or {r.get("name") for r in records if isinstance(r, dict)} != STAGE_FILES[stage]:
+    expected_names = STAGE_FILES.get(stage, {"surface.npz"})
+    if not isinstance(records, list) or len(records) != len(expected_names) or {r.get("name") for r in records if isinstance(r, dict)} != expected_names:
         return False
     for record in records:
         if not isinstance(record, dict):
             return False
         name, sha, size = record.get("name"), record.get("sha256"), record.get("bytes")
-        if name not in STAGE_FILES[stage] or not artwork.valid_art_id(sha) or type(size) is not int or not 0 < size <= 32 * 1024 * 1024:
+        if name not in expected_names or not artwork.valid_art_id(sha) or type(size) is not int or not 0 < size <= 64 * 1024 * 1024:
             return False
         path = job / name
         try:
@@ -107,9 +126,13 @@ def _valid_outputs(job, stage, records):
 
 def _worker(stage, job, root, payload, progress, cancel):
     _check_cancel(cancel)
-    output = art_client._run([art_client.runtime_python(root), art_client.source_dir() / "three_d.py", stage,
-                              "--cache", root / "models", "--job", job], payload,
-                             progress=progress, cancel=cancel, contain=True)
+    output = art_client._run(
+        [art_client.runtime_python(root), art_client.source_dir() / "three_d.py", stage, "--cache", root / "models", "--job", job],
+        payload,
+        progress=progress,
+        cancel=cancel,
+        contain=True,
+    )
     _check_cancel(cancel)
     try:
         result = json.loads(output)
@@ -155,8 +178,6 @@ def _legacy_stage(folder, cache, stage, key, signatures, spec, cancel):
                 if name == stage:
                     candidate = record
                     break
-                # A downstream legacy stage must match the exact scene/rig
-                # already adopted into this job, not merely its algorithm.
                 if not _valid_outputs(folder, name, record.get("files")):
                     break
                 previous = hashlib.sha256(json.dumps(record, sort_keys=True).encode()).hexdigest()
@@ -173,19 +194,42 @@ def _legacy_stage(folder, cache, stage, key, signatures, spec, cancel):
     return None
 
 
-def prepare_animation(spec, progress=lambda event: None, cancel=None, root=None, cache=None):
+def _clean_extra_views(extra_views):
+    cleaned = {}
+    if not isinstance(extra_views, dict):
+        return cleaned
+    for key, art_id in extra_views.items():
+        if key in EXTRA_VIEW_KEYS and artwork.valid_art_id(art_id):
+            cleaned[key] = art_id
+    return cleaned
+
+
+def prepare_animation(
+    spec,
+    progress=lambda event: None,
+    cancel=None,
+    root=None,
+    cache=None,
+    quality_mode="standard",
+    extra_views=None,
+):
     cancel = cancel or threading.Event()
     root = root or art_client.runtime_root()
     spec = safe_character(spec)
     if spec.get("kind") != "artwork":
         raise GenerationError("motion_source_missing")
+    if quality_mode not in QUALITY_MODES:
+        quality_mode = "standard"
+    clean_extras = _clean_extra_views(extra_views)
+
     with model_job():
         from .character_library import storage_lock
         with storage_lock():
             _check_cancel(cancel)
-            source = artwork.asset_root().resolve() / (spec["art_id"] + ".png")
+            art_dir = artwork.asset_root().resolve()
+            source = art_dir / (spec["art_id"] + ".png")
             try:
-                if source.resolve().parent != source.parent or source.stat().st_size > artwork.MAX_ART_BYTES:
+                if source.resolve().parent != art_dir or source.stat().st_size > artwork.MAX_ART_BYTES:
                     raise ValueError()
                 data = source.read_bytes()
                 if hashlib.sha256(data).hexdigest() != spec["art_id"]:
@@ -193,33 +237,52 @@ def prepare_animation(spec, progress=lambda event: None, cancel=None, root=None,
                 artwork.validate_png(data)
             except (OSError, ValueError):
                 raise GenerationError("motion_source_missing") from None
+
+            extra_bytes = {}
+            for angle_key, extra_id in clean_extras.items():
+                ep = art_dir / (extra_id + ".png")
+                try:
+                    if ep.resolve().parent != art_dir or ep.stat().st_size > artwork.MAX_ART_BYTES:
+                        raise ValueError()
+                    eb = ep.read_bytes()
+                    if hashlib.sha256(eb).hexdigest() != extra_id:
+                        raise ValueError()
+                    artwork.validate_png(eb)
+                    extra_bytes[angle_key] = eb
+                except (OSError, ValueError):
+                    raise GenerationError("motion_source_missing") from None
+
             if not art_client.runtime_python(root).is_file():
                 raise GenerationError("art_not_prepared")
             signatures = stage_signatures()
             cache = cache or data_dir() / "motion-jobs"
-            # Keep the expensive scene when only rigging or authored motion changes.
             revision = signatures["reconstruct"]
             folder = cache / (spec["art_id"] + "-staged-" + revision[:16])
             folder.mkdir(parents=True, exist_ok=True)
             if folder.resolve().parent != cache.resolve():
                 raise GenerationError("motion_runtime_failed")
-            if any((folder / name).resolve().parent != folder.resolve()
-                   for name in ("source.png", "state.json", "state.tmp", *set().union(*STAGE_FILES.values()))):
+            allowed_names = ("source.png", "state.json", "state.tmp", *set().union(*STAGE_FILES.values()), *(f"extra_{k}.png" for k in EXTRA_VIEW_KEYS))
+            if any((folder / name).resolve().parent != folder.resolve() for name in allowed_names):
                 raise GenerationError("motion_runtime_failed")
             (folder / "source.png").write_bytes(data)
+            for angle_key in EXTRA_VIEW_KEYS:
+                target_extra = folder / f"extra_{angle_key}.png"
+                if angle_key in extra_bytes:
+                    target_extra.write_bytes(extra_bytes[angle_key])
+                else:
+                    target_extra.unlink(missing_ok=True)
             try:
                 if (folder / "state.json").stat().st_size > 65536:
                     raise ValueError()
                 state = json.loads((folder / "state.json").read_text(encoding="utf-8"))
-                if (not isinstance(state, dict) or state.get("revision") != revision or
-                        not isinstance(state.get("stages"), dict)):
+                if not isinstance(state, dict) or state.get("revision") != revision or not isinstance(state.get("stages"), dict):
                     raise ValueError()
             except (OSError, ValueError):
                 state = {"revision": revision, "stages": {}}
             state["job"] = secrets.token_hex(16)
             state["status"] = "preparing"
             _write(folder / "state.json", state)
-        # Bootstrap only missing optional packages, inside the existing isolated runtime.
+
         ready = root / "motion-ready.json"
         try:
             prepared = json.loads(ready.read_text()).get("revision") == signatures["prepare"]
@@ -231,34 +294,55 @@ def prepare_animation(spec, progress=lambda event: None, cancel=None, root=None,
                 uv = root / "uv.exe"
                 if not uv.is_file():
                     raise GenerationError("art_not_prepared")
-                art_client._run([uv, "pip", "install", "--python", art_client.runtime_python(root),
-                                 "--index-url", "https://pypi.org/simple", "-r", art_client.source_dir() / "requirements.txt"],
-                                timeout=1800, progress=progress, cancel=cancel, contain=True)
-                art_client._run([art_client.runtime_python(root), art_client.source_dir() / "inventory.py", root],
-                                cancel=cancel, contain=True)
+                art_client._run(
+                    [uv, "pip", "install", "--python", art_client.runtime_python(root), "--index-url", "https://pypi.org/simple", "-r", art_client.source_dir() / "requirements.txt"],
+                    timeout=1800,
+                    progress=progress,
+                    cancel=cancel,
+                    contain=True,
+                )
+                art_client._run([art_client.runtime_python(root), art_client.source_dir() / "inventory.py", root], cancel=cancel, contain=True)
                 _worker("prepare", folder, root, {}, progress, cancel)
                 _write(ready, {"revision": signatures["prepare"]})
-            payload = {"source_art_id": spec["art_id"], "mouth": [spec["mouth_x"], spec["mouth_y"]]}
+
+            payload = {
+                "source_art_id": spec["art_id"],
+                "mouth": [spec["mouth_x"], spec["mouth_y"]],
+                "quality_mode": quality_mode,
+                "extra_views": clean_extras,
+                "seed": spec.get("seed", 42),
+            }
             previous = spec["art_id"]
+            reconstruct_params = [quality_mode, sorted(clean_extras.items())] if (quality_mode != "standard" or clean_extras) else []
+
             for stage in ("reconstruct", "rig", "bake"):
                 _check_cancel(cancel)
-                parameters = payload["mouth"] if stage == "rig" else []
+                parameters = payload["mouth"] if stage == "rig" else reconstruct_params if stage == "reconstruct" else []
                 key = hashlib.sha256(json.dumps([previous, signatures[stage], parameters]).encode()).hexdigest()
                 record = state["stages"].get(stage, {})
-                if not record:
+                if not record and stage == "reconstruct" and not reconstruct_params:
                     record = _legacy_stage(folder, cache, stage, key, signatures, spec, cancel) or {}
-                if (isinstance(record, dict) and record.get("input") == key and
-                        _valid_outputs(folder, stage, record.get("files"))):
+                elif not record and stage != "reconstruct":
+                    record = _legacy_stage(folder, cache, stage, key, signatures, spec, cancel) or {}
+                if isinstance(record, dict) and record.get("input") == key and _valid_outputs(folder, stage, record.get("files")):
                     progress("motion_cached")
                     state["stages"][stage] = record
                     _write(folder / "state.json", state)
                 else:
                     result = _worker(stage, folder, root, payload, progress, cancel)
                     _check_cancel(cancel)
-                    record = {"input": key, "files": result["files"]}
+                    if stage == "reconstruct" and quality_mode == "sdxl_multiview":
+                        refine_res = _worker("refine_views", folder, root, payload, progress, cancel)
+                        _check_cancel(cancel)
+                        refined_surf = refine_res["files"][0]
+                        files = [refined_surf if f["name"] == "surface.npz" else f for f in result["files"]]
+                    else:
+                        files = result["files"]
+                    record = {"input": key, "files": files}
                     state["stages"][stage] = record
                     _write(folder / "state.json", state)
                 previous = hashlib.sha256(json.dumps(record, sort_keys=True).encode()).hexdigest()
+
             progress("motion_validating")
             _check_cancel(cancel)
             data = (folder / "motion.zip").read_bytes()

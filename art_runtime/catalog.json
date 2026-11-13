@@ -30,6 +30,20 @@
     "license_url": "https://huggingface.co/usyd-community/vitpose-base-simple",
     "download": "~350 MB"
   },
+  "pose_large": {
+    "repo": "usyd-community/vitpose-plus-large",
+    "revision": "e211df377e49c89dba508ab3e83ddef13c0832b4",
+    "license": "Apache-2.0",
+    "license_url": "https://huggingface.co/usyd-community/vitpose-plus-large",
+    "download": "~1.7 GB"
+  },
+  "pose_huge": {
+    "repo": "usyd-community/vitpose-plus-huge",
+    "revision": "9f36d7aec1800d23e97f10c2e74393aee92aa53f",
+    "license": "Apache-2.0",
+    "license_url": "https://huggingface.co/usyd-community/vitpose-plus-huge",
+    "download": "~3.4 GB"
+  },
   "vision": {
     "repo": "Qwen/Qwen3-VL-2B-Instruct",
     "revision": "89644892e4d85e24eaac8bacfd4f463576704203",

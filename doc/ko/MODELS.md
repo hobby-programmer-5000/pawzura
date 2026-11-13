@@ -19,7 +19,7 @@
 | 모션 모델 | 없음 | 해당 없음 | 자체 절차적 애니메이션 |
 | 도형 모드의 이미지/배경 제거 모델 | 없음 | 해당 없음 | 자체 벡터 도형, 투명 Qt 창 |
 | 선택형 그림·검사·배경 제거 | SD 1.5, SDXL, Qwen3-VL, Falconsai ViT, U2NetP | 개별 조건 | [별도 카탈로그·절차](CREATIVE-ART.md) |
-| 선택형 그림 관절 제안 | usyd-community/vitpose-base-simple (약 350 MB), 카탈로그 리비전 고정 | Apache-2.0 | 설정·생성 시 로컬 CPU 도우미. [손발 움직임 편집](ARTWORK-MOTION.md). 걷는 동안은 모델 미사용 |
+| 선택형 그림 관절 제안 | usyd-community/vitpose-base-simple (약 350 MB, 8 GB 미만·CPU), vitpose-plus-large (약 1.7 GB, 8 GB+), vitpose-plus-huge (약 3.4 GB, 12 GB+), 카탈로그 리비전 고정 | Apache-2.0 | 설정·생성 시 VRAM 자동 맞춤 FP16 CUDA(또는 CPU) 도우미. [손발 움직임 편집](ARTWORK-MOTION.md). 걷는 동안은 모델 미사용 |
 
 모델 카드: https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF
 

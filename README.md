@@ -4,7 +4,7 @@
 
 A small SD desktop companion that walks across monitors above the Windows taskbar, reacts to hover/clicks and helps you stay focused with optional app and website allowlists. It jumps and bites before requesting an unlisted app window to close.
 
-Windows 10 (1809+) / Windows 11 · x64 · Python 3.12–3.15 for source use · MIT
+Windows 10 (1809+) / Windows 11 · x64 · Python 3.12–3.15 · MIT · [![Antigravity](https://img.shields.io/badge/AI_Rigging-Antigravity-4285F4?logo=google&logoColor=white)](doc/en/CONTRIBUTORS.md) [![Codex](https://img.shields.io/badge/AI_Assistant-Codex-412991?logo=openai&logoColor=white)](doc/en/CONTRIBUTORS.md)
 
 [![Pawzura demo: close distractions while allowed work stays open](artifacts/demo/pawzura-demo-en.gif)](artifacts/demo/pawzura-demo-en.mp4)
 *Close distracting app windows and tabs while keeping your allowed work open. [Watch MP4](artifacts/demo/pawzura-demo-en.mp4) · [How this demo was made](doc/en/DEMO.md).*
@@ -48,8 +48,8 @@ For websites, choose your browser and click **Install/connect extension…**. On
 | Run source, build an EXE or check coverage and limits | [Setup and builds](doc/en/BUILD.md) · [Validation](doc/en/VALIDATION.md) |
 | Review library/model licenses | [Third-party notices](doc/en/THIRD-PARTY-NOTICES.md) |
 
-| Product direction and maintenance | AI implementation assistance |
-| --- | --- |
-| [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
+| Product direction and maintenance | AI rigging advancement | AI implementation assistance |
+| --- | --- | --- |
+| [hobby-programmer-5000](https://github.com/hobby-programmer-5000) | [Antigravity (DeepMind)](doc/en/CONTRIBUTORS.md) | [ChatGPT (Codex)](https://github.com/apps/chatgpt-codex-connector) |
 
-App code: [MIT](LICENSE) · [Artwork policy](doc/en/ASSET-LICENSING.md). [Roles](doc/en/CONTRIBUTORS.md) · [0.7.0 changes](doc/en/RELEASE-v0.7.0.md) · [All guides](doc/README.md).
+App code: [MIT](LICENSE) · [Artwork policy](doc/en/ASSET-LICENSING.md). [Roles](doc/en/CONTRIBUTORS.md) · [0.8.0 changes](doc/en/RELEASE-v0.8.0.md) · [All guides](doc/README.md).

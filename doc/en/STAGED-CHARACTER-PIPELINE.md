@@ -1,4 +1,4 @@
-[English](../en/STAGED-CHARACTER-PIPELINE.md) | [한국어](../ko/STAGED-CHARACTER-PIPELINE.md) · [Directional animation](DIRECTIONAL-ANIMATION.md)
+[English](../en/STAGED-CHARACTER-PIPELINE.md) | [한국어](../ko/STAGED-CHARACTER-PIPELINE.md) · [Directional animation](DIRECTIONAL-ANIMATION.md) · [3D Rigging & Motion References](3D-RIGGING-AND-MOTION-REFERENCES.md)
 
 # Consistent frames and sequential model preparation
 
