@@ -20,7 +20,17 @@
    - Injected `solo, 1person, single full-body chibi character only` at the beginning of generation prompts and expanded the negative prompt with `2girls, 2boys, duo, pair, 2characters, multiple people, two people, twins, group, clone, companion` to prevent canvas-filling hallucinations.
    - Enhanced Qwen3-VL vision prompt to detect and reject multiple characters or twins even when tightly touching or identically dressed.
 
-4. **Contributor Roles & AI Attribution**
+4. **Subcultural Literature, Light Novel & Speculative Genre 3D-Rigging Character Examples (+10 Presets, 15 Total) & 4 Bilingual Research Guides**
+   - Translated subcultural narrative theory (Hiroki Azuma's database moe-element modularity, Go Ito's *Kyara* semiotics, 70-20-10 visual hierarchy) and 3D rigging constraints (A-pose negative space, cropped jackets exposing hip/leg joints, distinct cuff-to-hand boundaries) into 10 new built-in character presets in `Create original artwork…` ([Creative artwork](CREATIVE-ART.md), [3D motion preparation](3D-MOTION.md)):
+     - **Subcultural & Light Novel Archetypes (5):** Status-window shadow hunter (LitRPG), Strategic villainess noble (Otome Isekai), Isekai bookshop artisan (Reincarnation), Banished herbalist supporter (Slow-life), Quiet mastermind scholar (Misunderstanding)
+     - **Speculative & Classic Fantasy Archetypes (5):** Cyberpunk netrunner hacker (Cyberpunk), Solarpunk eco-tinker (Solarpunk), Retired adventurer barista (Cozy Fantasy), Night-watch occult detective (Urban Fantasy), Galactic train conductor (Classic Fantasy)
+   - Added 4 comprehensive bilingual (Korean/English) research guides to `doc/ko/` and `doc/en/`:
+     - [Character design methodology and archetypes](CHARACTER-DESIGN-METHODOLOGY.md)
+     - [Literary worldbuilding and character archetypes](LITERARY-WORLDBUILDING-AND-CHARACTERS.md)
+     - [Subcultural literature and light novel theory](SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md)
+     - [Character design and literature bibliography](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md)
+
+5. **Contributor Roles & AI Attribution**
    - Product Direction & Architecture: `hobby-programmer-5000`
    - AI Rigging Advancement & Engineering: `Antigravity (Google DeepMind)`
    - Initial AI Implementation Assistance: `ChatGPT (Codex, OpenAI)`

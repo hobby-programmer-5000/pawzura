@@ -39,7 +39,7 @@ The image model generates a single illustration. There is no preset list of body
    ollama pull qwen3-vl:2b
    ```
 
-5. Enter an original description, or select **Motion-friendly drawing examples → Chibi astronomer / Woodland courier / Clockwork gardener / Cloud mechanic / Forest otter explorer**, then click **Insert example**. Selecting a name alone preserves your current text; Insert example replaces it. The examples request a front-facing full body with visible, separated hands and feet on white, making the current motion setup easier. The selector and insert button are disabled while generation is running. You can edit the inserted description before generating. Do not name an existing character, franchise or logo. Do not include restricted content even as a negative instruction.
+5. Enter an original description, or select **Motion-friendly drawing examples → Chibi astronomer / Woodland courier / Clockwork gardener / Cloud mechanic / Forest otter explorer / Status-window shadow hunter (LitRPG) / Strategic villainess noble (Otome Isekai) / Isekai bookshop artisan (Reincarnation) / Banished herbalist supporter (Slow-life) / Quiet mastermind scholar (Misunderstanding) / Cyberpunk netrunner hacker (Cyberpunk) / Solarpunk eco-tinker (Solarpunk) / Retired adventurer barista (Cozy Fantasy) / Night-watch occult detective (Urban Fantasy) / Galactic train conductor (Classic Fantasy)**, then click **Insert example**. Selecting a name alone preserves your current text; Insert example replaces it. These 15 examples combine subcultural/literary archetype design (70-20-10 visual hierarchy and asymmetrical chest/lapel focal emblems) with 2.5D/3D rigging-friendly geometry (front-facing full body on white, cropped waistcoats/jackets that keep hip and leg joints visible, clear cuff-to-hand boundaries, and separated limbs). The selector and insert button are disabled while generation is running. You can edit the inserted description before generating. Do not name an existing character, franchise or logo. Do not include restricted content even as a negative instruction.
 6. Click **Generate artwork**. The local stages are description verdict → concise English summary when needed → image generation → image classifier/background removal → optional joint suggestions → composition/vision review. Generation asks for one centered figure and discourages reference sheets and repeated views. A transparent-silhouette check rejects substantial separate upright figures; the vision response must also explicitly identify a single character. A laptop may take many minutes, especially with sequential offload. Wait for the current operation before closing the dialog or quitting.
 7. Inspect the preview. Click **Use this character**, then **Save settings** in the main window. This final save applies the companion. Errors retain the previous design; the old result remains selectable after a failed retry.
 
@@ -78,6 +78,24 @@ NSFW content and identifiable existing character/logo replication requests are p
 ### Official samples and your own outputs
 
 Existing example prompts are not designated noncommercial assets. Using **Insert example** does not automatically license your generated image under CC BY-NC-SA. Future official sample images will need an explicit file/version entry in the [asset licensing register](ASSET-LICENSING.md), which currently contains none. Reusing protected content from a designated sample can require compliance with that sample's terms; independent outputs remain subject to model terms and any underlying rights. Existing MIT grants are preserved.
+
+### Built-in 15 2D/2.5D/3D character presets and literary/design theory guides
+
+The 15 built-in presets in **Motion-friendly drawing examples** synthesize the research in [Original Character Design Methodology](CHARACTER-DESIGN-METHODOLOGY.md), [Literary Genres, Worldbuilding, and Character Configurations](LITERARY-WORLDBUILDING-AND-CHARACTERS.md), [Subcultural Literature and Light Novel Narratology](SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md), and the [Comprehensive Research Bibliography](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md), combining 70-20-10 visual hierarchy with 2.5D/3D rigging-friendly geometry (A-pose separated limbs, cropped waistcoats/jackets exposing hip and knee joints, and clear cuff-to-hand boundaries).
+
+| Category | Selector Preset Name | 10% Focal Emblem & Rig-Friendly Attire (70-20-10 Hierarchy) |
+| :--- | :--- | :--- |
+| **Original 5** | `Chibi astronomer` / `Woodland courier` / `Clockwork gardener` / `Cloud mechanic` / `Forest otter explorer` | Crescent brooch navy vest / leaf pin apricot coat / flower pin moss overalls / ivory curls saffron vest / mint vest otter |
+| **Subcultural & Light Novel (5)** | `Status-window shadow hunter (LitRPG)` | Silver hair, ruby eyes + glowing cyan rune emblem + cropped midnight-blue hunter vest + black tactical boots |
+| | `Strategic villainess noble (Otome Isekai)` | Lavender twin drill curls + gold rose brooch + cropped crimson velvet waistcoat + tailored dark plum breeches |
+| | `Isekai bookshop artisan (Reincarnation)` | Deep-blue hair, gold hairpin + quill badge + cropped amber leather apron vest |
+| | `Banished herbalist supporter (Slow-life)` | Sage-green hair + herb pouch belt + cropped chestnut utility vest + olive cargo pants |
+| | `Quiet mastermind scholar (Misunderstanding)` | Jet-black hair + gold/violet heterochromia + antique chess knight lapel pin + silver-trimmed black tunic |
+| **Speculative & Classic Fantasy (5)** | `Cyberpunk netrunner hacker (Cyberpunk)` | Neon-pink bob + forehead cyan visor goggles + glowing teal circuit-trim cropped tech jacket + yellow boots |
+| | `Solarpunk eco-tinker (Solarpunk)` | Warm-bronze wavy hair + stained-glass sunleaf brooch + cropped moss-green work vest |
+| | `Retired adventurer barista (Cozy Fantasy)` | Silver-braided hair, tiny horn buds + coffee cup pin cropped cinnamon-brown waist apron |
+| | `Night-watch occult detective (Urban Fantasy)` | Tousled ash-blond hair, amber eyes + silver compass badge cropped charcoal bolero jacket |
+| | `Galactic train conductor (Classic Fantasy)` | Indigo hair, starry golden eyes + brass ticket-punch emblem fitted cobalt jacket + cream trousers |
 
 ## When something fails
 

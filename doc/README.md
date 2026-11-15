@@ -52,6 +52,10 @@ English is the default. Every project-authored guide has a Korean counterpart.
 
 - [Experimental 8 GB pose-assisted 3D motion](en/3D-MOTION.md)
 - [3D reconstruction, rigging, and stylized motion references](en/3D-RIGGING-AND-MOTION-REFERENCES.md)
+- [Original character design methodology and guidelines](en/CHARACTER-DESIGN-METHODOLOGY.md)
+- [Literary genres, worldbuilding, and character configurations](en/LITERARY-WORLDBUILDING-AND-CHARACTERS.md)
+- [Subcultural literature, light novels, and web fiction character narratology](en/SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md)
+- [Comprehensive bibliography: character design, worldbuilding, and subcultural narratology](en/CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md)
 
 - [Local character library and saved preparation](en/CHARACTER-LIBRARY.md)
 - [0.4.0 directional motion and character storage](en/RELEASE-v0.4.0.md)
