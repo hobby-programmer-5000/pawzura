@@ -454,7 +454,8 @@ def rig(cache, job, payload):
         image = Image.open(job / "reference.png").convert("RGB")
         width, height = image.size
         keypoints, scores = predict_pose(processor, model, image, [[[0, 0, width, height]]])
-        if scores.shape != (17,) or not np.isfinite(keypoints).all() or scores[[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]].min() < 0.15:
+        body_scores = scores[[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]]
+        if scores.shape != (17,) or not np.isfinite(keypoints).all() or float(body_scores.min()) < 0.08 or float(body_scores.mean()) < 0.22:
             raise RuntimeError("motion_pose_uncertain")
 
         with np.load(job / "surface.npz", allow_pickle=False) as data:

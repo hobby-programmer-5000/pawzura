@@ -331,27 +331,27 @@ def _pose_single_frame(
             act = wave if is_wave else cheer
             eff = act * (0.42 + 0.58 * arm_mob)
             rest_elev = math.atan2(max(0.0, side_sign * float(arm_rest_u[1])), max(1e-4, -float(arm_rest_u[2])))
-            target_elev = math.radians(28.0 + 58.0 * arm_mob)
+            target_elev = math.radians(24.0 + 30.0 * arm_mob)
             delta_elev = max(0.0, target_elev - rest_elev) * eff
-            fwd_tilt = -math.radians((18.0 - 4.0 * arm_mob) * eff)
+            fwd_tilt = -math.radians((14.0 - 3.0 * arm_mob) * eff)
             arm_r = (chest_r @ _euler_xyz(side_sign * delta_elev, fwd_tilt, 0.0)).astype(np.float32)
             chain_rot[arm_i] = arm_r
             targets[arm_i, 0] = targets[clav_i, 1]
             targets[arm_i, 1] = targets[arm_i, 0] + arm_r @ (bones[arm_i, 1] - bones[arm_i, 0])
 
             osc_val = math.sin(phase * 4.0 * math.pi)
-            flex = math.radians((54.0 + 22.0 * arm_mob) * eff)
+            flex = math.radians((26.0 + 14.0 * arm_mob) * eff)
             if is_wave:
-                flex += side_sign * math.radians(-16.0 * osc_val * act)
+                flex += side_sign * math.radians(-10.0 * osc_val * act)
             else:
-                flex += math.radians(10.0 * osc_val * act)
-            fore_fwd = -math.radians(14.0 * eff)
+                flex += math.radians(8.0 * osc_val * act)
+            fore_fwd = -math.radians(10.0 * eff)
             fore_r = (arm_r @ _euler_xyz(side_sign * flex, fore_fwd, 0.0)).astype(np.float32)
             chain_rot[fore_i] = fore_r
             targets[fore_i, 0] = targets[arm_i, 1]
             targets[fore_i, 1] = targets[fore_i, 0] + fore_r @ (bones[fore_i, 1] - bones[fore_i, 0])
 
-            wrist_wave = math.radians(14.0 * osc_val * act) if is_wave else 0.0
+            wrist_wave = math.radians(10.0 * osc_val * act) if is_wave else 0.0
             hand_r = (fore_r @ _euler_xyz(wrist_wave, 0.0, 0.0)).astype(np.float32)
         else:
             swing = math.radians(28.0 * math.sin(arm_phase) * gait - 26.0 * tucked - 18.0 * bite + 26.0 * crouch)

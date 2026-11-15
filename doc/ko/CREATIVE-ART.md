@@ -81,7 +81,7 @@ NSFW 및 식별 가능한 기존 캐릭터·로고의 복제 요청은 금지합
 
 ### 내장 2D/2.5D/3D 캐릭터 예시 15종 및 문학·조형 이론 안내
 
-`창작 그림 만들기…`의 **움직임에 적합한 그림 예시** 15종은 [독창적 캐릭터 제작 방법론](CHARACTER-DESIGN-METHODOLOGY.md), [문학 분야별 세계관 및 캐릭터 구성 총람](LITERARY-WORLDBUILDING-AND-CHARACTERS.md), [현대 특수문학(라이트노벨·웹소설·서브컬처) 서사학 총람](SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md), [연구 문헌 총괄 서지 목록](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md)을 바탕으로 2.5D 멀티플레인 패럴랙스 및 3D 메쉬 리깅 가동성(A-포즈 팔다리 분리, 골반/무릎 노출형 짧은 상의, 소매-손목 단차)에 맞춰 설계되었습니다.
+`창작 그림 만들기…`의 **움직임에 적합한 그림 예시** 15종은 [독창적 캐릭터 제작 방법론](CHARACTER-DESIGN-METHODOLOGY.md), [문학 분야별 세계관 및 캐릭터 구성 총람](LITERARY-WORLDBUILDING-AND-CHARACTERS.md), [현대 특수문학(라이트노벨·웹소설·서브컬처) 서사학 총람](SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md), [연구 문헌 총괄 서지 목록](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md), [3D 리깅·모션 학술 레퍼런스 및 15종 샌드박스 검수](3D-RIGGING-AND-MOTION-REFERENCES.md)를 바탕으로 2.5D 멀티플레인 패럴랙스 및 3D 메쉬 리깅 가동성(58토큰 이내 전진 배치된 A-포즈 팔다리 분리, 골반/무릎 노출형 짧은 상의, 소매-손목 단차, 중앙 거리 감쇠 단일 전경 추출)에 맞춰 설계되었습니다.
 
 | 분류 | 예시 선택기 이름 | 10% 상징 포인트 및 의상 구조 (70-20-10 위계) |
 | :--- | :--- | :--- |

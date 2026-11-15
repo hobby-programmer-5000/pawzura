@@ -81,7 +81,7 @@ Existing example prompts are not designated noncommercial assets. Using **Insert
 
 ### Built-in 15 2D/2.5D/3D character presets and literary/design theory guides
 
-The 15 built-in presets in **Motion-friendly drawing examples** synthesize the research in [Original Character Design Methodology](CHARACTER-DESIGN-METHODOLOGY.md), [Literary Genres, Worldbuilding, and Character Configurations](LITERARY-WORLDBUILDING-AND-CHARACTERS.md), [Subcultural Literature and Light Novel Narratology](SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md), and the [Comprehensive Research Bibliography](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md), combining 70-20-10 visual hierarchy with 2.5D/3D rigging-friendly geometry (A-pose separated limbs, cropped waistcoats/jackets exposing hip and knee joints, and clear cuff-to-hand boundaries).
+The 15 built-in presets in **Motion-friendly drawing examples** synthesize the research in [Original Character Design Methodology](CHARACTER-DESIGN-METHODOLOGY.md), [Literary Genres, Worldbuilding, and Character Configurations](LITERARY-WORLDBUILDING-AND-CHARACTERS.md), [Subcultural Literature and Light Novel Narratology](SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md), the [Comprehensive Research Bibliography](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md), and the [3D Rigging & Motion Academic References and 15-Preset Sandbox Audit](3D-RIGGING-AND-MOTION-REFERENCES.md), combining 70-20-10 visual hierarchy with 2.5D/3D rigging-friendly geometry (front-loaded `<= 58`-token A-pose separated limbs, cropped waistcoats/jackets exposing hip and knee joints, clear cuff-to-hand boundaries, and center-prior single-instance cutout filtering).
 
 | Category | Selector Preset Name | 10% Focal Emblem & Rig-Friendly Attire (70-20-10 Hierarchy) |
 | :--- | :--- | :--- |

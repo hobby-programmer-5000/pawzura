@@ -173,6 +173,8 @@ def inflate_2_5d_mesh(vertices, faces, points=None, min_depth_ratio=0.52):
 
     slice_centers_x = np.zeros(num_slices, dtype=np.float32)
     slice_scales = np.ones(num_slices, dtype=np.float32)
+    slice_mid_y = np.zeros(num_slices, dtype=np.float32)
+    slice_half_w = np.full(num_slices, max(0.04, height * 0.15), dtype=np.float32)
     slice_z = 0.5 * (z_bins[:-1] + z_bins[1:])
 
     for i in range(num_slices):
@@ -180,45 +182,47 @@ def inflate_2_5d_mesh(vertices, faces, points=None, min_depth_ratio=0.52):
         in_band = np.abs(v_out[:, 2] - zc) <= half_band
         if not in_band.any():
             slice_centers_x[i] = float(np.median(v_out[:, 0]))
+            slice_mid_y[i] = float(np.median(v_out[:, 1]))
             continue
         sub = v_out[in_band]
-        x_min, x_max = float(sub[:, 0].min()), float(sub[:, 0].max())
-        curr_thick = max(1e-4, x_max - x_min)
-        slice_centers_x[i] = 0.5 * (x_min + x_max)
+        x_lo, x_hi = float(np.percentile(sub[:, 0], 2)), float(np.percentile(sub[:, 0], 98))
+        curr_thick = max(1e-3, x_hi - x_lo)
+        slice_centers_x[i] = 0.5 * (x_lo + x_hi)
+        y_lo, y_hi = float(np.percentile(sub[:, 1], 2)), float(np.percentile(sub[:, 1], 98))
+        slice_mid_y[i] = 0.5 * (y_lo + y_hi)
+        slice_half_w[i] = max(0.03, 0.5 * (y_hi - y_lo))
 
         if zc >= z_neck:
             slice_scales[i] = 1.0
         else:
             t_frac = (zc - zmin) / max(1e-4, z_neck - zmin)
             d_profile = 0.62 if t_frac > 0.65 else (0.56 if t_frac > 0.40 else (0.44 if t_frac > 0.15 else 0.50))
-            width_sub = max(0.04, float(np.ptp(sub[:, 1])))
+            width_sub = max(0.04, y_hi - y_lo)
             target_depth = max(curr_thick, min(head_depth * d_profile, width_sub * 0.72))
             target_depth = max(target_depth, head_depth * min_depth_ratio * (0.82 + 0.18 * t_frac))
-            slice_scales[i] = max(1.0, target_depth / curr_thick)
+            slice_scales[i] = float(np.clip(target_depth / curr_thick, 1.0, 8.5))
 
-    smooth_scales = gaussian_filter1d(slice_scales, sigma=1.8, mode="nearest")
-    smooth_centers = gaussian_filter1d(slice_centers_x, sigma=2.0, mode="nearest")
+    smooth_scales = gaussian_filter1d(slice_scales, sigma=2.2, mode="nearest")
+    smooth_centers = gaussian_filter1d(slice_centers_x, sigma=2.2, mode="nearest")
+    smooth_mid_y = gaussian_filter1d(slice_mid_y, sigma=2.2, mode="nearest")
+    smooth_half_w = np.maximum(0.025, gaussian_filter1d(slice_half_w, sigma=2.2, mode="nearest"))
 
     vz = np.clip((v_out[:, 2] - zmin) / (zmax - zmin) * (num_slices - 1), 0.0, num_slices - 1.001)
     iz = vz.astype(np.int32)
     fz = vz - iz
     v_scale = (1.0 - fz) * smooth_scales[iz] + fz * smooth_scales[iz + 1]
     v_center = (1.0 - fz) * smooth_centers[iz] + fz * smooth_centers[iz + 1]
+    v_mid_y = (1.0 - fz) * smooth_mid_y[iz] + fz * smooth_mid_y[iz + 1]
+    v_half_w = (1.0 - fz) * smooth_half_w[iz] + fz * smooth_half_w[iz + 1]
     neck_transition = np.clip((z_neck + dz * 2.0 - v_out[:, 2]) / (dz * 4.0), 0.0, 1.0)
 
-    for i in range(num_slices):
-        zc = slice_z[i]
-        in_band = np.abs(v_out[:, 2] - zc) <= half_band
-        if in_band.any() and slice_scales[i] > 1.02:
-            sub_y = v_out[in_band, 1]
-            y_mid = 0.5 * (float(sub_y.min()) + float(sub_y.max()))
-            y_half_w = max(1e-4, 0.5 * float(np.ptp(sub_y)))
-            rel_y = np.clip(np.abs(sub_y - y_mid) / y_half_w, 0.0, 1.0)
-            lateral_weight = np.sqrt(np.maximum(0.04, 1.0 - rel_y * rel_y * 0.90))
-
-            dx = v_out[in_band, 0] - v_center[in_band]
-            eff_scale = 1.0 + (v_scale[in_band] - 1.0) * lateral_weight * neck_transition[in_band]
-            v_out[in_band, 0] = v_center[in_band] + dx * eff_scale
+    # Single-pass continuous Lumo/Monster-Mash elliptical cross-section inflation (zero slice-overlap compounding).
+    rel_y = np.clip(np.abs(v_out[:, 1] - v_mid_y) / v_half_w, 0.0, 1.0)
+    lateral_weight = np.sqrt(np.maximum(0.08, 1.0 - rel_y * rel_y * 0.88))
+    dx = v_out[:, 0] - v_center
+    eff_scale = 1.0 + (v_scale - 1.0) * lateral_weight * neck_transition
+    max_half_depth = head_depth * 0.36
+    v_out[:, 0] = v_center + np.clip(dx * eff_scale, -max_half_depth, max_half_depth)
 
     if points is not None:
         p_out = points.astype(np.float32, copy=True)
@@ -227,9 +231,13 @@ def inflate_2_5d_mesh(vertices, faces, points=None, min_depth_ratio=0.52):
         fpz = pz - ipz
         p_scale = (1.0 - fpz) * smooth_scales[ipz] + fpz * smooth_scales[ipz + 1]
         p_center = (1.0 - fpz) * smooth_centers[ipz] + fpz * smooth_centers[ipz + 1]
+        p_mid_y = (1.0 - fpz) * smooth_mid_y[ipz] + fpz * smooth_mid_y[ipz + 1]
+        p_half_w = (1.0 - fpz) * smooth_half_w[ipz] + fpz * smooth_half_w[ipz + 1]
+        p_rel_y = np.clip(np.abs(p_out[:, 1] - p_mid_y) / p_half_w, 0.0, 1.0)
+        p_lat_w = np.sqrt(np.maximum(0.08, 1.0 - p_rel_y * p_rel_y * 0.88))
         p_neck_tr = np.clip((z_neck + dz * 2.0 - p_out[:, 2]) / (dz * 4.0), 0.0, 1.0)
         p_dx = p_out[:, 0] - p_center
-        p_out[:, 0] = p_center + p_dx * (1.0 + (p_scale - 1.0) * p_neck_tr)
+        p_out[:, 0] = p_center + p_dx * (1.0 + (p_scale - 1.0) * p_lat_w * p_neck_tr)
         return v_out, p_out
 
     return v_out
@@ -1042,52 +1050,75 @@ def _find_neck_pinch(vertices):
 
 
 def _refine_chibi_joints(vertices, joints):
-    """Correct chibi torso/arm limbs using 3D mesh neck-pinch and hanging sleeve silhouette."""
-    pinch = _find_neck_pinch(vertices)
-    if pinch is None:
-        return joints
-    z_neck, neck_hw = pinch
+    """Correct chibi torso/arm/leg limbs using 3D mesh neck-pinch, hanging sleeve silhouette, and chibi anatomical priors (CharacterGen / UniRig)."""
     height = max(0.1, float(np.ptp(vertices[:, 2])))
+    if len(vertices) < 32:
+        return joints
+    zmin = float(vertices[:, 2].min())
     mid_y = float(np.median(vertices[:, 1]))
+    pinch = _find_neck_pinch(vertices)
+    if pinch is not None:
+        z_neck, neck_hw = pinch
+    else:
+        z_neck = zmin + height * 0.52
+        neck_hw = height * 0.14
     joints = joints.copy()
 
-    # Clamp ViTPose shoulders down to the physical torso collar below the neck pinch when crushed into hair.
-    if max(float(joints[5, 2]), float(joints[6, 2])) > z_neck + height * 0.025:
-        z_sho = z_neck - height * 0.008
-        joints[5, 2] = min(float(joints[5, 2]), z_sho)
-        joints[6, 2] = min(float(joints[6, 2]), z_sho)
+    # 1. Clamp ViTPose shoulders down to the physical torso collar below the neck pinch when crushed into hair/cheeks.
+    z_sho_max = z_neck - height * 0.008
+    z_sho_min = zmin + height * 0.34
+    if max(float(joints[5, 2]), float(joints[6, 2])) > z_neck + height * 0.020 or min(float(joints[5, 2]), float(joints[6, 2])) < z_sho_min:
+        joints[5, 2] = float(np.clip(joints[5, 2], z_sho_min, z_sho_max))
+        joints[6, 2] = float(np.clip(joints[6, 2], z_sho_min, z_sho_max))
         for s_i, sign in ((5, 1.0), (6, -1.0)):
             lat = max(height * 0.08, min(abs(float(joints[s_i, 1]) - mid_y), neck_hw * 0.92))
             joints[s_i, 1] = mid_y + sign * max(lat, neck_hw * 0.88)
-            near_s = vertices[(abs(vertices[:, 2] - joints[s_i, 2]) < height * 0.03) & (abs(vertices[:, 1] - joints[s_i, 1]) < height * 0.04)]
+            near_s = vertices[(abs(vertices[:, 2] - joints[s_i, 2]) < height * 0.035) & (abs(vertices[:, 1] - joints[s_i, 1]) < height * 0.045)]
             if len(near_s) >= 6:
                 joints[s_i, 0] = 0.5 * float(np.percentile(near_s[:, 0], 90) + np.percentile(near_s[:, 0], 10))
+    if abs(float(joints[5, 1] - joints[6, 1])) < height * 0.10:
+        joints[5, 1] = mid_y + height * 0.065
+        joints[6, 1] = mid_y - height * 0.065
 
-    # Fix hanging A-pose chibi sleeves/wrists that pose estimators pull up into side curls or ears.
+    # 2. Enforce Chibi Anatomical Prior on hips, knees, and ankles so animal/chibi proportions never invert.
+    sho_mid_z = 0.5 * float(joints[5, 2] + joints[6, 2])
+    z_hip_max = sho_mid_z - height * 0.11
+    z_hip_min = zmin + height * 0.14
+    for h_i, k_i, a_i, sign in ((11, 13, 15, 1.0), (12, 14, 16, -1.0)):
+        if float(joints[h_i, 2]) > z_hip_max or float(joints[h_i, 2]) < z_hip_min:
+            joints[h_i, 2] = float(np.clip(joints[h_i, 2], z_hip_min, z_hip_max))
+        if abs(float(joints[h_i, 1]) - mid_y) < height * 0.035:
+            joints[h_i, 1] = mid_y + sign * height * 0.048
+        if float(joints[h_i, 2]) - float(joints[a_i, 2]) < height * 0.085:
+            joints[a_i, 2] = max(zmin + height * 0.025, float(joints[h_i, 2]) - height * 0.095)
+            joints[k_i, 2] = 0.5 * (float(joints[h_i, 2]) + float(joints[a_i, 2]))
+            joints[a_i, 1] = joints[h_i, 1]
+            joints[k_i, 1] = joints[h_i, 1]
+
+    # 3. Fix hanging A-pose chibi sleeves/wrists that pose estimators pull up into side curls, props, or pockets.
     hip_z = 0.5 * float(joints[11, 2] + joints[12, 2])
     for s_i, e_i, w_i, sign in ((5, 7, 9, 1.0), (6, 8, 10, -1.0)):
         sho = joints[s_i]
         wri = joints[w_i]
-        if float(wri[2]) < float(sho[2]) - height * 0.04:
+        if float(wri[2]) < float(sho[2]) - height * 0.085 and float(np.linalg.norm(wri - sho)) >= height * 0.065:
             continue
         z_hi = float(sho[2]) - height * 0.035
-        z_lo = max(float(vertices[:, 2].min()) + height * 0.10, hip_z - height * 0.08, float(sho[2]) - height * 0.36)
-        if z_hi - z_lo < height * 0.10:
-            continue
-        slices = np.linspace(z_lo, z_hi, 14)
-        exts = np.zeros(len(slices), dtype=np.float32)
-        for k_z, zc in enumerate(slices):
-            sub = vertices[(abs(vertices[:, 2] - zc) < height * 0.025) & ((vertices[:, 1] - mid_y) * sign > 0.0)]
-            if len(sub) >= 8:
-                y_out = float(np.percentile(sub[:, 1], 99 if sign > 0 else 1))
-                exts[k_z] = (y_out - mid_y) * sign
-        if float(exts.max()) <= neck_hw * 1.10:
-            continue
-        peak_k = int(np.argmax(exts[:max(1, len(exts) - 2)]))
-        z_wri = float(slices[peak_k]) - height * 0.015
+        z_lo = max(zmin + height * 0.16, hip_z + height * 0.005, float(sho[2]) - height * 0.28)
+        if z_hi - z_lo >= height * 0.08:
+            slices = np.linspace(z_lo, z_hi, 14)
+            exts = np.zeros(len(slices), dtype=np.float32)
+            for k_z, zc in enumerate(slices):
+                sub = vertices[(abs(vertices[:, 2] - zc) < height * 0.025) & ((vertices[:, 1] - mid_y) * sign > 0.0)]
+                if len(sub) >= 8:
+                    y_out = float(np.percentile(sub[:, 1], 99 if sign > 0 else 1))
+                    exts[k_z] = (y_out - mid_y) * sign
+            peak_k = int(np.argmax(exts[:max(1, len(exts) - 2)])) if float(exts.max()) > 0 else 0
+            z_wri = min(float(sho[2]) - height * 0.095, float(slices[peak_k]) - height * 0.015)
+        else:
+            z_wri = float(sho[2]) - height * 0.095
         z_elb = 0.5 * (float(sho[2]) + z_wri)
-        for target_i, zt, frac in ((e_i, z_elb, 0.78), (w_i, z_wri, 0.80)):
-            sub = vertices[(abs(vertices[:, 2] - zt) < height * 0.028) & ((vertices[:, 1] - mid_y) * sign > 0.0)]
+        for target_i, zt, frac in ((e_i, z_elb, 0.76), (w_i, z_wri, 0.78)):
+            sub = vertices[(abs(vertices[:, 2] - zt) < height * 0.032) & ((vertices[:, 1] - mid_y) * sign > 0.0)]
             if len(sub) >= 8:
                 y_out = float(np.percentile(sub[:, 1], 99 if sign > 0 else 1))
                 span_y = max(height * 0.04, (y_out - mid_y) * sign)
@@ -1098,6 +1129,12 @@ def _refine_chibi_joints(vertices, joints):
                         float(np.median(arm_pts[:, 1])),
                         zt,
                     ], dtype=np.float32)
+                    continue
+            joints[target_i] = np.array([
+                float(sho[0]),
+                float(sho[1]) + sign * height * (0.025 if target_i == e_i else 0.045),
+                zt,
+            ], dtype=np.float32)
     return joints
 
 
@@ -1561,14 +1598,16 @@ def _detach_and_cap_limbs(vertices, faces, normals, colors, weights, bones, bone
         zs = np.array([float(w_pt[2]) - height * 0.06, float(w_pt[2]), float(e_pt[2]), float(s_pt[2])], dtype=np.float32)
         ys = np.array([abs(float(w_pt[1]) - mid_y), abs(float(w_pt[1]) - mid_y), abs(float(e_pt[1]) - mid_y), abs(float(s_pt[1]) - mid_y)], dtype=np.float32)
         arm_lat = np.interp(vertices[:, 2], zs, ys)
-        # Carve at medial sleeve radius so the full cylindrical sleeve lifts instead of a thin front strip.
-        inner = arm_lat - max(height * 0.026, sleeve_r * 0.96)
-        floor_lim = torso_hw * (0.94 + 0.14 * t_down)
+        # Carve at medial sleeve radius while never slicing inside the torso/hip cylinder wall.
+        inner = arm_lat - max(height * 0.028, sleeve_r * 0.92)
+        floor_lim = torso_hw * (0.88 + 0.10 * t_down)
         return np.maximum(inner, floor_lim)
 
+    leg_cols = [idx[n] for n in ("pelvis", "left_thigh", "left_shin", "left_foot", "right_thigh", "right_shin", "right_foot") if n in idx]
     w_l = weights[:, l_cols].sum(axis=1)
     w_r = weights[:, r_cols].sum(axis=1)
     w_b = weights[:, body_cols].sum(axis=1)
+    w_leg = weights[:, leg_cols].sum(axis=1) if leg_cols else np.zeros(len(vertices), dtype=np.float32)
 
     flank_mask = (
         (vertices[:, 2] >= min(float(l_w[2]), float(r_w[2])) - height * 0.04)
@@ -1593,10 +1632,11 @@ def _detach_and_cap_limbs(vertices, faces, normals, colors, weights, bones, bone
             & (vertices[:, 0] >= np.maximum(front_floor_x, arm_x - max_dx))
             & (vertices[:, 0] <= arm_x + max_dx)
             & (lat <= max_lat)
+            & (w_leg < 0.16)
         )
         m = in_arm_tube & (w_side > w_b * 0.34) & (lat > cut_y)
 
-        # Full distal fist/paw capsule below wrist: never leave inner thumb/palm glued to torso/thigh.
+        # Full distal fist/paw capsule near wrist without dipping into thigh/coat-tails/pockets.
         hw = h_tip - w_pt
         h_den = max(1e-8, float(np.dot(hw, hw)))
         t_h = np.clip(((vertices - w_pt) @ hw) / h_den, 0.0, 1.0)
@@ -1615,9 +1655,9 @@ def _detach_and_cap_limbs(vertices, faces, normals, colors, weights, bones, bone
             & (vertices[:, 2] <= float(w_pt[2]) + height * 0.025)
             & (vertices[:, 0] >= float(w_pt[0]) - height * 0.056)
             & (vertices[:, 0] <= float(w_pt[0]) + height * 0.058)
+            & (w_leg < 0.16)
         )
         m &= (~below_w) | hand_tube
-        # Claim whole hanging fist/paw near/below wrist even when chest/thigh weights bled into fused seam.
         m |= hand_tube & (w_side > 0.12) & ((below_w) | (lat >= abs(float(w_pt[1]) - mid_y) - sleeve_r * 1.05))
 
         # Separate exposed outer sleeve from overlapping vest pocket flaps without slicing off shadow sleeve walls.
@@ -1637,12 +1677,13 @@ def _detach_and_cap_limbs(vertices, faces, normals, colors, weights, bones, bone
                     d_s = np.linalg.norm(colors - sl_rgb[None, :], axis=1)
                     outer_hand_hint = (
                         (vertices[:, 2] < float(e_pt[2]) + height * 0.02)
-                        & (vertices[:, 2] >= float(h_tip[2]) - height * 0.036)
-                        & (lat >= arm_y - height * 0.004)
+                        & (vertices[:, 2] >= float(w_pt[2]) - height * 0.016)
+                        & (lat >= np.maximum(cut_y, arm_y - height * 0.004))
                         & (lat <= max_lat)
                         & (vertices[:, 0] >= arm_x - max_dx)
-                        & (d_t > 0.14)
-                        & (w_side > 0.14)
+                        & (d_t > 0.16)
+                        & (w_side > w_b * 0.40)
+                        & (w_leg < 0.16)
                     )
                     m |= outer_hand_hint & ((~below_w) | hand_tube)
                     vest_flap = (
@@ -1658,6 +1699,18 @@ def _detach_and_cap_limbs(vertices, faces, normals, colors, weights, bones, bone
     v_side = np.zeros(len(vertices), dtype=np.int8)
     is_l = _refined_side(l_s, l_e, l_w, l_ht, l_sr, 1.0, w_l) & (w_l >= w_r)
     is_r = _refined_side(r_s, r_e, r_w, r_ht, r_sr, -1.0, w_r) & (w_r > w_l)
+    # Reject thin pocket/coat-hem slivers or akimbo/pocket-tucked hands that would slice into the hip/thigh.
+    for side_mask, w_s_arr, e_pt_c, w_pt_c, s_sign in ((is_l, w_l, l_e, l_w, 1.0), (is_r, w_r, r_e, r_w, -1.0)):
+        if int(side_mask.sum()) > 0:
+            w_lat = abs(float(w_pt_c[1]) - mid_y)
+            e_lat = abs(float(e_pt_c[1]) - mid_y)
+            if w_lat < e_lat - height * 0.024:
+                side_mask[:] = False
+                continue
+            lats_s = (vertices[side_mask, 1] - mid_y) * s_sign
+            lat_span = float(np.percentile(lats_s, 92) - np.percentile(lats_s, 8)) if len(lats_s) >= 8 else 0.0
+            if int(side_mask.sum()) < 16 or float(w_s_arr[side_mask].mean()) < 0.38 or lat_span < height * 0.016:
+                side_mask[:] = False
     v_side[is_l] = 1
     v_side[is_r] = 2
 

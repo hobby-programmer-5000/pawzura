@@ -169,13 +169,114 @@ def clean_cutout_rgba(rgb_arr, alpha_raw):
     if interior_holes.any():
         alpha[interior_holes] = 1.0
 
-    fg_comp, n_fg = label(alpha > 0.12)
+    # Split touching multi-view turnaround figures (e.g., front + back views whose hands/cuffs touch across a narrow bridge).
+    h_img, w_img = alpha.shape
+    for _ in range(3):
+        fg_tmp, n_tmp = label(alpha > 0.14)
+        split_any = False
+        for cid in range(1, n_tmp + 1):
+            ys, xs = np.where(fg_tmp == cid)
+            if len(ys) < int(h_img * w_img * 0.06):
+                continue
+            y0, y1 = int(ys.min()), int(ys.max())
+            x0, x1 = int(xs.min()), int(xs.max())
+            hc, wc = y1 - y0 + 1, x1 - x0 + 1
+            if hc < int(h_img * 0.38) or wc < int(hc * 0.50):
+                continue
+            sub_m = (fg_tmp[y0 : y1 + 1, x0 : x1 + 1] == cid)
+            col_full = sub_m.sum(axis=0).astype(np.float32)
+            head_h = max(8, int(hc * 0.32))
+            col_head = sub_m[:head_h, :].sum(axis=0).astype(np.float32)
+            margin_x = max(8, int(wc * 0.18))
+            if wc <= 2 * margin_x + 8:
+                continue
+            best_vx = -1
+            best_v_ratio = 1.0
+            for vx in range(margin_x, wc - margin_x):
+                if col_head[vx] > hc * 0.26:
+                    continue
+                left_peak = float(col_full[:vx].max()) if vx > 0 else 0.0
+                right_peak = float(col_full[vx + 1 :].max()) if vx + 1 < wc else 0.0
+                if min(left_peak, right_peak) < hc * 0.50:
+                    continue
+                v_ratio = (float(col_full[vx]) + 0.35 * float(col_head[vx])) / max(1.0, min(left_peak, right_peak))
+                if v_ratio < 0.56 and v_ratio < best_v_ratio:
+                    best_v_ratio = v_ratio
+                    best_vx = vx
+            if best_vx >= 0:
+                cut_x = x0 + best_vx
+                alpha[y0 : y1 + 1, max(0, cut_x - 2) : min(w_img, cut_x + 3)] = 0.0
+                split_any = True
+        if not split_any:
+            break
+
+    fg_comp, n_fg = label(alpha > 0.14)
     if n_fg > 1:
+        cy_img, cx_img = 0.5 * h_img, 0.5 * w_img
+        sigma_c = 0.48 * max(h_img, w_img)
         counts = np.bincount(fg_comp.ravel())
         counts[0] = 0
-        main_area = int(counts.max())
-        keep_fg = counts >= max(48, int(main_area * 0.025))
-        keep_fg[0] = True
+        best_id = 1
+        best_score = -1.0
+        for cid in range(1, n_fg + 1):
+            if counts[cid] < 32:
+                continue
+            ys, xs = np.where(fg_comp == cid)
+            y0, y1 = int(ys.min()), int(ys.max())
+            x0, x1 = int(xs.min()), int(xs.max())
+            hc, wc = max(1, y1 - y0 + 1), max(1, x1 - x0 + 1)
+            dy = float(ys.mean()) - cy_img
+            dx = float(xs.mean()) - cx_img
+            spatial_w = float(np.exp(-(dx * dx + dy * dy) / (2.0 * sigma_c * sigma_c)))
+            aspect = float(wc) / float(hc)
+            aspect_w = 1.0 if (0.26 <= aspect <= 0.52 and hc >= int(h_img * 0.42)) else 0.28
+            # Penalize fused 2-headed turnaround blobs that have a bimodal crown notch in the top 18% or wide dual-head span.
+            crown_h = max(6, int(hc * 0.18))
+            col_crown = (fg_comp[y0 : y0 + crown_h, x0 : x1 + 1] == cid).sum(axis=0).astype(np.float32)
+            head_band = fg_comp[y0 : y0 + int(hc * 0.30), x0 : x1 + 1] == cid
+            head_xs = np.where(head_band.any(axis=0))[0]
+            head_span_ratio = float(head_xs[-1] - head_xs[0] + 1) / float(hc) if len(head_xs) >= 2 else 0.0
+            two_head_w = 0.15 if head_span_ratio > 0.43 else 1.0
+            if wc > 24:
+                c_margin = max(4, int(wc * 0.22))
+                for cvx in range(c_margin, wc - c_margin):
+                    lc = float(col_crown[:cvx].max()) if cvx > 0 else 0.0
+                    rc = float(col_crown[cvx + 1 :].max()) if cvx + 1 < wc else 0.0
+                    if min(lc, rc) >= crown_h * 0.45 and float(col_crown[cvx]) < 0.55 * min(lc, rc):
+                        two_head_w = 0.12
+                        break
+            # Frontal face/eye contrast prior strictly in the head zone (above collar/chest) so cream jackets on back views never mimic face skin.
+            fy0, fy1 = y0 + int(hc * 0.10), y0 + int(hc * 0.27)
+            fx0, fx1 = x0 + int(wc * 0.24), x0 + int(wc * 0.76)
+            face_bonus = 1.0
+            if fy1 > fy0 + 4 and fx1 > fx0 + 4:
+                f_mask = fg_comp[fy0:fy1, fx0:fx1] == cid
+                f_fill = float(f_mask.mean())
+                if f_fill < 0.18:
+                    face_bonus = 0.20
+                else:
+                    f_rgb = rgb[fy0:fy1, fx0:fx1][f_mask]
+                    f_lum = 0.299 * f_rgb[:, 0] + 0.587 * f_rgb[:, 1] + 0.114 * f_rgb[:, 2]
+                    lum_span = float(np.percentile(f_lum, 92) - np.percentile(f_lum, 8)) if len(f_lum) >= 8 else 0.0
+                    dark_eye_frac = float((f_lum < 0.28).mean())
+                    skin_like = float(((f_rgb[:, 0] > 0.62) & (f_rgb[:, 0] > f_rgb[:, 1] * 1.03) & (f_rgb[:, 1] > f_rgb[:, 2] * 1.04) & ((f_rgb[:, 0] - f_rgb[:, 2]) > 0.08)).mean())
+                    has_eyes_and_skin = 2.20 if (dark_eye_frac >= 0.020 and skin_like >= 0.14) else 0.35
+                    face_bonus = has_eyes_and_skin * (1.0 + 1.15 * np.clip(lum_span, 0.0, 0.75) + 1.25 * skin_like)
+            score = float(counts[cid]) * spatial_w * aspect_w * two_head_w * float(face_bonus)
+            if score > best_score:
+                best_score = score
+                best_id = cid
+        main_mask = fg_comp == best_id
+        main_area = max(1, int(counts[best_id]))
+        dist_to_main = distance_transform_edt(~main_mask)
+        keep_fg = np.zeros(n_fg + 1, dtype=bool)
+        keep_fg[best_id] = True
+        for cid in range(1, n_fg + 1):
+            if cid == best_id or counts[cid] < 24:
+                continue
+            # Only keep tiny nearby silhouette tufts (e.g., hair/ear tips <= 8px from main body), never detached secondary bodies/props.
+            if counts[cid] <= int(main_area * 0.06) and float(dist_to_main[fg_comp == cid].min()) <= 8.0:
+                keep_fg[cid] = True
         alpha = np.where(keep_fg[fg_comp], alpha, 0.0)
 
     solid = alpha >= 0.88
@@ -242,11 +343,12 @@ def generate(tier, cache, payload):
         pipe.enable_attention_slicing("max")
     else:
         pipe.enable_model_cpu_offload()
-    composed = "solo, 1person, single full-body chibi character only, front view, isolated on pure white background, crisp clean shading. " + prompt
+    prefix = "1person, " if prompt.lower().startswith("solo ") else "solo, 1person, centered single chibi character looking at viewer, full-body standing on plain white background. "
+    composed = prefix + prompt
     report("art_sampling", 0, 32)
     with torch.inference_mode():
         output = pipe(prompt=composed,
-                      negative_prompt="nsfw, nude, sexual, gore, logo, text, watermark, signature, cropped, frame, multiple characters, 2girls, 2boys, duo, pair, 2characters, multiple people, two people, twins, group, clone, companion, character sheet, reference sheet, turnaround sheet, multiple views, multiple poses, collage, montage, comic panels, duplicate bodies, portrait insets, pedestal, base, plinth, stand, platform, podium, ground shadow, drop shadow, floor shadow, shadow under feet, grey floor, ground plane, gradient background, blurry face, muddy colors, low contrast",
+                      negative_prompt="multiple characters, 2girls, 2boys, 2views, 3views, front and back, turnaround, character sheet, reference sheet, multiple views, back view, from behind, outfit breakdown, split screen, duo, pair, twins, group, clone, nsfw, nude, sexual, gore, logo, text, watermark, signature, cropped, half body, bust, portrait, upper body only, cowboy shot, holding object, holding weapon, holding book, holding scroll, holding rose, hands in pockets, crossed arms, crossed legs, frame, border, furniture, bookshelf, wall, room, background scenery, collage, montage, comic panels, duplicate bodies, portrait insets, floating head, pedestal, base, plinth, stand, platform, podium, ground shadow, drop shadow, floor shadow, shadow under feet, grey floor, ground plane, gradient background, blurry face, muddy colors, low contrast",
                       height=size, width=size, num_inference_steps=32, guidance_scale=7.5,
                       callback_on_step_end=sampling_progress,
                       generator=torch.Generator("cpu").manual_seed(seed))

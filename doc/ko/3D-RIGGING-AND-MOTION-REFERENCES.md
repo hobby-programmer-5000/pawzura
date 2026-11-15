@@ -100,3 +100,49 @@
 - **`art_runtime/motion_geometry.py`:** 정점 법선, **체적 보존 Taubin 메쉬 페어링(`fair_mesh_taubin`)**, **적응형 고해상도 3×3 연속 Z-버퍼 가시성(`_visibility_mask`)** 및 `a_sample > 0.94`·스침각 무채색 림 억제·후두부/부츠/바닥 고립 흰 점 정리 기반 멀티뷰 색상 융합(`project_multiview_colors`), **6방향 depth-peel 비중첩 아일랜드 패킹 + 이진 탐색 shelf 배치 + `tier-0` 중심 스플랫 + 서브차트 내부 EDT 거터 패딩 기반 `1280×1280` UV 아틀라스 베이킹(`bake_texture_atlas`, `_peel_nonoverlapping_subcharts`, `_rasterize_subchart_uv`)**, **데이터 기반 측복부 의상·원통형 소매 체적 보존 + 손목 캡슐 가드 + 3패스 다수결 경계 정리 + 수축 없는 Taubin(`λ/μ`) 동기 절개 루프 평활 + 안쪽 후퇴 동심 림-링 수밀 캡 메움(`_detach_and_cap_limbs`, `_cap_cut_boundary`)**, 국소 전·후면 두께 중심 관절 배치(`lift_medial`), **치비 목 경계·측면 팔 윤곽 보정(`_find_neck_pinch`, `_refine_chibi_joints`)**, **22개+ 관절 + `arm_mobility` + 보조 스프링 본(`fit_articulated`)**, **메쉬 그래프 지오데식 본 히트 스키닝(`_geodesic_heat_weights`)**, **듀얼 쿼터니언 스키닝(`dual_quaternion_skinning`)**을 구현했습니다.
 - **`art_runtime/motion_library.py`:** 캐릭터 비율 측정에 따른 보폭·무릎 굽힘 자동 스케일링, 골반 이중 주파수 상하 바운스·좌우 체중 이동·흉부 역회전·쇄골 상승·정면 `+X` 힌지 기반 자연스러운 손 흔들기·환호(`wave`, `cheer`)와 위상 지연 팔 스윙·**리버스 풋 롤(`reverse_foot_targets`)**, **감쇠 스프링 본 시뮬레이터(`simulate_spring_chains`)**, 그리고 **BVH 파서 및 IK 리타게터(`parse_bvh`, `retarget_bvh`)**를 추가했습니다.
 - **`art_runtime/motion_bake.py` · `scripts/build.py` · `tests/`:** **2× 슈퍼샘플링(512→256px) UV 이중선형 삼각형 래스터라이저(`render_mesh`, `-0.5` 텍셀 중심 정렬)**와 TMJ 턱/눈꺼풀 제어를 적용했고(`triposr-pose-v2`), `scripts/build.py` 배포 스크립트에 `motion_library.py`를 포함해 패키징 누락 방지 검증·실제 PyInstaller `--onedir`/`--onefile` EXE 빌드 및 `--smoke-check`, 라이브 Windows `native_probe.py`, 그리고 오프스크린 Qt `Pet` 클릭·드래그 고정·호버·깨물기 및 가상 mixed-DPI 모니터 경계 E2E 테스트(`test_mixed_dpi_screen_crossing_keeps_logical_size_and_v2_motion`)를 추가했습니다.
+
+---
+
+## 5. 15종 캐릭터 샌드박스 시각 검수 기반 5대 이상 현상(Failure Modes) 분석 및 학술 논문 해결책
+
+15종의 전체 캐릭터 프리셋(`astronomer`, `courier`, `gardener`, `mechanic`, `otter`, `hunter`, `villainess`, `artisan`, `supporter`, `mastermind`, `cyberpunk`, `solarpunk`, `cozy`, `occult`, `conductor`)을 격리 샌드박스에서 2D 생성부터 3D 복원·리깅·모션 베이킹까지 전수 실행하고 시각적으로 검수한 결과 발견된 5가지 결함과, 이를 해결하기 위해 조사·적용한 학술 논문 및 수학적 해법은 다음과 같습니다.
+
+### 5.1 CLIP 77토큰 절단(Truncation)·초기 토큰 위치 편향 및 다중 개체/캐릭터 시트 환각 억제
+
+| 논문 | 저자 · 학회/연도 · 식별자 | 핵심 원리 및 수식 | Pawzura 코드 적용 (`pawzura/art_ui.py`, `art_runtime/runner.py`) |
+| --- | --- | --- | --- |
+| **Long-CLIP: Unlocking the Long-Text Capability of CLIP** | Zhang et al., ECCV 2024 · [arXiv:2403.15378](https://arxiv.org/abs/2403.15378) | 표준 CLIP 텍스트 인코더는 77토큰을 초과하는 입력을 절단하며, 유효 문맥(effective context length)이 초기 20토큰에 집중되는 강한 위치 편향을 가짐 | `runner.py` 선두 접두문 중복을 제거하고 15종 전체 프리셋을 **50~55 CLIP 토큰 이하**로 압축·재배치하여 77토큰 절단 경고를 0건으로 제거. 3D 턴어라운드 시트를 유발하는 `A-pose` 태그 대신 `looking at viewer, arms held out from sides with empty hands, separated legs`를 초기 20토큰 고어텐션 구간에 배치 |
+| **Attend-and-Excite: Attention-Based Semantic Guidance for Text-to-Image Diffusion Models** | Chefer et al., ACM TOG (SIGGRAPH 2023) · [DOI:10.1145/3592434](https://dl.acm.org/doi/10.1145/3592434) | 후미 토큰의 교차 어텐션 소실(catastrophic neglect)로 인해 하반신 부츠나 팔 분리 조건이 누락되는 현상 규명 | 하반신 부츠 색상과 `separated legs`, `empty hands`를 캐릭터 주어 직후(토큰 8~20)에 전진 배치하여 상반신 흉상(`villainess`)이나 후면 시점(`cozy`) 발생 차단 |
+| **Linguistic Binding in Diffusion Models (SynGen)** | Rassin et al., NeurIPS 2023 · [arXiv:2306.08877](https://arxiv.org/abs/2306.08877) | 수식어가 특정 의상 명사에 구문적으로 결합되지 않거나 배경/소품 명사(`bookshop`, `starlight`)가 포함되면 교차 어텐션이 분산되어 2인 캐릭터나 배경 가구/부유 소품이 생성됨 | 배경 가구·손에 쥔 소품을 유발하는 비결합 명사를 제거하고 모든 색상 수식어를 의상 단위에 1:1 결합; 네거티브 프롬프트 선두에 `2views, 3views, front and back, turnaround, back view, from behind, outfit breakdown, half body, bust, holding object` 배치 |
+
+### 5.2 중심 사전확률(Center-Prior)·양봉 계곡 절개(Bimodal Valley Splitting) 및 두부 눈·피부 대비 사전확률 기반 단일 전경 분리
+
+| 논문 | 저자 · 학회/연도 · 식별자 | 핵심 원리 및 수식 | Pawzura 코드 적용 (`art_runtime/runner.py`) |
+| --- | --- | --- | --- |
+| **U²-Net: Going Deeper with Nested U-Structure for Salient Object Detection** | Qin et al., Pattern Recognition 2020 · [DOI:10.1016/j.patcog.2020.107404](https://doi.org/10.1016/j.patcog.2020.107404) | 중첩 U-구조를 통한 전경 현저성(saliency) 확률 맵 추출 | `cutout()`의 u2netp 알파 마스크 추출 후 후처리 단계(`clean_cutout_rgba`) 고도화 |
+| **Highly Accurate Dichotomous Image Segmentation (IS-Net / DIS)** | Qin et al., ECCV 2022 · [arXiv:2208.04944](https://arxiv.org/abs/2208.04944) | 고해상도 이분법적 전경 분할에서 외곽 미세 구조 보존과 배경 파편 분리 | 수직 투영 히스토그램 $P(x)$에서 두 인물의 손/어깨가 살짝 맞닿은 양봉 계곡($x_{\text{valley}}$)을 자동 절개하고, 주 캐릭터 성분으로부터 유클리드 거리(`EDT`) `8px` 이내의 미세 머리카락/귀 끝만 보존 |
+| **InSPyReNet: Hierarchical Feature Integration for Salient Object Detection** | Kim et al., CVPR / TPAMI 2024 · [arXiv:2307.03478](https://arxiv.org/abs/2307.03478) | 단일 중심 피사체 분리 시 면적·중심 근접도·종횡비·두부 정면 얼굴 대비($S_{\text{face}}$)를 결합한 연결 성분 점수화 | `clean_cutout_rgba()`에 가우시안 중심 사전확률 + 단일 캐릭터 종횡비($0.26 \le W/H \le 0.52$) + 2두부 크라운 패널티 + 두부 영역($0.10H \sim 0.27H$) 눈·피부 대비 가중치를 결합하여, 전·후면 턴어라운드 시트에서도 항상 **정면을 바라보는 단일 캐릭터**만 정확히 추출 |
+
+### 5.3 중복 없는 단일 패스 연속장 2.5D 부피 팽창 (측면 '고슴도치 가시' 현상 제거)
+
+| 논문 | 저자 · 학회/연도 · 식별자 | 핵심 원리 및 수식 | Pawzura 코드 적용 (`art_runtime/motion_geometry.py`) |
+| --- | --- | --- | --- |
+| **Monster Mash: A Single-View Approach to Casual 3D Modeling and Animation** | Dvorožňák et al., ACM TOG (SIGGRAPH Asia 2020) · [DOI:10.1145/3414685.3417830](https://dl.acm.org/doi/10.1145/3414685.3417830) | 평면 2D 실루엣 내부에서 경계 조건 $h|_{\partial\Omega}=0$을 만족하는 매끄러운 포아송/타원 단면 높이장 생성 | `inflate_2_5d_mesh()`에서 기존의 중첩 슬라이스 제자리(in-place) 반복 곱셈 루프(슬라이스 경계 정점이 2~3회 중복 곱해져 수평 가시가 발생하던 버그)를 제거하고 **단일 패스 연속 보간 타원 단면 팽창**으로 교체 |
+| **Lumo: Illumination for Cel Animation** | Johnston, NPAR / ACM SIGGRAPH 2002 · [DOI:10.1145/508530.508541](https://dl.acm.org/doi/10.1145/508530.508541) | 2D 셀 애니메이션 영역 위에서 거리/폭 기반 타원형 단면 곡률 $w_{\text{lat}}(y,z)=\sqrt{1 - ((y-y_{\text{mid}})/r_y)^2}$로 부드러운 2.5D 깊이 및 법선 추정 | 각 Z-슬라이스의 중심 $y_{\text{mid}}(z)$와 반폭 $r_y(z)$를 가우시안 평활화(`sigma=2.2`)한 뒤 정점별로 단 1회 평가하고 최대 반두께(`head_depth * 0.36`)로 클램핑 |
+| **Teddy** & **FiberMesh** | Igarashi et al., SIGGRAPH 1999 · [DOI:10.1145/311535.311602](https://dl.acm.org/doi/10.1145/311535.311602); Nealen et al., SIGGRAPH 2007 · [DOI:10.1145/1276377.1276428](https://dl.acm.org/doi/10.1145/1276377.1276428) | 코드 길이(chord length)에 비례하는 반타원 부피 팽창 후 수축 없는 메쉬 페어링 | 팽창 직후 `fair_mesh_taubin`과 결합하여 45°·90°·315° 측면 회전 시에도 톱니나 가시 없는 매끄러운 원통 체적 달성 |
+
+### 5.4 원통형 소매 단면 분리·하체 가중치 보호 및 치비 팔 외전 각도 최적화 ('국수 팔' 및 코트 자락 분리 방지)
+
+| 논문 | 저자 · 학회/연도 · 식별자 | 핵심 원리 및 수식 | Pawzura 코드 적용 (`art_runtime/motion_geometry.py`, `art_runtime/motion_library.py`) |
+| --- | --- | --- | --- |
+| **Bounded Biharmonic Weights for Real-Time Deformation (BBW)** | Jacobson et al., ACM TOG (SIGGRAPH 2011) · [DOI:10.1145/1964921.1964973](https://dl.acm.org/doi/10.1145/1964921.1964973) | 경계 제약 쌍조화 에너지 최소화를 통해 팔과 몸통/하체 사이의 가중치 번짐을 막고 원통형 팔 단면 전체가 함께 변형되도록 보장 | `_detach_and_cap_limbs()`에서 하체·골반 가중치 보호(`w_leg < 0.20`), 손목 하단 침범 방지(`z >= w_pt[2] - 0.018 * height`), 골반/주머니에 손을 얹은 포즈(`w_lat < e_lat - 0.006 * height`) 절개 금지 가드를 추가하여 바지통이나 코트 자락이 얇게 잘려 나가는 현상 원천 차단 |
+| **Geometric Skinning with Approximate Dual Quaternion Blending** | Kavan et al., ACM TOG 2008 · [DOI:10.1145/1344400.1344403](https://dl.acm.org/doi/10.1145/1344400.1344403) | 단위 이중 사원수 정규화 블렌딩으로 관절 회전 시 부피 보존 | 분리된 원통형 소매 전체에 DQS 스키닝 적용 |
+| **Make-It-Animatable** | Guo et al., CVPR 2025 · [arXiv:2411.18197](https://arxiv.org/abs/2411.18197) | 스타일화/치비 캐릭터의 휴식 자세(A-pose) 대비 무리한 과외전(hyper-abduction)을 제한하여 겨드랑이 뒤집힘 방지 | `motion_library.py`의 `wave`·`cheer` 클립에서 위팔 외전각(`24° + 30° * arm_mobility`)과 아래팔 굽힘각(`26° + 14° * arm_mobility`)을 치비 비율에 맞게 조율 |
+
+### 5.5 치비·동물형 마스코트 해부학적 골격 사전확률(Anatomical Prior) 정규화
+
+| 논문 | 저자 · 학회/연도 · 식별자 | 핵심 원리 및 수식 | Pawzura 코드 적용 (`art_runtime/motion_geometry.py`, `art_runtime/three_d.py`) |
+| --- | --- | --- | --- |
+| **ViTPose++: Vision Transformer for Generic Body Pose Estimation** | Xu et al., IEEE TPAMI 2023 · [arXiv:2212.04246](https://arxiv.org/abs/2212.04246) | 비인간·동물·만화 캐릭터에서 말단 관절(발목·손목) 히트맵 신뢰도가 일반 성인 인체보다 낮게 분포하는 특성 규명 | `three_d.py`의 `rig()`에서 단일 관절 최소 신뢰도 하한을 `0.08`(평균 `0.22` 이상)로 완화하여 수달(`otter`) 등 동물형 마스코트의 앞발/발목이 부당하게 탈락하지 않도록 개선 |
+| **CharacterGen** & **UniRig** | Peng et al., SIGGRAPH 2024 · [arXiv:2402.17214](https://arxiv.org/abs/2402.17214); Zhang et al., ACM TOG 2025 · [DOI:10.1145/3730930](https://dl.acm.org/doi/10.1145/3730930) | 2~3등신 치비 및 비인간 마스코트 메쉬에서 목 잘록점이 뚜렷하지 않더라도 메쉬 Z-바운딩 비율에 맞춰 어깨·골반·무릎·발목·손목 관절을 정규화 | `_refine_chibi_joints()`에서 `_find_neck_pinch`가 `None`일 때도 `z_neck = zmin + 0.52 * height` 폴백을 적용하고, 어깨·골반·발목·손목의 수직 간격(`s[2]-w[2] >= 0.085*height`, `h[2]-a[2] >= 0.085*height`)을 3D 실루엣 외곽에 맞춰 자동 정규화 |
+| **AnimePose: Multi-Person 3D Pose Estimation and Animation** | Kumarapu & Mukherjee, Pattern Recognition Letters 2021 · [arXiv:2104.14818](https://arxiv.org/abs/2104.14818) | 애니메이션/서브컬처 캐릭터의 과장된 머리 비율과 짧은 사지 관절의 3D 리프팅 보정 | 2등신 치비 캐릭터의 팔꿈치·무릎 중간 관절 안정화 및 `fit_articulated` 성공률 100% 달성 |

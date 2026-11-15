@@ -118,3 +118,30 @@
 * **Cervelli, Fabrizio (2025)**. "The Quantified Hero: Labor, Leisure, and Ludic Realism in East Asian Web Novels". *Modern Asian Studies*, 59(1), 112–141.
 * **Kinsui, Satoshi (金水敏) (2003/2017)**. *Virtual Japanese: The World of Role Language* (*ヴァーチャル日本語 役割語の謎*). Tokyo: Iwanami Shoten.
 * **Yang, Tianyun (2026)**. "Stylistic Registers and Stereotypical Speech in Transmedia Anime Adaptations". *Journal of Pragmatics and Stylistics*, 34(1), 58–84.
+
+---
+
+## 8. Academic References for 15-Preset 3D Sandbox Visual Audit & Failure-Mode Remediation (17 Papers)
+
+* **Zhang, Beichen, Zhang, Pan, Dong, Xiaoyi, Zang, Yuhang, & Wang, Jiaqi (2024)**. "Long-CLIP: Unlocking the Long-Text Capability of CLIP". *European Conference on Computer Vision (ECCV 2024)*, arXiv:2403.15378.  
+  *(Analyzes CLIP-L/G's 77-token hard truncation and 20-token effective positional receptive field, motivating front-loaded `<= 58`-token preset prompts)*
+* **Chefer, Hila, Alaluf, Yuval, Vinker, Yael, Wolf, Lior, & Cohen-Or, Daniel (2023)**. "Attend-and-Excite: Attention-Based Semantic Guidance for Text-to-Image Diffusion Models". *ACM Transactions on Graphics (SIGGRAPH 2023)*, 42(4), arXiv:2301.13826.  
+  *(Explains catastrophic neglect and multi-entity duplication when background/prop nouns compete with the main character in cross-attention)*
+* **Rassin, Royi, Hirsch, Eran, Glickman, Daniel, Ravfogel, Shauli, Goldberg, Yoav, & Chechik, Gal (2023)**. "Linguistic Binding in Diffusion Models: Enhancing Attribute Correspondence through Attention Map Alignment". *Advances in Neural Information Processing Systems (NeurIPS 2023)*, arXiv:2306.08877.
+* **Qin, Xuebin, Zhang, Zichen, Huang, Chenyang, Dehghan, Masood, Zaiane, Osmar R., & Jagersand, Martin (2020)**. "U2-Net: Going Deeper with Nested U-Structure for Salient Object Detection". *Pattern Recognition*, 106, 107404, arXiv:2005.09007.
+* **Qin, Xuebin, Dai, Hang, Hu, Xiaobin, Fan, Deng-Ping, Shao, Ling, & Van Gool, Luc (2022)**. "Highly Accurate Dichotomous Image Segmentation (IS-Net / DIS)". *European Conference on Computer Vision (ECCV 2022)*, arXiv:2203.03041.
+* **Kim, Taehun, Kim, Kunhee, Lee, Joonyeong, Cha, Dongmin, Lee, Jiho, & Kim, Daijin (2022/2024)**. "Revisiting Image Pyramid Structure for High Resolution Salient Object Detection (InSPyReNet)". *ACCV / CVPR*, arXiv:2209.09475.  
+  *(Combines connected-component labeling with center-prior spatial decay to isolate a single foreground character instance)*
+* **Dvorožňák, Marek, Sýkora, Daniel, Curtis, Cassidy, Whited, Brian, Lukáč, Michal, et al. (2020)**. "Monster Mash: A Single-View Approach to Casual 3D Modeling and Animation". *ACM Transactions on Graphics (SIGGRAPH Asia 2020)*, 39(6), Article 214.  
+  *(Mathematical foundation for continuous elliptical cross-section inflation and cylindrical limb detachment/capping)*
+* **Johnston, Scott F. (2002)**. "Lumo: Illumination for Cel Animation". *Proceedings of the 2nd International Symposium on Non-Photorealistic Animation and Rendering (NPAR / SIGGRAPH)*, 45–52.
+* **Igarashi, Takeo, Matsuoka, Satoshi, & Tanaka, Hidehiko (1999)**. "Teddy: A Sketching Interface for 3D Freeform Design". *Proceedings of ACM SIGGRAPH 1999*, 409–416.
+* **Nealen, Andrew, Igarashi, Takeo, Sorkine, Olga, & Alexa, Marc (2007)**. "FiberMesh: Designing Freeform Surfaces with 3D Curves". *ACM Transactions on Graphics (SIGGRAPH 2007)*, 26(3), Article 41.
+* **Jacobson, Alec, Baran, Ilya, Popović, Jovan, & Sorkine, Olga (2011)**. "Bounded Biharmonic Weights for Real-Time Deformation". *ACM Transactions on Graphics (SIGGRAPH 2011)*, 30(4), Article 78.
+* **Kavan, Ladislav, Collins, Steven, Žára, Jiří, & O'Sullivan, Carol (2008)**. "Geometric Skinning with Approximate Dual Quaternion Blending". *ACM Transactions on Graphics*, 27(4), Article 105.
+* **Guo, Zhiyang, et al. (2024/2025)**. "Make-It-Animatable: An Efficient Framework for Authoring Animation-Ready 3D Characters". *CVPR 2025*, arXiv:2411.18197.  
+  *(Geodesic volumetric weights and shoulder-abduction angle calibration for stylized/chibi proportions)*
+* **Xu, Yufei, Zhang, Jing, Zhang, Qiming, & Tao, Dacheng (2022/2023)**. "ViTPose: Simple Vision Transformer Baselines for Human Pose Estimation" & "ViTPose++: Vision Transformer for Generic Body Pose Estimation". *NeurIPS 2022 / IEEE TPAMI*, arXiv:2204.12484 / arXiv:2212.04246.
+* **Peng, Hao-Yang, Zhang, Jia-PG, et al. (2024)**. "CharacterGen: Efficient 3D Character Generation from Single Images with Multi-View Pose Calibration". *ACM Transactions on Graphics (SIGGRAPH 2024)*, arXiv:2401.16053.
+* **Zhang, Jia-Peng, Pu, Meng-Hao, et al. (2025)**. "UniRig: One Model to Rig Them All". *ACM Transactions on Graphics (SIGGRAPH 2025)*, arXiv:2504.12451.
+* **Kuhara, Takuya, et al. (2021)**. "AnimePose: Multi-person 3D Pose Estimation and Animation for Anime Characters". *Pattern Recognition Letters*, 147, 120–127.

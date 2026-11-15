@@ -72,8 +72,8 @@ class ArtworkExamplesTests(unittest.TestCase):
                     if language == 'en':
                         self.assertTrue(prompt.isascii())
                         self.assertLessEqual(len(prompt), 512)
-                        self.assertTrue(prompt.startswith('Solo single chibi '))
-                        self.assertIn('upright full-body front view', prompt)
+                        self.assertTrue(prompt.startswith('Solo centered chibi '))
+                        self.assertIn('looking at viewer', prompt)
                         self.assertIn('separated legs', prompt)
                     else:
                         self.assertIn('정면 전신', prompt)
