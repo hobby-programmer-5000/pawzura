@@ -14,6 +14,7 @@
   - 4단계 순차 고도화(텍스처 분류 및 팽창 → 2.5D 패럴랙스 → 파라메트릭 치비 템플릿 → 랜드마크 모핑) 로드맵 채택 및 승인.
   - 대용량 모델 다운로드 시 체감 프리징 현상 발견 및 실시간 단계별 모델명·용량(MB/GB) 투명 표시 요구.
   - SDXL 이미지 생성 시 캔버스 여백 채움으로 인한 복수 인물(2명) 발생 버그 포착 및 단일 인물(Solo) 원천 차단 요구.
+  - 서브컬처 문학·라이트노벨·사변문학 이론 분석 결과를 실제 Pawzura 3D 캐릭터 생성용 예시 프리셋(10종 추가, 총 15종)으로 연결하도록 누락 지점 포착 및 기획 지시.
 - GitHub 계정과 저장소의 소유·관리, 배포 방향 및 최종 제품 판단.
 
 GitHub: https://github.com/hobby-programmer-5000
@@ -33,6 +34,8 @@ GitHub: https://github.com/hobby-programmer-5000
     - 프롬프트 선두에 `solo, 1person, single full-body chibi character only` 강제 주입.
     - 네거티브 프롬프트에 `2girls, 2boys, duo, pair, 2characters, multiple people, two people, twins, group, clone, companion` 보강.
     - Qwen3-VL 비전 검사기 프롬프트 강화: 밀착된 쌍둥이나 복수 인물 얼굴/머리 2개 이상 감지 시 즉시 거부하도록 개선.
+  - **서브컬처·라이트노벨·사변문학 기반 3D 리깅 최적화 캐릭터 프리셋 10종(총 15종) 설계 및 탑재**:
+    - 아즈마 히로키의 모듈형 모에 요소(70-20-10 시각 위계, 비대칭 가슴/옷깃 배지)와 3D 리깅 가동성 조건(A-포즈 팔다리 분리, 골반/무릎 노출형 짧은 상의, 소매-손목 단차)을 결합한 10종의 한/영 캐릭터 생성 예시(`pawzura/art_ui.py`) 및 색상·포즈 번역 힌트(`pawzura/art_policy.py`) 구현.
   - **전체 단위 테스트(235개 전체 통과) 및 x64 단일 실행 파일(EXE) 무설치 패키징 검증.**
 
 Antigravity는 Google DeepMind가 개발한 첨단 에이전트 인공지능 도구입니다.

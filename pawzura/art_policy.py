@@ -137,7 +137,10 @@ def review_art_prompt(description, progress=None):
               "연한 갈색": "light brown", "갈색": "brown", "민트색": "mint green", "보라색": "purple",
               "연보라": "lavender", "분홍색": "pink", "금색": "gold", "은색": "silver", "은빛": "silver",
               "흰색": "white", "검정색": "black", "빨간색": "red", "초록색": "green", "파란색": "blue",
-              "노란색": "yellow", "샛노란": "bright yellow", "주황색": "orange", "회색": "gray"}
+              "노란색": "yellow", "샛노란": "bright yellow", "주황색": "orange", "회색": "gray",
+              "진홍색": "crimson", "차콜색": "charcoal", "자주색": "plum", "구릿빛": "copper bronze",
+              "상아색": "ivory", "이끼색": "moss green", "적갈색": "russet brown", "금빛": "golden",
+              "슬레이트": "slate", "올리브": "olive", "테라코타": "terracotta", "계피색": "cinnamon brown"}
     species_pose = {
         "수달": "anthropomorphic furry brown otter mascot (non-human animal, bare otter head, round ears)",
         "여우": "anthropomorphic fox mascot (non-human animal)",
@@ -145,7 +148,13 @@ def review_art_prompt(description, progress=None):
         "강아지": "anthropomorphic puppy mascot (non-human animal)",
         "곰": "anthropomorphic bear mascot (non-human animal)",
         "토끼": "anthropomorphic rabbit mascot (non-human animal)",
-        "조끼": "vest",
+        "조끼": "cropped vest",
+        "재킷": "cropped jacket",
+        "튜닉": "fitted tunic",
+        "앞치마": "cropped apron vest",
+        "드릴 롤머리": "twin drill curls",
+        "오드아이": "heterochromia gold and violet eyes",
+        "바이저 고글": "cyan visor goggles on forehead",
         "소매": "sleeves",
         "부츠": "boots",
         "구두": "shoes",

@@ -5,8 +5,27 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication
+from pawzura.art_policy import validate_art_prompt
 from pawzura.art_ui import ArtworkDialog
 from pawzura.characters import MAX_PROMPT
+
+EXPECTED_EXAMPLE_KEYS = (
+    'example',
+    'courier_prompt',
+    'gardener_prompt',
+    'mechanic_prompt',
+    'otter_prompt',
+    'hunter_prompt',
+    'villainess_prompt',
+    'artisan_prompt',
+    'supporter_prompt',
+    'mastermind_prompt',
+    'cyberpunk_prompt',
+    'solarpunk_prompt',
+    'cozy_prompt',
+    'occult_prompt',
+    'conductor_prompt',
+)
 
 
 class ArtworkExamplesTests(unittest.TestCase):
@@ -32,6 +51,10 @@ class ArtworkExamplesTests(unittest.TestCase):
     def test_selection_preserves_custom_text_until_insert_and_never_starts_generation(self):
         for language in ('en', 'ko'):
             dialog = self.dialog(language)
+            self.assertEqual(
+                tuple(dialog.example_choice.itemData(i) for i in range(dialog.example_choice.count())),
+                EXPECTED_EXAMPLE_KEYS,
+            )
             dialog.description.setPlainText('An original custom character description')
             chosen = []
             dialog.chosen.connect(chosen.append)
@@ -43,8 +66,18 @@ class ArtworkExamplesTests(unittest.TestCase):
                     self.assertEqual(dialog.description.toPlainText(), previous)
                     dialog.sample.click()
                     prompt = dialog.description.toPlainText()
+                    self.assertEqual(validate_art_prompt(prompt), prompt)
                     self.assertGreater(len(prompt), 20)
                     self.assertLessEqual(len(prompt), MAX_PROMPT)
+                    if language == 'en':
+                        self.assertTrue(prompt.isascii())
+                        self.assertLessEqual(len(prompt), 512)
+                        self.assertTrue(prompt.startswith('Solo single chibi '))
+                        self.assertIn('upright full-body front view', prompt)
+                        self.assertIn('separated legs', prompt)
+                    else:
+                        self.assertIn('정면 전신', prompt)
+                        self.assertIn('다리 사이가 떨어진', prompt)
                     prompts.append(prompt)
                 self.assertEqual(len(set(prompts)), dialog.example_choice.count())
                 worker.assert_not_called()
