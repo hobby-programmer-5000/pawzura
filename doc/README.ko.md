@@ -53,6 +53,10 @@
 
 - [실험용 8GB 포즈 추정 보조 3D 움직임](ko/3D-MOTION.md)
 - [3D 복원·리깅·스타일화 동작 참고 문헌 및 구현 안내](ko/3D-RIGGING-AND-MOTION-REFERENCES.md)
+- [독창적 캐릭터 제작 방법론 및 디자인 지침 보고서](ko/CHARACTER-DESIGN-METHODOLOGY.md)
+- [문학 분야별 세계관 및 캐릭터 구성 종합 연구 총람](ko/LITERARY-WORLDBUILDING-AND-CHARACTERS.md)
+- [현대 특수문학(라이트노벨·웹소설·서브컬처) 세계관 및 캐릭터 서사학 총람](ko/SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md)
+- [문학 세계관 및 캐릭터 디자인 연구 문헌 총괄 서지 목록](ko/CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md)
 
 - [로컬 캐릭터 보관함과 중간 결과 저장](ko/CHARACTER-LIBRARY.md)
 - [0.4.0 방향별 모션과 캐릭터 보관](ko/RELEASE-v0.4.0.md)

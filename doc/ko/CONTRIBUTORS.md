@@ -34,8 +34,9 @@ GitHub: https://github.com/hobby-programmer-5000
     - 프롬프트 선두에 `solo, 1person, single full-body chibi character only` 강제 주입.
     - 네거티브 프롬프트에 `2girls, 2boys, duo, pair, 2characters, multiple people, two people, twins, group, clone, companion` 보강.
     - Qwen3-VL 비전 검사기 프롬프트 강화: 밀착된 쌍둥이나 복수 인물 얼굴/머리 2개 이상 감지 시 즉시 거부하도록 개선.
-  - **서브컬처·라이트노벨·사변문학 기반 3D 리깅 최적화 캐릭터 프리셋 10종(총 15종) 설계 및 탑재**:
+  - **서브컬처·라이트노벨·사변문학 기반 3D 리깅 최적화 캐릭터 프리셋 10종(총 15종) 설계·탑재 및 한/영 학술 연구 문서 4종 집필**:
     - 아즈마 히로키의 모듈형 모에 요소(70-20-10 시각 위계, 비대칭 가슴/옷깃 배지)와 3D 리깅 가동성 조건(A-포즈 팔다리 분리, 골반/무릎 노출형 짧은 상의, 소매-손목 단차)을 결합한 10종의 한/영 캐릭터 생성 예시(`pawzura/art_ui.py`) 및 색상·포즈 번역 힌트(`pawzura/art_policy.py`) 구현.
+    - [캐릭터 디자인 방법론과 원형 가이드](CHARACTER-DESIGN-METHODOLOGY.md), [문학 장르·세계관 구축과 캐릭터 원형](LITERARY-WORLDBUILDING-AND-CHARACTERS.md), [서브컬처 문학·라이트노벨 이론과 서사 구조](SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md), [캐릭터 디자인·문학·서브컬처 통합 참고문헌](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md) 양언어(`doc/ko/`, `doc/en/`) 집필 및 수록.
   - **전체 단위 테스트(235개 전체 통과) 및 x64 단일 실행 파일(EXE) 무설치 패키징 검증.**
 
 Antigravity는 Google DeepMind가 개발한 첨단 에이전트 인공지능 도구입니다.

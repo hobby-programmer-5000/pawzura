@@ -33,8 +33,9 @@ GitHub: [hobby-programmer-5000](https://github.com/hobby-programmer-5000)
     - Enforced `solo, 1person, single full-body chibi character only` leading prompt injection.
     - Expanded negative prompt with `2girls, 2boys, duo, pair, 2characters, multiple people, two people, twins, group, clone, companion`.
     - Enhanced Qwen3-VL vision prompt to detect and reject multiple characters even when touching or identically dressed.
-  - **Subcultural, Light Novel & Speculative Genre 3D-Rigging Character Presets (+10 Examples, 15 Total)**:
+  - **Subcultural, Light Novel & Speculative Genre 3D-Rigging Character Presets (+10 Examples, 15 Total) & 4 Bilingual Research Guides**:
     - Engineered 10 bilingual character generation presets (`pawzura/art_ui.py`) and translation hints (`pawzura/art_policy.py`) combining Hiroki Azuma's modular moe-element database theory (70-20-10 visual hierarchy, asymmetrical chest/lapel emblems) with 3D rigging constraints (A-pose limb separation, cropped waistcoats/jackets exposing hip/knee joints, and clear cuff-to-hand boundaries).
+    - Authored 4 comprehensive bilingual (`doc/ko/` & `doc/en/`) research guides: [Character design methodology and archetypes](CHARACTER-DESIGN-METHODOLOGY.md), [Literary worldbuilding and character archetypes](LITERARY-WORLDBUILDING-AND-CHARACTERS.md), [Subcultural literature and light novel theory](SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md), and [Character design and literature bibliography](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md).
   - **Regression Test Suite (235 tests passed) & Standalone Windows x64 Packaging Verification.**
 
 Antigravity is an advanced agentic AI assistant developed by the Google DeepMind team.

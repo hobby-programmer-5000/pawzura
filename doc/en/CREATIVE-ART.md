@@ -79,6 +79,24 @@ NSFW content and identifiable existing character/logo replication requests are p
 
 Existing example prompts are not designated noncommercial assets. Using **Insert example** does not automatically license your generated image under CC BY-NC-SA. Future official sample images will need an explicit file/version entry in the [asset licensing register](ASSET-LICENSING.md), which currently contains none. Reusing protected content from a designated sample can require compliance with that sample's terms; independent outputs remain subject to model terms and any underlying rights. Existing MIT grants are preserved.
 
+### Built-in 15 2D/2.5D/3D character presets and literary/design theory guides
+
+The 15 built-in presets in **Motion-friendly drawing examples** synthesize the research in [Original Character Design Methodology](CHARACTER-DESIGN-METHODOLOGY.md), [Literary Genres, Worldbuilding, and Character Configurations](LITERARY-WORLDBUILDING-AND-CHARACTERS.md), [Subcultural Literature and Light Novel Narratology](SUBCULTURAL-LITERATURE-AND-LIGHT-NOVELS.md), and the [Comprehensive Research Bibliography](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md), combining 70-20-10 visual hierarchy with 2.5D/3D rigging-friendly geometry (A-pose separated limbs, cropped waistcoats/jackets exposing hip and knee joints, and clear cuff-to-hand boundaries).
+
+| Category | Selector Preset Name | 10% Focal Emblem & Rig-Friendly Attire (70-20-10 Hierarchy) |
+| :--- | :--- | :--- |
+| **Original 5** | `Chibi astronomer` / `Woodland courier` / `Clockwork gardener` / `Cloud mechanic` / `Forest otter explorer` | Crescent brooch navy vest / leaf pin apricot coat / flower pin moss overalls / ivory curls saffron vest / mint vest otter |
+| **Subcultural & Light Novel (5)** | `Status-window shadow hunter (LitRPG)` | Silver hair, ruby eyes + glowing cyan rune emblem + cropped midnight-blue hunter vest + black tactical boots |
+| | `Strategic villainess noble (Otome Isekai)` | Lavender twin drill curls + gold rose brooch + cropped crimson velvet waistcoat + tailored dark plum breeches |
+| | `Isekai bookshop artisan (Reincarnation)` | Deep-blue hair, gold hairpin + quill badge + cropped amber leather apron vest |
+| | `Banished herbalist supporter (Slow-life)` | Sage-green hair + herb pouch belt + cropped chestnut utility vest + olive cargo pants |
+| | `Quiet mastermind scholar (Misunderstanding)` | Jet-black hair + gold/violet heterochromia + antique chess knight lapel pin + silver-trimmed black tunic |
+| **Speculative & Classic Fantasy (5)** | `Cyberpunk netrunner hacker (Cyberpunk)` | Neon-pink bob + forehead cyan visor goggles + glowing teal circuit-trim cropped tech jacket + yellow boots |
+| | `Solarpunk eco-tinker (Solarpunk)` | Warm-bronze wavy hair + stained-glass sunleaf brooch + cropped moss-green work vest |
+| | `Retired adventurer barista (Cozy Fantasy)` | Silver-braided hair, tiny horn buds + coffee cup pin cropped cinnamon-brown waist apron |
+| | `Night-watch occult detective (Urban Fantasy)` | Tousled ash-blond hair, amber eyes + silver compass badge cropped charcoal bolero jacket |
+| | `Galactic train conductor (Classic Fantasy)` | Indigo hair, starry golden eyes + brass ticket-punch emblem fitted cobalt jacket + cream trousers |
+
 ## When something fails
 
 | Symptom | Next step |
