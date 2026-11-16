@@ -121,7 +121,7 @@
 
 ---
 
-## 8. Academic References for 15-Preset 3D Sandbox Visual Audit & Front-to-Side Remediation (31 Papers)
+## 8. Academic References for 15-Preset 3D Sandbox Visual Audit & Front-to-Side Remediation (32 Papers)
 
 * **Zhang, Beichen, Zhang, Pan, Dong, Xiaoyi, Zang, Yuhang, & Wang, Jiaqi (2024)**. "Long-CLIP: Unlocking the Long-Text Capability of CLIP". *European Conference on Computer Vision (ECCV 2024)*, arXiv:2403.15378.  
   *(Analyzes CLIP-L/G's 77-token hard truncation and 20-token effective positional receptive field, motivating front-loaded `<= 58`-token preset prompts)*
@@ -170,3 +170,5 @@
   *(Standard edge-preserving spatial-range bilateral filter preserving garment and hair silhouettes)*
 * **Chen, Jiawen, Adams, Andrew, Wadhwa, Neal, & Hasinoff, Samuel W. (2016)**. "Bilateral Guided Upsampling". *ACM Transactions on Graphics (SIGGRAPH Asia 2016)*, 35(6), Article 203.  
   *(Applied to oblique multi-view denoising and non-front UV atlas tiles in `motion_geometry.py`)*
+* **Boss, Mark, Huang, Zixuan, Varma, Aaryaman, Jampani, Varun, et al. (2025)**. "SF3D: Stable Fast 3D Mesh Reconstruction with UV-unwrapping and Illumination Disentanglement". *CVPR 2025*, arXiv:2408.00653.  
+  *(Basis for Z-band intrinsic albedo delighting and dominant 2D cel swatch snapping on muted oblique/back TripoSR views)*

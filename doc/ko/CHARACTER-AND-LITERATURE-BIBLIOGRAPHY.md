@@ -132,7 +132,7 @@
 
 ---
 
-## 8. 15종 캐릭터 프리셋 3D 샌드박스 시각 검수 및 정면·측면 괴리 해결 학술 문헌 (31편)
+## 8. 15종 캐릭터 프리셋 3D 샌드박스 시각 검수 및 정면·측면 괴리 해결 학술 문헌 (32편)
 
 * **Zhang, Beichen, Zhang, Pan, Dong, Xiaoyi, Zang, Yuhang, & Wang, Jiaqi (2024)**. "Long-CLIP: Unlocking the Long-Text Capability of CLIP". *European Conference on Computer Vision (ECCV 2024)*, arXiv:2403.15378.  
   *(CLIP-L/G의 77토큰 절단 한계 및 앞쪽 20토큰 유효 수용 영역 편향을 규명하여 15종 캐릭터 프롬프트 58토큰 이내 압축·전진 배치의 근거가 된 핵심 연구)*
@@ -181,3 +181,5 @@
   *(경계선 보존 공간·색상 결합 양방향 필터링의 표준 공식)*
 * **Chen, Jiawen, Adams, Andrew, Wadhwa, Neal, & Hasinoff, Samuel W. (2016)**. "Bilateral Guided Upsampling". *ACM Transactions on Graphics (SIGGRAPH Asia 2016)*, 35(6), Article 203.  
   *(측면 멀티뷰 및 비정면 UV 차트 아틀라스 평활화에 적용된 경계 보존 양방향 업샘플링)*
+* **Boss, Mark, Huang, Zixuan, Varma, Aaryaman, Jampani, Varun, et al. (2025)**. "SF3D: Stable Fast 3D Mesh Reconstruction with UV-unwrapping and Illumination Disentanglement". *CVPR 2025*, arXiv:2408.00653.  
+  *(측면·후면 조명 음영(delighting) 분리 및 Z-구간 주 셀 알베도 스와치 정합 근거)*

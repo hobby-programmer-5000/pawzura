@@ -943,6 +943,39 @@ Frame Time: 0.0333333
             self.assertLess(float(arr_s[edge_s, 0].mean()), float(arr_s[core_s, 0].mean()) * 0.92)
             self.assertLess(float(arr_s[edge_s, 0].mean()), float(arr_f[edge_f, 0].mean()))
 
+    def test_z_band_delighting_and_posterior_skull_compaction(self):
+        # 1. Verify Z-band palette delighting lifts muddy grey/olive oblique TripoSR patches toward crisp 2D swatches
+        # while leaving unrepresented dark colors untouched.
+        ref_rgba = np.zeros((128, 128, 4), dtype=np.float32)
+        ref_rgba[16:64, 32:96] = [0.96, 0.96, 0.97, 1.0]    # Crisp white upper helmet
+        ref_rgba[64:112, 32:96] = [0.98, 0.85, 0.16, 1.0]   # Vibrant yellow jacket
+        pal = g._extract_z_band_palettes(ref_rgba)
+        self.assertIsNotNone(pal)
+
+        oblique = np.ones((128, 128, 3), dtype=np.float32) * 0.95
+        fg = np.zeros((128, 128), dtype=bool)
+        fg[16:64, 32:96] = True
+        fg[64:112, 32:96] = True
+        oblique[16:64, 32:96] = [0.58, 0.59, 0.61]          # Shaded concrete grey helmet
+        oblique[64:96, 32:96] = [0.64, 0.56, 0.22]          # Muddy ochre jacket
+        oblique[96:112, 32:96] = [0.12, 0.14, 0.22]         # Unique dark navy cape not in bright palette
+
+        harmonized = g._harmonize_oblique_view(oblique, fg, 180.0, 0.0, pal)
+        self.assertGreater(float(harmonized[32:48, 64].mean()), 0.82)
+        self.assertGreater(float(harmonized[76:84, 64, 0].mean()), 0.80)
+        self.assertLess(float(harmonized[104, 64].mean()), 0.28)
+
+        # 2. Posterior skull bloat above z_neck compacts backward bulge while leaving front (+X) vertices unshifted.
+        u = np.linspace(-0.5, 0.5, 32)
+        cx, cy, cz = np.meshgrid(u, u, u, indexing="ij")
+        f_head = ((cx + 0.10) / 0.34) ** 2 + (cy / 0.28) ** 2 + ((cz - 0.22) / 0.22) ** 2
+        f_body = (cx / 0.12) ** 2 + (cy / 0.14) ** 2 + ((cz + 0.22) / 0.24) ** 2
+        hv, hf, _ = g.extract(np.clip(50.0 * (1.15 - np.minimum(f_head, f_body)), 0.0, 60.0).astype(np.float32), radius=0.5, threshold=25.0)
+        pre_head_back = float(hv[hv[:, 2] >= 0.06, 0].min())
+        compacted = g.inflate_2_5d_mesh(hv, hf)
+        post_head_back = float(compacted[compacted[:, 2] >= 0.06, 0].min())
+        self.assertGreater(post_head_back, pre_head_back + 0.04)
+
 
 if __name__ == "__main__":
     unittest.main()

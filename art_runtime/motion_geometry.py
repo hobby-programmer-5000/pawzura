@@ -306,7 +306,7 @@ def inflate_2_5d_mesh(vertices, faces, points=None, min_depth_ratio=0.52):
 
         # Gently relax excessive lateral C-shell curvature (c2) while keeping each slice's axial center v_c0
         # intact so boots below a cape/hair hem never shift backward relative to the knees.
-        x_med_relaxed = v_c0 + 0.50 * (v_c1 * dy_norm + v_c2 * (dy_norm ** 2))
+        x_med_relaxed = v_c0 + 0.35 * (v_c1 * dy_norm + v_c2 * (dy_norm ** 2))
         # Attenuate inflation on laterally separated arms/forearms/hands so slim sleeves do not bloat
         # to full torso thickness when viewed from 90 degrees.
         in_body_z = smooth(zmin + height * 0.18, zmin + height * 0.30, out[:, 2]) * (1.0 - smooth(z_neck - height * 0.03, z_neck + height * 0.03, out[:, 2]))
@@ -321,7 +321,15 @@ def inflate_2_5d_mesh(vertices, faces, points=None, min_depth_ratio=0.52):
             dome = v_da * u_dome * np.tanh(dx / np.maximum(1e-3, 0.22 * v_th)) * (1.0 - 0.80 * arm_out)
         limb_cap = max(height * 0.045, trunk_hw * 0.45)
         max_half_d = (height * 0.30) * (1.0 - arm_out) + limb_cap * arm_out
-        out[:, 0] = x_med_relaxed + np.clip(dx * v_sc_eff + dome, -max_half_d, max_half_d)
+        dx_new = dx * v_sc_eff + dome
+        # Compact exaggerated posterior skull ballooning (e.g. fluffy hair backs) above neck without shifting front face.
+        in_head = smooth(z_neck, z_neck + height * 0.08, out[:, 2])
+        back_skull_cap = -max(height * 0.185, min(head_w * 0.34, height * 0.205))
+        neg_cap = np.where(in_head > 0.0, -max_half_d * (1.0 - in_head) + back_skull_cap * in_head, -max_half_d)
+        # Smoothly compress excess beyond back_skull_cap instead of hard-clipping so roundness remains intact.
+        excess = np.maximum(0.0, neg_cap - dx_new)
+        dx_new = np.where(excess > 0.0, neg_cap - excess * 0.18, dx_new)
+        out[:, 0] = x_med_relaxed + np.clip(dx_new, -max_half_d, max_half_d)
         return out
 
     v_inflated = _apply_smooth_inflation(v_out)
@@ -471,10 +479,12 @@ def _visibility_mask(points, u, v, depth, side):
     return visible
 
 
-def _bilateral_smooth_rgb(rgb, sigma_s=1.5, sigma_r=0.075):
+def _bilateral_smooth_rgb(rgb, sigma_s=1.5, sigma_r=0.075, fg_mask=None):
     """Edge-preserving bilateral smooth (Kopf et al. 2007) removing TripoSR neural noise on flat cel regions."""
     h, w, _ = rgb.shape
     padded = np.pad(rgb, ((2, 2), (2, 2), (0, 0)), mode="edge")
+    if fg_mask is not None:
+        m_pad = np.pad(fg_mask.astype(np.float32), ((2, 2), (2, 2)), mode="edge")
     acc = np.zeros_like(rgb, dtype=np.float32)
     w_sum = np.zeros((h, w), dtype=np.float32)
     inv_2s2 = 1.0 / (2.0 * sigma_s * sigma_s)
@@ -485,9 +495,141 @@ def _bilateral_smooth_rgb(rgb, sigma_s=1.5, sigma_r=0.075):
             nbr = padded[2 + dy:2 + dy + h, 2 + dx:2 + dx + w]
             diff2 = np.sum((nbr - rgb) ** 2, axis=2) / 3.0
             rw = np.exp(-diff2 * inv_2r2) * sp_w
+            if fg_mask is not None:
+                rw = rw * m_pad[2 + dy:2 + dy + h, 2 + dx:2 + dx + w]
             acc += nbr * rw[:, :, None]
             w_sum += rw
-    return np.clip(acc / np.maximum(w_sum[:, :, None], 1e-6), 0.0, 1.0).astype(np.float32)
+    out = np.where(w_sum[:, :, None] > 1e-5, acc / np.maximum(w_sum[:, :, None], 1e-5), rgb)
+    return np.clip(out, 0.0, 1.0).astype(np.float32)
+
+
+def _extract_z_band_palettes(rgba, n_bins=18):
+    """Build per-elevation reference cel swatches from clean front artwork (SF3D delighting + 3DOT palette lock)."""
+    from scipy.ndimage import distance_transform_edt
+
+    arr = np.asarray(rgba, dtype=np.float32)
+    if arr.max() > 1.5:
+        arr = arr / 255.0
+    alpha = arr[:, :, 3] if arr.shape[2] == 4 else (arr.min(2) < 0.96).astype(np.float32)
+    ys, xs = np.where(alpha > 0.5)
+    if len(ys) < 32:
+        return None
+    y0, y1 = int(ys.min()), int(ys.max()) + 1
+    fg_h = max(32, y1 - y0)
+    rim_px = max(3.5, fg_h * 0.011)
+    d_alpha = distance_transform_edt(alpha > 0.85).astype(np.float32)
+    fg_int = d_alpha >= rim_px
+    if int(fg_int.sum()) < 32:
+        fg_int = d_alpha >= 1.5
+    if int(fg_int.sum()) < 16:
+        return None
+
+    rgb_int = arr[:, :, :3]
+    fg_vals = rgb_int[fg_int]
+    p88_lum = float(np.percentile(fg_vals.mean(axis=1), 88))
+    palettes = []
+    for b in range(n_bins):
+        # Overlapping +-1 bin window accommodates ~20 deg vertical camera tilts.
+        b_lo = max(y0, int(y0 + ((b - 1) / n_bins) * fg_h))
+        b_hi = min(y1, int(y0 + ((b + 2) / n_bins) * fg_h))
+        row_mask = np.zeros_like(fg_int)
+        row_mask[b_lo:b_hi, :] = fg_int[b_lo:b_hi, :]
+        pts = rgb_int[row_mask]
+        if len(pts) < 12:
+            palettes.append(np.empty((0, 3), dtype=np.float32))
+            continue
+        # Quantize interior colors into dominant cel base swatches, pruning minority crease-shadow traps.
+        q = np.clip(np.rint(pts * 9.0), 0, 9).astype(np.int32)
+        codes = q[:, 0] * 100 + q[:, 1] * 10 + q[:, 2]
+        uniq, inv, counts = np.unique(codes, return_inverse=True, return_counts=True)
+        order = np.argsort(-counts)
+        min_cnt = max(6, int(len(pts) * 0.015))
+        keep_idx = [int(idx) for idx in order if counts[idx] >= min_cnt][:18]
+        if not keep_idx:
+            keep_idx = [int(idx) for idx in order[:10]]
+        raw_sw = [pts[inv == idx].mean(axis=0) for idx in keep_idx]
+        raw_ct = [int(counts[idx]) for idx in keep_idx]
+        kept_sw = []
+        for s_col, s_cnt in zip(raw_sw, raw_ct):
+            s_m = float(s_col.mean())
+            s_c = s_col - s_m
+            # Drop dim same-hue shadow swatches when a larger/equal brighter base swatch represents the same material.
+            shadow_of_bright = any(
+                (float(k_col.mean()) > s_m + 0.14)
+                and (k_cnt >= s_cnt * 0.85)
+                and (float(np.sqrt(np.mean(((k_col - float(k_col.mean())) - s_c) ** 2))) < 0.055)
+                for k_col, k_cnt in zip(raw_sw, raw_ct)
+            )
+            if not shadow_of_bright:
+                kept_sw.append(s_col)
+        swatches = np.stack(kept_sw if kept_sw else raw_sw[:8], axis=0).astype(np.float32)
+        palettes.append(swatches)
+    return {"palettes": palettes, "n_bins": n_bins, "p88_lum": p88_lum}
+
+
+def _harmonize_oblique_view(rgb_img, fg_mask, az_deg, el_deg, pal_info):
+    """Apply intrinsic albedo delighting + Z-band cel palette locking on oblique/back TripoSR views."""
+    if pal_info is None or not fg_mask.any():
+        return rgb_img
+    az_norm = float(az_deg) % 360.0
+    if az_norm <= 15.0 or az_norm >= 345.0:
+        return rgb_img
+    ys, _ = np.where(fg_mask)
+    if len(ys) < 32:
+        return rgb_img
+    vy0, vy1 = int(ys.min()), int(ys.max()) + 1
+    vh = max(16.0, float(vy1 - vy0))
+
+    # Measure side-view brightness crush vs crisp 2D reference 88th-percentile albedo.
+    fg_rgb = rgb_img[fg_mask]
+    side_p88 = float(np.percentile(fg_rgb.mean(axis=1), 88))
+    az_rad = math.radians(az_norm)
+    side_factor = min(1.0, (1.0 - math.cos(az_rad)) * 0.65)
+    raw_gain = float(np.clip(pal_info["p88_lum"] / max(0.24, side_p88), 1.0, 1.36))
+    gain = 1.0 + (raw_gain - 1.0) * side_factor
+
+    out = rgb_img.copy()
+    delit = np.clip(fg_rgb * (0.28 + 0.72 * gain), 0.0, 1.0)
+    # Restore subtle cel vibrance lost under TripoSR ambient shading without hallucinating colors on neutrals.
+    mean_d = delit.mean(axis=1, keepdims=True)
+    chroma_d = delit - mean_d
+    sat_d = chroma_d.max(axis=1) - chroma_d.min(axis=1)
+    vib_boost = 1.0 + 0.18 * side_factor * np.clip((sat_d - 0.04) / 0.14, 0.0, 1.0)
+    delit = np.clip(mean_d + chroma_d * vib_boost[:, None], 0.0, 1.0)
+
+    n_bins = pal_info["n_bins"]
+    palettes = pal_info["palettes"]
+    tz = np.clip((ys - vy0) / vh, 0.0, 0.999)
+    bin_ids = np.clip((tz * n_bins).astype(np.int32), 0, n_bins - 1)
+    snapped = delit.copy()
+    for b in range(n_bins):
+        sw = palettes[b]
+        if len(sw) == 0:
+            continue
+        sel = bin_ids == b
+        if not sel.any():
+            continue
+        pix = delit[sel]  # (M, 3)
+        pix_m = pix.mean(axis=1, keepdims=True)
+        pix_c = pix - pix_m
+        sw_m = sw.mean(axis=1, keepdims=True)
+        sw_c = sw - sw_m
+        # Weighted distance: strongly preserve hue/chroma identity (2.0x) while allowing ambient shadow lift.
+        d_luma = np.abs(pix_m - sw_m.T)  # (M, K)
+        d_chr = np.sqrt(np.mean((pix_c[:, None, :] - sw_c[None, :, :]) ** 2, axis=2))  # (M, K)
+        # Relax ambient-shadow luma penalty when chroma matches closely (e.g., shaded grey-white helmet vs pure white swatch),
+        # while preventing dark hair/boots (<0.42) from snapping to bright clothing swatches.
+        luma_w = np.where((d_chr < 0.048) & (pix_m > 0.44), 0.50, 0.82)
+        d_tot = d_luma * luma_w + d_chr * 1.95
+        best_j = np.argmin(d_tot, axis=1)
+        best_d = d_tot[np.arange(len(pix)), best_j]
+        # Only snap pixels within genuine material neighborhood (<0.27) so unique back-side details stay intact.
+        match_w = np.clip((0.27 - best_d) / 0.19, 0.0, 1.0) * (0.78 * side_factor)
+        target_sw = sw[best_j]
+        snapped[sel] = pix * (1.0 - match_w[:, None]) + target_sw * match_w[:, None]
+
+    out[fg_mask] = np.clip(snapped, 0.0, 1.0).astype(np.float32)
+    return out
 
 
 def project_multiview_colors(points, views, normals=None, ref_views=None):
@@ -521,14 +663,24 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
     accum = np.zeros((len(points), 3), dtype=np.float32)
     weight_sum = np.zeros(len(points), dtype=np.float32)
 
+    pal_info = None
+    for ref in (ref_views or ()):
+        if abs((float(ref.get("az", 0.0)) + 180.0) % 360.0 - 180.0) <= 20.0:
+            pal_info = _extract_z_band_palettes(ref["rgba"])
+            if pal_info is not None:
+                break
+
     for spec in view_specs:
         rgb_raw = spec["rgb"]
         side = rgb_raw.shape[0]
         # Exclude antialiased gray-white background fringe (>=0.80 low-sat) before inward EDT extrapolation
-        # so TripoSR border halo pixels never bleed across jawline/hair edges.
+        # and mask background out of bilateral filtering so border white never bleeds into foreground hair/cheeks.
         is_bg = (rgb_raw.min(axis=2) > 0.80) & ((rgb_raw.max(axis=2) - rgb_raw.min(axis=2)) < 0.08)
+        fg_mask = ~is_bg
         az_val = float(spec.get("az", 0.0)) % 360.0
-        rgb_img = _bilateral_smooth_rgb(rgb_raw) if (15.0 < az_val < 345.0 and not is_bg.all()) else rgb_raw
+        rgb_img = _bilateral_smooth_rgb(rgb_raw, fg_mask=fg_mask) if (15.0 < az_val < 345.0 and not is_bg.all()) else rgb_raw
+        if pal_info is not None and 15.0 < az_val < 345.0 and not is_bg.all():
+            rgb_img = _harmonize_oblique_view(rgb_img, fg_mask, az_val, float(spec.get("el", 0.0)), pal_info)
         if is_bg.any():
             d_bg_map = distance_transform_edt(~is_bg).astype(np.float32)
             fg_core = d_bg_map >= 2.8
@@ -574,6 +726,10 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
         accum[uv_idx] += sampled * w[:, None]
         weight_sum[uv_idx] += w
 
+    # Snapshot TripoSR multi-view consensus BEFORE frontal reference projection for photometric rim validation.
+    base_acc = accum.copy()
+    base_w = weight_sum.copy()
+
     # High-resolution silhouette-aligned reference image projection (Wonder3D Front-Reference Locking + Paint3D Lateral Cel Wrap).
     height_pt = max(1e-4, float(np.ptp(points[:, 2])))
     zmin_pt = float(points[:, 2].min())
@@ -587,15 +743,6 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
             rgba = rgba / 255.0
         h_img, w_img = rgba.shape[:2]
         alpha = rgba[:, :, 3] if rgba.shape[2] == 4 else (rgba.min(2) < 0.96).astype(np.float32)
-        d_alpha = distance_transform_edt(alpha > 0.85).astype(np.float32)
-        # Strip outer 3-px dark 2D ink outline via interior EDT extrapolation so silhouette rims carry pure cel albedo.
-        lum_img = 0.299 * rgba[:, :, 0] + 0.587 * rgba[:, :, 1] + 0.114 * rgba[:, :, 2]
-        core_fg = (d_alpha > 3.2) | ((alpha > 0.88) & (lum_img > 0.26))
-        if int(core_fg.sum()) >= 32:
-            _, near_c = distance_transform_edt(~core_fg, return_indices=True)
-            rgba_clean = rgba[:, :, :3][near_c[0], near_c[1]]
-        else:
-            rgba_clean = rgba[:, :, :3]
 
         # Use solid opaque silhouette (ignoring faint ground shadows) to align bounding boxes accurately.
         fg_y, fg_x = np.where(alpha > 0.72)
@@ -605,6 +752,20 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
             continue
         x0, x1 = float(fg_x.min()), float(fg_x.max())
         y0, y1 = float(fg_y.min()), float(fg_y.max())
+        fg_h = max(32.0, y1 - y0)
+        rim_px = max(3.5, fg_h * 0.011)
+
+        d_alpha = distance_transform_edt(alpha > 0.85).astype(np.float32)
+        # Strip outer dark 2D ink outline AND outer white sticker/halo rims via interior EDT extrapolation.
+        lum_img = 0.299 * rgba[:, :, 0] + 0.587 * rgba[:, :, 1] + 0.114 * rgba[:, :, 2]
+        sat_img = rgba[:, :, :3].max(axis=2) - rgba[:, :, :3].min(axis=2)
+        white_rim = (d_alpha <= rim_px) & (lum_img > 0.80) & (sat_img < 0.12)
+        core_fg = (d_alpha > rim_px) | ((alpha > 0.88) & (lum_img > 0.26) & (~white_rim))
+        if int(core_fg.sum()) >= 32:
+            _, near_c = distance_transform_edt(~core_fg, return_indices=True)
+            rgba_clean = rgba[:, :, :3][near_c[0], near_c[1]]
+        else:
+            rgba_clean = rgba[:, :, :3]
 
         az_ref = float(ref.get("az", 0.0))
         _, cam_dir, right, up = _spherical_camera_basis(az_ref, ref.get("el", 0.0), 1.9)
@@ -615,9 +776,9 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
         px_r = (rel @ right) / np.maximum(depth, 0.1)
         px_u = (rel @ up) / np.maximum(depth, 0.1)
         ndot = np.clip(normals @ cam_dir, 0.0, 1.0)
-        # Keep ref_views away from nearly orthogonal side walls (ndot <= 0.28) so 0-deg silhouette
-        # contours never scatter salt-and-pepper confetti streaks across +Y/-Y side atlas charts.
-        front_pts = ndot > 0.28
+        # Strictly restrict 2D frontal reference to forward/three-quarter faces (ndot > 0.38) so grazing contours
+        # never bleed onto +Y/-Y side profiles.
+        front_pts = ndot > 0.38
         if not front_pts.any():
             continue
         r_min, r_max = float(px_r.min()), float(px_r.max())
@@ -641,10 +802,26 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
                 d_edge = map_coordinates(d_alpha, [v_img[idx], u_img[idx]], order=1, mode="nearest")
                 rgb_raw = np.stack([map_coordinates(rgba[:, :, c], [v_img[idx], u_img[idx]], order=1, mode="nearest") for c in range(3)], 1)
                 rgb_cln = np.stack([map_coordinates(rgba_clean[:, :, c], [v_img[idx], u_img[idx]], order=1, mode="nearest") for c in range(3)], 1)
-                # Blend smoothly to outline-free interior cel color near outer 3-px contour or oblique normal angles.
-                rim_t = np.clip((d_edge - 1.6) / 2.2, 0.0, 1.0) * np.clip((ndot[idx] - 0.20) / 0.35, 0.0, 1.0)
+                # Blend smoothly to outline-free interior cel color near outer contours or oblique normal angles.
+                rim_t = np.clip((d_edge - rim_px * 0.45) / max(1.5, rim_px * 0.55), 0.0, 1.0) * np.clip((ndot[idx] - 0.36) / 0.34, 0.0, 1.0)
                 rgb_sample = rgb_cln * (1.0 - rim_t[:, None]) + rgb_raw * rim_t[:, None]
-                w = boost * 2.8 * (np.clip(ndot[idx], 0.20, 1.0) ** 1.35) * np.clip(a_sample, 0.45, 1.0)
+                w = boost * 2.8 * (np.clip((ndot[idx] - 0.34) / 0.66, 0.05, 1.0) ** 1.30) * np.clip(a_sample, 0.45, 1.0)
+
+                # Cross-view photometric consistency guard: reject white rim/halo bleeds and large silhouette-shift
+                # mismatches where 3D multi-view consensus disagrees outside the locked central face.
+                has_v = base_w[idx] > 1e-4
+                if has_v.any():
+                    c_v = np.zeros_like(rgb_sample)
+                    c_v[has_v] = base_acc[idx[has_v]] / base_w[idx[has_v], None]
+                    r_min_c = rgb_sample.min(axis=1)
+                    r_sat_c = rgb_sample.max(axis=1) - r_min_c
+                    r_lum = rgb_sample.mean(axis=1)
+                    v_lum = c_v.mean(axis=1)
+                    non_front_core = (ndot[idx] < 0.82) | (d_edge < rim_px)
+                    white_vs_dark = has_v & non_front_core & (r_min_c > 0.78) & (r_sat_c < 0.12) & (v_lum < 0.72)
+                    luma_mismatch = has_v & ((ndot[idx] < 0.68) | (d_edge < rim_px)) & (np.abs(r_lum - v_lum) > 0.25)
+                    w = np.where(white_vs_dark, 0.0, np.where(luma_mismatch, w * 0.08, w))
+
                 accum[idx] += rgb_sample * w[:, None]
                 weight_sum[idx] += w
 
