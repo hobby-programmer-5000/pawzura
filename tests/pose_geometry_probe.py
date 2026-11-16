@@ -836,6 +836,53 @@ Frame Time: 0.0333333
         self.assertTrue(mid_bridge.any())
         self.assertGreater(float(colors[mid_bridge, 0].min()), 0.88)
 
+    def test_lift_isolates_front_shell_and_elliptical_blink_avoids_forehead_flicker(self):
+        import math
+        import motion_bake as mb
+
+        # Build dense back-head cluster + sparse front face at identical projected (u, v).
+        focal = 0.5 / math.tan(math.radians(20))
+        front_pts = np.array([[0.15, y, z] for y in np.linspace(-0.08, 0.08, 12) for z in np.linspace(0.24, 0.36, 12)], dtype=np.float32)
+        # Project one target uv cleanly onto front_pts center (0.15, 0.0, 0.30) and back-project dense back wall along the same camera ray.
+        target_uv = np.array([[0.5, 0.5 - 0.30 * focal / (1.9 - 0.15)]], dtype=np.float32)
+        back_pts = []
+        for dy in np.linspace(-0.015, 0.015, 16):
+            for dz in np.linspace(-0.015, 0.015, 16):
+                ray_z = 0.30 * (1.9 + 0.12) / (1.9 - 0.15)
+                back_pts.append([-0.12, dy, ray_z + dz])
+        all_pts = np.vstack([front_pts, np.asarray(back_pts, dtype=np.float32)])
+        lifted = g.lift(all_pts, target_uv)[0]
+        self.assertGreater(float(lifted[0]), 0.10)  # Must select front shell (+0.15), not dense back (-0.12)
+        self.assertAlmostEqual(float(lifted[2]), 0.30, delta=0.015)
+
+        # Photometric refinement pulls drifted eyebrow landmark onto actual dark iris socket above bright cheek skin.
+        gy, gz = np.meshgrid(np.linspace(-0.10, 0.10, 28), np.linspace(0.25, 0.40, 32))
+        face_only = np.column_stack([np.full(gy.size, 0.15), gy.ravel(), gz.ravel()]).astype(np.float32)
+        face_v = np.vstack([face_only, np.array([[0.15, 0.0, -0.60]], dtype=np.float32)])
+        face_c = np.tile(np.array([[0.90, 0.78, 0.68]], dtype=np.float32), (len(face_v), 1))
+        # Dark bangs above z=0.335 and dark irises around z=0.308, |y| ~ 0.042
+        face_c[face_v[:, 2] >= 0.335] = [0.28, 0.17, 0.12]
+        iris = (np.abs(np.abs(face_v[:, 1]) - 0.042) < 0.016) & (np.abs(face_v[:, 2] - 0.308) < 0.012)
+        face_c[iris] = [0.20, 0.14, 0.10]
+        mouth = np.array([0.15, 0.0, 0.275], dtype=np.float32)
+        j = np.zeros((17, 3), dtype=np.float32)
+        j[1] = [0.15, 0.042, 0.345]   # Drifted up into dark bangs
+        j[2] = [0.15, -0.042, 0.345]
+        j[3] = [0.10, 0.085, 0.315]
+        j[4] = [0.10, -0.085, 0.315]
+        refined = g._refine_eye_joints(face_v, j, mouth, face_c)
+        self.assertLess(float(refined[1, 2]), 0.320)
+        self.assertLess(float(refined[2, 2]), 0.320)
+
+        # Elliptical blink keeps forehead bangs clean and produces full un-squared closure inside the eye socket.
+        _, ov_c, _, _, _, ov_w = mb.face(face_v, face_c, refined, mouth, blink=1.0, opening=0.0, smile=0.0, height=1.0, return_blend=True)
+        forehead = face_v[:, 2] >= 0.340
+        nose_bridge = (np.abs(face_v[:, 1]) < 0.008) & (face_v[:, 2] > 0.29)
+        self.assertLess(float(ov_w[forehead].max()), 0.05)
+        self.assertLess(float(ov_w[nose_bridge].max()), 0.05)
+        self.assertGreater(float(ov_w[iris].mean()), 0.85)
+        self.assertGreater(float(ov_c[iris, 0].mean()), 0.70)
+
 
 if __name__ == "__main__":
     unittest.main()

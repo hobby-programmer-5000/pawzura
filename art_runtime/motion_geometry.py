@@ -1087,8 +1087,25 @@ def lift(points, uv):
     depth = 1.9 - points[:, 0]
     focal = 0.5 / math.tan(math.radians(20))
     projected = np.stack([0.5 + points[:, 1] * focal / depth, 0.5 - points[:, 2] * focal / depth], 1)
-    _, nearest = cKDTree(projected).query(np.asarray(uv), k=48)
-    return np.median(points[nearest], axis=1).astype(np.float32)
+    tree = cKDTree(projected)
+    uv_arr = np.atleast_2d(np.asarray(uv, dtype=np.float32))
+    height = max(0.1, float(np.ptp(points[:, 2])))
+    # Isolate the visible frontmost (+X) shell within a local 2D ball around each (u, v) so
+    # arbitrarily dense back-of-head geometry never pulls front-face landmarks backward/upward.
+    lifted = []
+    for pt_uv in uv_arr:
+        idx = np.asarray(tree.query_ball_point(pt_uv, r=0.028), dtype=np.int32)
+        if len(idx) < 4:
+            _, idx = tree.query(pt_uv, k=min(48, len(points)))
+            idx = np.atleast_1d(np.asarray(idx, dtype=np.int32))
+        d2 = np.linalg.norm(projected[idx] - pt_uv, axis=1)
+        idx = idx[np.argsort(d2)]
+        cand = points[idx]
+        x_front = float(np.percentile(cand[:, 0], 92))
+        front_cand = cand[cand[:, 0] >= x_front - height * 0.045]
+        use = front_cand[:min(12, len(front_cand))] if len(front_cand) >= 3 else cand[:min(12, len(cand))]
+        lifted.append(np.median(use, axis=0))
+    return np.asarray(lifted, dtype=np.float32)
 
 
 def lift_medial(points, uv):
@@ -1235,6 +1252,73 @@ def _refine_chibi_joints(vertices, joints):
                 zt,
             ], dtype=np.float32)
     return joints
+
+
+def _refine_eye_joints(vertices, joints, mouth, colors):
+    """Snap ViTPose eye landmarks down from overhanging hair bangs onto actual iris sockets above cheek skin."""
+    if colors is None or len(colors) != len(vertices) or len(vertices) < 64:
+        return joints
+    height = max(0.1, float(np.ptp(vertices[:, 2])))
+    eye_dist = max(height * 0.06, abs(float(joints[1, 1]) - float(joints[2, 1])))
+    front = vertices[:, 0] > float(mouth[0]) - height * 0.14
+    if not front.any():
+        return joints
+
+    lum = colors.mean(axis=1)
+    cheek_mask = front & (abs(vertices[:, 1] - float(mouth[1])) < eye_dist * 0.75) & (abs(vertices[:, 2] - float(mouth[2])) < height * 0.035) & (lum > 0.45)
+    cheek_lum = float(np.median(lum[cheek_mask])) if cheek_mask.sum() >= 6 else 0.72
+    skin_floor = max(0.46, cheek_lum - 0.22)
+    ear_mid_z = 0.5 * float(joints[3, 2] + joints[4, 2])
+    half_y = max(height * 0.014, eye_dist * 0.20)
+    half_z = height * 0.008
+
+    refined = joints.copy()
+    for idx in (1, 2):
+        eye_p = refined[idx]
+        col = front & (abs(vertices[:, 1] - float(eye_p[1])) < half_y)
+        if col.sum() < 12:
+            continue
+        z_lo = max(float(mouth[2]) + height * 0.020, float(eye_p[2]) - height * 0.048)
+        z_hi = min(float(eye_p[2]) + height * 0.004, ear_mid_z + height * 0.032)
+        if z_hi - z_lo < height * 0.012:
+            continue
+
+        def _slice_score(zc):
+            in_eye = col & (abs(vertices[:, 2] - zc) < half_z)
+            below = col & (vertices[:, 2] >= zc - height * 0.021) & (vertices[:, 2] <= zc - height * 0.009)
+            above = col & (vertices[:, 2] >= zc + height * 0.008) & (vertices[:, 2] <= zc + height * 0.020)
+            bridge = front & (abs(vertices[:, 1] - float(mouth[1])) < eye_dist * 0.18) & (abs(vertices[:, 2] - zc) < half_z * 1.3)
+            if in_eye.sum() < 4 or below.sum() < 4:
+                return -1.0, 0.0
+            e_l = float(lum[in_eye].mean())
+            b_l = float(lum[below].mean())
+            a_l = float(lum[above].mean()) if above.sum() >= 3 else e_l
+            br_l = float(lum[bridge].mean()) if bridge.sum() >= 3 else b_l
+            e_std = float(lum[in_eye].std())
+            if b_l < skin_floor:
+                return (b_l - e_l) * 0.25, b_l
+            # Distinguish isolated iris sockets (dark center flanked by bright cheek + nose bridge)
+            # from full-width overhanging hair bangs or hat rims.
+            bridge_bonus = 0.55 * max(0.0, br_l - e_l) if br_l >= skin_floor else -0.25
+            return (b_l - e_l) + 0.35 * max(0.0, a_l - e_l) + 0.25 * e_std + bridge_bonus, b_l
+
+        pred_score, _ = _slice_score(float(eye_p[2]))
+        best_z = float(eye_p[2])
+        best_score = pred_score
+        best_below = 0.0
+        for zc in np.linspace(z_lo, z_hi, 18):
+            sc, bl = _slice_score(float(zc))
+            if sc > best_score:
+                best_score = sc
+                best_z = float(zc)
+                best_below = bl
+        if best_score > pred_score + 0.10 and best_below >= skin_floor:
+            # Bias slightly upward from the lower cheek-iris border onto the true pupil/eyeball center.
+            refined[idx, 2] = np.float32(min(float(eye_p[2]), best_z + height * 0.005))
+            front_eye = col & (abs(vertices[:, 2] - float(refined[idx, 2])) < half_z * 1.4)
+            if front_eye.sum() >= 4:
+                refined[idx, 0] = np.float32(0.5 * float(np.percentile(vertices[front_eye, 0], 88) + np.percentile(vertices[front_eye, 0], 12)))
+    return refined
 
 
 def _segments_distances(points, bones):
@@ -1998,6 +2082,12 @@ def fit_articulated(vertices, faces, keypoints, mouth_uv, colors=None):
     joints = _refine_chibi_joints(vertices, lift_medial(vertices, keypoints))
     height = float(np.ptp(vertices[:, 2]))
     pinch = _find_neck_pinch(vertices)
+    # Mouth landmark on front face lifted after body joints so mocked callers see consistent lift order.
+    mouth = lift(vertices, [mouth_uv])[0]
+    mouth_hits = vertices[(abs(vertices[:, 1] - mouth[1]) < height * 0.025) & (abs(vertices[:, 2] - mouth[2]) < height * 0.02)]
+    if len(mouth_hits):
+        mouth[0] = float(np.percentile(mouth_hits[:, 0], 95))
+    joints = _refine_eye_joints(vertices, joints, mouth, colors)
     shoulder_mid = (joints[5] + joints[6]) * 0.5
     hip_mid = (joints[11] + joints[12]) * 0.5
     if height < 0.1 or shoulder_mid[2] <= hip_mid[2] or np.linalg.norm(joints[5] - joints[6]) < height * 0.08:
@@ -2036,11 +2126,7 @@ def fit_articulated(vertices, faces, keypoints, mouth_uv, colors=None):
         toe = ball + np.array([height * 0.034, 0.0, -height * 0.004], dtype=np.float32)
         limb_data[label] = (s, e, w, hand_tip, h, k, a, ball, toe)
 
-    # Mouth landmark on front face & TMJ jaw pivot tucked back near ear depth.
-    mouth = lift(vertices, [mouth_uv])[0]
-    mouth_hits = vertices[(abs(vertices[:, 1] - mouth[1]) < height * 0.025) & (abs(vertices[:, 2] - mouth[2]) < height * 0.02)]
-    if len(mouth_hits):
-        mouth[0] = float(np.percentile(mouth_hits[:, 0], 95))
+    # TMJ jaw pivot tucked back near ear depth & chin tip below mouth anchor.
     ear_mid = 0.5 * (joints[3] + joints[4])
     tmj_pivot = np.array([min(float(ear_mid[0]), float(mouth[0]) - height * 0.11), float(mouth[1]), float(mouth[2]) + height * 0.025], dtype=np.float32)
     chin_tip = mouth + np.array([0.0, 0.0, -height * 0.045], dtype=np.float32)

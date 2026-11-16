@@ -25,35 +25,58 @@ COUNTS = {
 }
 
 
-def face(points, colors, joints, mouth, blink, opening, smile, height, gaze_y=0.0, brow=0.0, apply_jaw=True):
-    """Apply smooth eyelid closure, subtle gaze/brow motion, smile lift, and recessed mouth interior."""
+def face(points, colors, joints, mouth, blink, opening, smile, height, gaze_y=0.0, brow=0.0, apply_jaw=True, return_blend=False):
+    """Apply smooth elliptical eyelid closure, subtle gaze/brow motion, smile lift, and recessed mouth interior."""
     p = points.copy()
     c = colors.copy()
     eyes = joints[[1, 2]].copy()
     distance = max(height * 0.08, abs(eyes[0, 1] - eyes[1, 1]))
     front = p[:, 0] > mouth[0] - height * 0.14
     skin_region = front & (abs(p[:, 1] - mouth[1]) < distance * 0.7) & (abs(p[:, 2] - mouth[2]) < height * 0.035)
-    skin = c[skin_region & (c.mean(1) > 0.6)]
-    skin = np.median(skin, 0) if len(skin) > 5 else np.array([0.93, 0.79, 0.65], dtype=np.float32)
+    skin_samples = c[skin_region & (c.mean(1) > 0.55)]
+    cheek_skin = np.median(skin_samples, 0) if len(skin_samples) > 5 else np.array([0.93, 0.79, 0.65], dtype=np.float32)
+    override_c = c.copy()
+    blend_mask = np.zeros(len(p), dtype=np.float32)
 
+    r_y = distance * 0.28
+    r_z = distance * 0.19
     for eye in eyes:
         dy_e = p[:, 1] - eye[1]
         dz_e = p[:, 2] - eye[2]
-        influence = (1 - smooth(distance * 0.34, distance * 0.58, abs(dy_e))) * (1 - smooth(distance * 0.16, distance * 0.27, abs(dz_e))) * front
+        rad2 = (dy_e / r_y) ** 2 + (dz_e / r_z) ** 2
+        influence = (1 - smooth(0.65, 1.0, rad2)) * front
         # Subtle eye gaze shift on pupil/iris pixels.
         if abs(gaze_y) > 1e-3:
             pupil = influence * smooth(0.35, 0.7, 1.0 - c.mean(1))
             p[:, 1] += pupil * gaze_y * distance * 0.06
         # Eyebrow subtle vertical lift/furrow just above eye band.
         if abs(brow) > 1e-3:
-            brow_band = front * (1 - smooth(distance * 0.25, distance * 0.52, abs(dy_e))) * smooth(distance * 0.18, distance * 0.28, dz_e) * (1 - smooth(distance * 0.32, distance * 0.44, dz_e))
+            brow_band = front * (1 - smooth(distance * 0.22, distance * 0.42, abs(dy_e))) * smooth(r_z * 0.95, r_z * 1.40, dz_e) * (1 - smooth(r_z * 1.60, r_z * 2.05, dz_e))
             p[:, 2] += brow_band * brow * height * 0.011
-        aperture = distance * 0.19 * (1 - blink)
-        lid = influence * smooth(aperture - 0.0015, aperture + 0.003, abs(dz_e)) * blink
-        c = c * (1 - lid[:, None]) + skin * lid[:, None]
-        curve = eye[2] + height * 0.003 * (dy_e / (distance * 0.36)) ** 2
-        line = influence * (1 - smooth(height * 0.001, height * 0.003, abs(p[:, 2] - curve))) * smooth(0.72, 1.0, blink)
-        c = c * (1 - line[:, None]) + np.array([0.23, 0.16, 0.13], dtype=np.float32) * line[:, None]
+        if blink > 1e-3:
+            # Sample local under-eye cheek tone and keep warm upper-lid shading aligned with forehead skin.
+            local_skin_m = (
+                front
+                & (abs(dy_e) < distance * 0.48)
+                & (dz_e >= -distance * 0.28)
+                & (dz_e <= -distance * 0.09)
+                & (colors.mean(1) > 0.48)
+            )
+            eye_skin = np.median(colors[local_skin_m], 0) if int(local_skin_m.sum()) >= 5 else cheek_skin
+            lid_skin = np.clip(eye_skin * 0.97, 0.0, 1.0).astype(np.float32)
+            aperture = r_z * (1.0 - blink) - height * 0.004 * smooth(0.65, 1.0, blink)
+            lid = (influence * smooth(aperture - height * 0.002, aperture + height * 0.004, abs(dz_e)) * blink).astype(np.float32)
+            c = c * (1 - lid[:, None]) + lid_skin * lid[:, None]
+            # Smooth mesh-aware closed eyelash crease (avoids sub-voxel dashed vertex artifacts).
+            curve = eye[2] - r_z * 0.15 + height * 0.0025 * (dy_e / r_y) ** 2
+            lash_w = max(r_z * 0.24, height * 0.0065)
+            line = (influence * (1 - smooth(lash_w * 0.35, lash_w, abs(p[:, 2] - curve))) * smooth(0.55, 1.0, blink) * 0.58).astype(np.float32)
+            lash_col = np.array([0.24, 0.16, 0.13], dtype=np.float32)
+            c = c * (1 - line[:, None]) + lash_col * line[:, None]
+            ov_eye = lid_skin[None, :] * (1 - line[:, None]) + lash_col[None, :] * line[:, None]
+            active_e = influence > 0.01
+            override_c[active_e] = ov_eye[active_e]
+            blend_mask = np.maximum(blend_mask, np.maximum(lid, line))
 
     dy = p[:, 1] - mouth[1]
     dz = p[:, 2] - mouth[2]
@@ -66,7 +89,10 @@ def face(points, colors, joints, mouth, blink, opening, smile, height, gaze_y=0.
     p[:, 2] += smile * height * 0.009 * corners
     cover = front & (abs(dy) < distance * 0.44) & (abs(dz) < height * 0.016)
     amount = float(smooth(0.08, 0.35, opening))
-    c[cover] = c[cover] * (1 - amount) + skin * amount
+    c[cover] = c[cover] * (1 - amount) + cheek_skin * amount
+    if amount > 1e-4:
+        override_c[cover] = cheek_skin
+        blend_mask[cover] = np.maximum(blend_mask[cover], np.float32(amount))
 
     extra_v, extra_f, extra_c = [], [], []
     if opening > 0.01:
@@ -106,6 +132,8 @@ def face(points, colors, joints, mouth, blink, opening, smile, height, gaze_y=0.
         extra_v = np.empty((0, 3), dtype=np.float32)
         extra_f = np.empty((0, 3), dtype=np.int32)
         extra_c = np.empty((0, 3), dtype=np.float32)
+    if return_blend:
+        return p, override_c, extra_v, extra_f, extra_c, blend_mask
     return p, c, extra_v, extra_f, extra_c
 
 
@@ -363,18 +391,24 @@ def _bake_articulated(job, payload, report, surf_data, rig_data):
             for i in range(count):
                 transforms = clip_transforms[i]
                 ft = face_tracks[i]
-                v_face, c_face, ex_v, ex_f, ex_c = face(
-                    vertices, colors, joints, mouth,
-                    ft["blink"], ft["opening"], ft["smile"], height,
-                    gaze_y=ft.get("gaze_y", 0.0), brow=ft.get("brow", 0.0), apply_jaw=False,
-                )
+                use_atlas = atlas_f is not None and face_uvs is not None
+                if use_atlas:
+                    v_face, c_face, ex_v, ex_f, ex_c, ov_base = face(
+                        vertices, colors, joints, mouth,
+                        ft["blink"], ft["opening"], ft["smile"], height,
+                        gaze_y=ft.get("gaze_y", 0.0), brow=ft.get("brow", 0.0), apply_jaw=False, return_blend=True,
+                    )
+                    ov_w = np.concatenate([ov_base, np.ones(len(ex_v), dtype=np.float32)]) if len(ex_v) else ov_base
+                else:
+                    v_face, c_face, ex_v, ex_f, ex_c = face(
+                        vertices, colors, joints, mouth,
+                        ft["blink"], ft["opening"], ft["smile"], height,
+                        gaze_y=ft.get("gaze_y", 0.0), brow=ft.get("brow", 0.0), apply_jaw=False,
+                    )
+                    ov_w = None
                 deformed_v, deformed_n = dual_quaternion_skinning(v_face, normals, weights, transforms)
                 r_head, tr_head = transforms[head_idx]
                 mouth_now = mouth @ r_head.T + tr_head
-                ov_w = None
-                if atlas_f is not None and face_uvs is not None:
-                    ov_base = np.clip(np.abs(c_face - colors).max(axis=1) * 4.0, 0.0, 1.0).astype(np.float32)
-                    ov_w = np.concatenate([ov_base, np.ones(len(ex_v), dtype=np.float32)]) if len(ex_v) else ov_base
                 if len(ex_v):
                     ex_v_def = ex_v @ r_head.T + tr_head
                     ex_n = compute_vertex_normals(ex_v_def, ex_f)
