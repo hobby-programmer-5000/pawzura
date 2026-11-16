@@ -167,12 +167,28 @@ def inflate_2_5d_mesh(vertices, faces, points=None, min_depth_ratio=0.52):
         raw_head_d = float(np.percentile(v_out[head_mask, 0], 98) - np.percentile(v_out[head_mask, 0], 2))
     else:
         head_w = width_total * 0.65
-        raw_head_d = height * 0.34
+        raw_head_d = height * 0.28
 
-    # Anatomical target full-depth across head, torso, and legs so flat heads/limbs become plump cylinders.
-    target_head_d = float(np.clip(max(head_w * 0.72, raw_head_d, height * 0.32), height * 0.30, height * 0.40))
-    target_torso_d = max(height * 0.26, target_head_d * max(0.76, float(min_depth_ratio) * 1.38))
-    target_leg_d = max(height * 0.22, target_head_d * max(0.64, float(min_depth_ratio) * 1.18))
+    # Estimate central core torso width and per-leg column width so slim 4-head characters stay
+    # proportional in 90-deg side view while paper-thin standee slabs still expand past >0.16H.
+    torso_mid = v_out[(v_out[:, 2] >= z_hip + height * 0.06) & (v_out[:, 2] <= z_neck - height * 0.03)]
+    if len(torso_mid) >= 24:
+        core_band = torso_mid[np.abs(torso_mid[:, 1] - ymed) <= max(width_total * 0.30, height * 0.12)]
+        torso_pts = core_band if len(core_band) >= 16 else torso_mid
+        torso_w = float(np.percentile(torso_pts[:, 1], 92) - np.percentile(torso_pts[:, 1], 8))
+    else:
+        torso_w = width_total * 0.52
+    leg_band = v_out[(v_out[:, 2] >= zmin + height * 0.05) & (v_out[:, 2] <= z_hip)]
+    if len(leg_band) >= 16:
+        half_leg = leg_band[leg_band[:, 1] >= ymed] if (leg_band[:, 1] >= ymed).sum() >= 8 else leg_band
+        leg_w = float(np.percentile(half_leg[:, 1], 95) - np.percentile(half_leg[:, 1], 5))
+    else:
+        leg_w = torso_w * 0.50
+
+    target_head_d = float(np.clip(max(head_w * 0.72, height * 0.23), height * 0.22, height * 0.34))
+    target_torso_d = float(np.clip(max(torso_w * 0.74, height * 0.165), height * 0.165, max(height * 0.225, float(min_depth_ratio) * 0.90)))
+    target_leg_d = float(np.clip(max(leg_w * 0.85, height * 0.135), height * 0.135, height * 0.185))
+    trunk_hw = max(height * 0.085, torso_w * 0.52)
 
     torso_band = (v_out[:, 2] >= z_hip) & (v_out[:, 2] <= z_neck + height * 0.12)
     x_canon = float(np.median(v_out[torso_band, 0])) if torso_band.any() else float(np.median(v_out[:, 0]))
@@ -232,20 +248,20 @@ def inflate_2_5d_mesh(vertices, faces, points=None, min_depth_ratio=0.52):
 
         if zc >= z_neck:
             crown_t = float(np.clip((zmax - zc) / max(1e-4, height * 0.08), 0.25, 1.0))
-            t_depth = min(target_head_d * math.sqrt(crown_t), width_sub * 0.82)
-            slice_scales[i] = float(np.clip(t_depth / curr_thick, 1.0, 2.6))
-            slice_dome_amp[i] = slab_score * min(height * 0.11, width_sub * 0.20)
+            t_depth = min(target_head_d * math.sqrt(crown_t), width_sub * 0.80)
+            slice_scales[i] = float(np.clip(t_depth / curr_thick, 1.0, 2.4))
+            slice_dome_amp[i] = slab_score * min(height * 0.095, width_sub * 0.18)
         elif zc >= z_hip:
             t_tr = float(np.clip((zc - z_hip) / max(1e-4, z_neck - z_hip), 0.0, 1.0))
             want_d = target_leg_d + t_tr * (target_torso_d - target_leg_d)
-            t_depth = max(curr_thick, min(want_d, max(height * 0.22, width_sub * 0.78)))
+            t_depth = max(curr_thick, min(want_d, max(height * 0.145, width_sub * 0.74)))
             slice_scales[i] = float(np.clip(t_depth / curr_thick, 1.0, 9.0))
-            slice_dome_amp[i] = slab_score * min(height * 0.085, width_sub * 0.18)
+            slice_dome_amp[i] = slab_score * min(height * 0.075, width_sub * 0.16)
         else:
             sole_t = float(np.clip((zc - zmin) / max(1e-4, height * 0.04), 0.45, 1.0))
-            t_depth = max(curr_thick, min(target_leg_d * sole_t, max(height * 0.20, width_sub * 0.76)))
+            t_depth = max(curr_thick, min(target_leg_d * sole_t, max(height * 0.135, width_sub * 0.72)))
             slice_scales[i] = float(np.clip(t_depth / curr_thick, 1.0, 9.0))
-            slice_dome_amp[i] = slab_score * min(height * 0.065, width_sub * 0.16) * sole_t
+            slice_dome_amp[i] = slab_score * min(height * 0.060, width_sub * 0.14) * sole_t
 
     smooth_c0 = gaussian_filter1d(c0, sigma=2.4, mode="nearest")
     smooth_c1 = gaussian_filter1d(c1, sigma=2.4, mode="nearest")
@@ -291,15 +307,21 @@ def inflate_2_5d_mesh(vertices, faces, points=None, min_depth_ratio=0.52):
         # Gently relax excessive lateral C-shell curvature (c2) while keeping each slice's axial center v_c0
         # intact so boots below a cape/hair hem never shift backward relative to the knees.
         x_med_relaxed = v_c0 + 0.50 * (v_c1 * dy_norm + v_c2 * (dy_norm ** 2))
+        # Attenuate inflation on laterally separated arms/forearms/hands so slim sleeves do not bloat
+        # to full torso thickness when viewed from 90 degrees.
+        in_body_z = smooth(zmin + height * 0.18, zmin + height * 0.30, out[:, 2]) * (1.0 - smooth(z_neck - height * 0.03, z_neck + height * 0.03, out[:, 2]))
+        arm_out = smooth(trunk_hw * 0.82, trunk_hw * 1.18, np.abs(out[:, 1] - ymed)) * in_body_z
+        v_sc_eff = 1.0 + (v_sc - 1.0) * (1.0 - 0.85 * arm_out)
         dome = 0.0
         if dome_norm_map is not None:
             gn = dome_norm_map.shape[0]
             fy = np.clip((out[:, 1] - ymin) / max(1e-5, ymax - ymin) * (gn - 5) + 2, 0.0, gn - 1.001)
             fz_m = np.clip((out[:, 2] - zmin) / max(1e-5, zmax - zmin) * (gn - 5) + 2, 0.0, gn - 1.001)
             u_dome = map_coordinates(dome_norm_map, [fz_m, fy], order=1, mode="nearest")
-            dome = v_da * u_dome * np.tanh(dx / np.maximum(1e-3, 0.22 * v_th))
-        max_half_d = height * 0.32
-        out[:, 0] = x_med_relaxed + np.clip(dx * v_sc + dome, -max_half_d, max_half_d)
+            dome = v_da * u_dome * np.tanh(dx / np.maximum(1e-3, 0.22 * v_th)) * (1.0 - 0.80 * arm_out)
+        limb_cap = max(height * 0.045, trunk_hw * 0.45)
+        max_half_d = (height * 0.30) * (1.0 - arm_out) + limb_cap * arm_out
+        out[:, 0] = x_med_relaxed + np.clip(dx * v_sc_eff + dome, -max_half_d, max_half_d)
         return out
 
     v_inflated = _apply_smooth_inflation(v_out)
@@ -449,6 +471,25 @@ def _visibility_mask(points, u, v, depth, side):
     return visible
 
 
+def _bilateral_smooth_rgb(rgb, sigma_s=1.5, sigma_r=0.075):
+    """Edge-preserving bilateral smooth (Kopf et al. 2007) removing TripoSR neural noise on flat cel regions."""
+    h, w, _ = rgb.shape
+    padded = np.pad(rgb, ((2, 2), (2, 2), (0, 0)), mode="edge")
+    acc = np.zeros_like(rgb, dtype=np.float32)
+    w_sum = np.zeros((h, w), dtype=np.float32)
+    inv_2s2 = 1.0 / (2.0 * sigma_s * sigma_s)
+    inv_2r2 = 1.0 / (2.0 * sigma_r * sigma_r)
+    for dy in range(-2, 3):
+        for dx in range(-2, 3):
+            sp_w = math.exp(-(dx * dx + dy * dy) * inv_2s2)
+            nbr = padded[2 + dy:2 + dy + h, 2 + dx:2 + dx + w]
+            diff2 = np.sum((nbr - rgb) ** 2, axis=2) / 3.0
+            rw = np.exp(-diff2 * inv_2r2) * sp_w
+            acc += nbr * rw[:, :, None]
+            w_sum += rw
+    return np.clip(acc / np.maximum(w_sum[:, :, None], 1e-6), 0.0, 1.0).astype(np.float32)
+
+
 def project_multiview_colors(points, views, normals=None, ref_views=None):
     """Project multi-elevation TripoSR views and high-res reference RGBA images onto points/vertices.
 
@@ -481,12 +522,16 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
     weight_sum = np.zeros(len(points), dtype=np.float32)
 
     for spec in view_specs:
-        rgb_img = spec["rgb"]
-        side = rgb_img.shape[0]
-        is_bg = (rgb_img.min(axis=2) > 0.90) & ((rgb_img.max(axis=2) - rgb_img.min(axis=2)) < 0.06)
+        rgb_raw = spec["rgb"]
+        side = rgb_raw.shape[0]
+        # Exclude antialiased gray-white background fringe (>=0.80 low-sat) before inward EDT extrapolation
+        # so TripoSR border halo pixels never bleed across jawline/hair edges.
+        is_bg = (rgb_raw.min(axis=2) > 0.80) & ((rgb_raw.max(axis=2) - rgb_raw.min(axis=2)) < 0.08)
+        az_val = float(spec.get("az", 0.0)) % 360.0
+        rgb_img = _bilateral_smooth_rgb(rgb_raw) if (15.0 < az_val < 345.0 and not is_bg.all()) else rgb_raw
         if is_bg.any():
             d_bg_map = distance_transform_edt(~is_bg).astype(np.float32)
-            fg_core = d_bg_map >= 2.4
+            fg_core = d_bg_map >= 2.8
             if int(fg_core.sum()) >= 32:
                 _, near_fg = distance_transform_edt(~fg_core, return_indices=True)
                 rgb_clean_view = rgb_img[near_fg[0], near_fg[1]]
@@ -570,7 +615,9 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
         px_r = (rel @ right) / np.maximum(depth, 0.1)
         px_u = (rel @ up) / np.maximum(depth, 0.1)
         ndot = np.clip(normals @ cam_dir, 0.0, 1.0)
-        front_pts = ndot > 0.12
+        # Keep ref_views away from nearly orthogonal side walls (ndot <= 0.28) so 0-deg silhouette
+        # contours never scatter salt-and-pepper confetti streaks across +Y/-Y side atlas charts.
+        front_pts = ndot > 0.28
         if not front_pts.any():
             continue
         r_min, r_max = float(px_r.min()), float(px_r.max())
@@ -1072,8 +1119,12 @@ def bake_texture_atlas(vertices, faces, normals, views, ref_views=None, atlas_w=
                 tile_filled = tile[nearest_rc[0], nearest_rc[1]]
             else:
                 tile_filled = tile.copy()
+            if k != 0 and tile_filled.shape[0] >= 5 and tile_filled.shape[1] >= 5:
+                # Edge-preserving bilateral smooth harmonizes side/back UV tiles into crisp cel planes
+                # without disturbing sharp garment boundaries or the 1024px front (+X) tile.
+                tile_filled = _bilateral_smooth_rgb(tile_filled, sigma_s=1.4, sigma_r=0.065)
             med = median_filter(tile_filled, size=(3, 3, 1))
-            thresh = 0.20 if (k == 0 and layer_idx == 0) else 0.13
+            thresh = 0.20 if (k == 0 and layer_idx == 0) else 0.09
             spike = tcov & (np.abs(tile_filled - med).mean(axis=2) > thresh)
             if spike.any():
                 tile_filled[spike] = med[spike]

@@ -149,15 +149,16 @@ def render_mesh(vertices, faces, colors, normals, yaw, floor, top, mouth, out_si
     sy = (ssaa - 1.0 - (p[:, 2] - floor) * scale).astype(np.float32)
     sz = p[:, 0].astype(np.float32)
 
-    # 2.5D NPR Cel-Relief & Rim Shading (Ink-and-Ray / Lumo / Paint3D): Half-Lambert toon ramp + grazing contour relief + rim lift.
+    # 2.5D NPR Cel-Relief & Rim Shading (Ink-and-Ray / Lumo / Paint3D): Cohesive Half-Lambert cel
+    # tone ramp keeping 90-deg side profiles vibrant and harmonized with the flat 2D front illustration.
     hl = 0.5 * (0.80 * n_rot[:, 0] - 0.26 * n_rot[:, 1] + 0.54 * n_rot[:, 2]) + 0.5
-    toon_ramp = smooth(0.34, 0.58, hl)
+    toon_ramp = smooth(0.32, 0.58, hl)
     cam_nx = np.abs(n_rot[:, 0])
     contour_relief = smooth(0.08, 0.45, cam_nx)
-    rim_lift = 0.04 * np.clip(n_rot[:, 2], 0.0, 1.0) * (1.0 - cam_nx)
-    shade_relief = 0.81 + 0.13 * toon_ramp + 0.09 * contour_relief + rim_lift
+    rim_lift = 0.03 * np.clip(n_rot[:, 2], 0.0, 1.0) * (1.0 - cam_nx)
+    shade_relief = 0.87 + 0.09 * toon_ramp + 0.06 * contour_relief + rim_lift
     front_lock = float(max(0.0, 1.0 - abs(math.sin(yaw)) / 0.35)) * smooth(0.45, 0.78, n_rot[:, 0])
-    shade = np.clip(shade_relief * (1.0 - 0.65 * front_lock) + (0.98 + 0.04 * cam_nx) * (0.65 * front_lock), 0.78, 1.05).astype(np.float32)
+    shade = np.clip(shade_relief * (1.0 - 0.65 * front_lock) + (0.98 + 0.04 * cam_nx) * (0.65 * front_lock), 0.85, 1.05).astype(np.float32)
     lit_rgb = np.clip(colors * shade[:, None], 0.0, 1.0).astype(np.float32)
 
     atlas_f = None
@@ -291,6 +292,37 @@ def render_mesh(vertices, faces, colors, normals, yaw, floor, top, mouth, out_si
         rgba[valid, 1] = ((vals >> 8) & 0xFF).astype(np.uint8)
         rgba[valid, 2] = (vals & 0xFF).astype(np.uint8)
         rgba[valid, 3] = 255
+
+        # Subtle stylized ink contour along outer silhouette and internal limb overlaps on angled views
+        # (PAniC-3D / Mitchell NPAR stylized contour coherence with 2D anime front linework).
+        side_w = min(1.0, max(0.0, (abs(math.sin(yaw)) - 0.20) / 0.45))
+        if side_w > 0.0:
+            v2 = valid.reshape(ssaa, ssaa)
+            z2_buf = (zcolor >> 25).astype(np.int64).reshape(ssaa, ssaa)
+            sil_edge = np.zeros((ssaa, ssaa), dtype=bool)
+            sil_edge[1:, :] |= v2[1:, :] & ~v2[:-1, :]
+            sil_edge[:-1, :] |= v2[:-1, :] & ~v2[1:, :]
+            sil_edge[:, 1:] |= v2[:, 1:] & ~v2[:, :-1]
+            sil_edge[:, :-1] |= v2[:, :-1] & ~v2[:, 1:]
+
+            dz_thresh = int(max(1.0, 0.055 * (top - floor) * 1e6))
+            crease_edge = np.zeros((ssaa, ssaa), dtype=bool)
+            crease_edge[1:, :] |= v2[1:, :] & v2[:-1, :] & ((z2_buf[1:, :] - z2_buf[:-1, :]) > dz_thresh)
+            crease_edge[:-1, :] |= v2[:-1, :] & v2[1:, :] & ((z2_buf[:-1, :] - z2_buf[1:, :]) > dz_thresh)
+            crease_edge[:, 1:] |= v2[:, 1:] & v2[:, :-1] & ((z2_buf[:, 1:] - z2_buf[:, :-1]) > dz_thresh)
+            crease_edge[:, :-1] |= v2[:, :-1] & v2[:, 1:] & ((z2_buf[:, :-1] - z2_buf[:, 1:]) > dz_thresh)
+
+            rgb2 = rgba[:, :3].reshape(ssaa, ssaa, 3).astype(np.float32)
+            ink = np.array([52.0, 38.0, 34.0], dtype=np.float32)
+            if sil_edge.any():
+                # Soft dark ink edge that darkens albedo without turning pale outlines muddy
+                blend = 0.34 * side_w
+                rgb2[sil_edge] = rgb2[sil_edge] * (1.0 - blend) + np.minimum(rgb2[sil_edge] * 0.45, ink) * blend
+            inner_crease = crease_edge & ~sil_edge
+            if inner_crease.any():
+                blend_c = 0.28 * side_w
+                rgb2[inner_crease] = rgb2[inner_crease] * (1.0 - blend_c) + np.minimum(rgb2[inner_crease] * 0.48, ink) * blend_c
+            rgba[:, :3] = np.clip(np.rint(rgb2), 0.0, 255.0).astype(np.uint8).reshape(-1, 3)
 
     # Premultiplied alpha downsample prevents dark/white boundary halos.
     hi_img = Image.fromarray(rgba.reshape(ssaa, ssaa, 4), "RGBA").convert("RGBa")

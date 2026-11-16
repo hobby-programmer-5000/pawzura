@@ -132,7 +132,7 @@
 
 ---
 
-## 8. 15종 캐릭터 프리셋 3D 샌드박스 시각 검수 및 이상 현상 해결 학술 문헌 (25편)
+## 8. 15종 캐릭터 프리셋 3D 샌드박스 시각 검수 및 정면·측면 괴리 해결 학술 문헌 (31편)
 
 * **Zhang, Beichen, Zhang, Pan, Dong, Xiaoyi, Zang, Yuhang, & Wang, Jiaqi (2024)**. "Long-CLIP: Unlocking the Long-Text Capability of CLIP". *European Conference on Computer Vision (ECCV 2024)*, arXiv:2403.15378.  
   *(CLIP-L/G의 77토큰 절단 한계 및 앞쪽 20토큰 유효 수용 영역 편향을 규명하여 15종 캐릭터 프롬프트 58토큰 이내 압축·전진 배치의 근거가 된 핵심 연구)*
@@ -169,3 +169,15 @@
   *(다중 시점 3D 투영 시 실루엣 위험 버퍼 확장(silhouette risk dilation) 및 배경 림 잔여 픽셀 배제를 통한 역투영 halo 방지)*
 * **Hasinoff, Samuel W., & Kutulakos, Kiriakos N. (2007/2008)**. "Photo-Consistent Reconstruction of Semitransparent Scenes by Density-Sheet Decomposition" & "Boundary Matting". *IEEE TPAMI / CiteSeerX:64.2335*.  
   *(전경/배경 언믹싱 및 다이컷 스티커 테두리 제거·창백한 피부색 림 보호 기준 — 상세 구현 대응표는 [3D 복원·리깅·스타일화 동작 참고 문헌](3D-RIGGING-AND-MOTION-REFERENCES.md) 참고)*
+* **Chen, Shuhong, Zhang, Kevin, Shi, Yichun, Wang, Heng, & Zhu, Yiheng (2023)**. "PAniC-3D: Stylized Single-view 3D Reconstruction from Portraits of Anime Characters". *IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR 2023)*, arXiv:2303.14587.  
+  *(스타일화 애니메이션 원화의 측면 윤곽·선화 일관성 및 비례 복원 기준)*
+* **Wu, Kailu, Liu, Fangfu, Cai, Zhihan, Yan, Runjie, Wang, Hanyang, Hu, Yating, Duan, Yueqi, & Ma, Kaisheng (2024)**. "Unique3D: High-Quality and Efficient 3D Mesh Generation from a Single Image". *Advances in Neural Information Processing Systems (NeurIPS 2024)*, arXiv:2405.20343.  
+  *(고해상도 적도 시점(`384px`) 및 법선 기반 ISOMER 명시적 메쉬 텍스처 정합 근거)*
+* **Zhang, Pei, et al. (2024)**. "GTR: Improving Large 3D Reconstruction Models through Geometry and Texture Refinement". *arXiv preprint*, arXiv:2406.05649.  
+  *(대규모 3D 복원 모델의 기하 비대·측면 노이즈를 형상·텍스처 양방향 정제로 개선)*
+* **3DOT Authors (2025)**. "3DOT: Single-Reference 2D-to-3D Texture Transfer with Cross-View Consistency". *arXiv preprint*, arXiv:2503.18853.  
+  *(단일 2D 정면 참조와 측면 투영 사이의 스침각 오염 차단 및 색감 일관성 기준)*
+* **Kopf, Johannes, Cohen, Michael F., Lischinski, Dani, & Uyttendaele, Matt (2007)**. "Joint Bilateral Upsampling". *ACM Transactions on Graphics (SIGGRAPH 2007)*, 26(3), Article 96.  
+  *(경계선 보존 공간·색상 결합 양방향 필터링의 표준 공식)*
+* **Chen, Jiawen, Adams, Andrew, Wadhwa, Neal, & Hasinoff, Samuel W. (2016)**. "Bilateral Guided Upsampling". *ACM Transactions on Graphics (SIGGRAPH Asia 2016)*, 35(6), Article 203.  
+  *(측면 멀티뷰 및 비정면 UV 차트 아틀라스 평활화에 적용된 경계 보존 양방향 업샘플링)*

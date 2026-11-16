@@ -883,6 +883,66 @@ Frame Time: 0.0333333
         self.assertGreater(float(ov_w[iris].mean()), 0.85)
         self.assertGreater(float(ov_c[iris, 0].mean()), 0.70)
 
+    def test_bilateral_smooth_rgb_preserves_edges_and_suppresses_salt_pepper(self):
+        img = np.zeros((32, 32, 3), dtype=np.float32)
+        img[:, :16] = [0.20, 0.30, 0.80]
+        img[:, 16:] = [0.90, 0.78, 0.68]
+        # Inject mild intra-region noise on the skin side and dark hair side.
+        noisy = img.copy()
+        noisy[8, 24] = [0.76, 0.64, 0.55]
+        noisy[8, 8] = [0.30, 0.40, 0.88]
+        smooth = g._bilateral_smooth_rgb(noisy, sigma_s=1.4, sigma_r=0.075)
+        # Edge contrast across columns 15->16 must stay sharp while isolated speckle flattens.
+        edge_jump = float(np.abs(smooth[16, 16] - smooth[16, 15]).mean())
+        self.assertGreater(edge_jump, 0.40)
+        self.assertLess(float(np.abs(smooth[8, 24] - img[8, 24]).mean()), float(np.abs(noisy[8, 24] - img[8, 24]).mean()) * 0.45)
+
+    def test_inflate_lateral_arm_attenuation_and_angled_cel_contour(self):
+        import math
+        import motion_bake as mb
+
+        # Build flattened trunk + slim laterally separated arms in torso Z-band ([-0.20, 0.02] = 0.30H..0.52H below neck 0.54H).
+        gy, gz = np.meshgrid(np.linspace(-0.08, 0.08, 13), np.linspace(-0.20, 0.02, 13))
+        trunk_front = np.column_stack([np.full(gy.size, 0.02), gy.ravel(), gz.ravel()])
+        trunk_back = np.column_stack([np.full(gy.size, -0.02), gy.ravel(), gz.ravel()])
+        arm_y, arm_z = np.meshgrid(np.linspace(0.14, 0.18, 5), np.linspace(-0.18, 0.00, 9))
+        arm_l_f = np.column_stack([np.full(arm_y.size, 0.015), arm_y.ravel(), arm_z.ravel()])
+        arm_l_b = np.column_stack([np.full(arm_y.size, -0.015), arm_y.ravel(), arm_z.ravel()])
+        cap = np.array([[0.0, 0.0, 0.50], [0.0, 0.0, -0.50]], dtype=np.float32)
+        verts = np.vstack([trunk_front, trunk_back, arm_l_f, arm_l_b, cap]).astype(np.float32)
+        arm_mask = (verts[:, 1] >= 0.13) & (verts[:, 2] >= -0.18) & (verts[:, 2] <= 0.00)
+        trunk_mask = (np.abs(verts[:, 1]) <= 0.08) & (verts[:, 2] >= -0.20) & (verts[:, 2] <= 0.02)
+
+        faces = np.empty((0, 3), dtype=np.int32)
+        inflated = g.inflate_2_5d_mesh(verts, faces)
+        trunk_depth = float(inflated[trunk_mask, 0].max() - inflated[trunk_mask, 0].min())
+        arm_depth = float(inflated[arm_mask, 0].max() - inflated[arm_mask, 0].min())
+        self.assertGreater(trunk_depth, 0.15)
+        self.assertLess(arm_depth, trunk_depth * 0.60)
+
+        # Verify render_mesh() does not ink-darken front view (yaw=0), while adding subtle outline on side view (yaw=pi/2).
+        u = np.linspace(-0.5, 0.5, 32)
+        cx, cy, cz = np.meshgrid(u, u, u, indexing="ij")
+        f = (cx / 0.18) ** 2 + (cy / 0.18) ** 2 + (cz / 0.42) ** 2
+        sv, sf, _ = g.extract(np.clip(50.0 * (1.2 - f), 0.0, 60.0).astype(np.float32), radius=0.5, threshold=25.0)
+        sn = g.compute_vertex_normals(sv, sf)
+        sc = np.tile(np.array([[0.95, 0.90, 0.85]], dtype=np.float32), (len(sv), 1))
+        mouth = np.array([0.18, 0.0, 0.10], dtype=np.float32)
+        img_front, _ = mb.render_mesh(sv, sf, sc, sn, 0.0, -0.45, 0.45, mouth)
+        img_side, _ = mb.render_mesh(sv, sf, sc, sn, math.pi * 0.5, -0.45, 0.45, mouth)
+        arr_f = np.asarray(img_front)
+        arr_s = np.asarray(img_side)
+        # Side silhouette edge has slightly darker outer boundary pixels than flat bright front core.
+        self.assertGreater((arr_f[:, :, 3] > 200).sum(), 2000)
+        self.assertGreater((arr_s[:, :, 3] > 200).sum(), 2000)
+        # On uniform sphere side view, outer silhouette pixels are subtly darkened by the cel contour compared to front boundary.
+        edge_f = (arr_f[:, :, 3] > 180) & (arr_f[:, :, 3] < 252)
+        edge_s = (arr_s[:, :, 3] > 180) & (arr_s[:, :, 3] < 252)
+        core_s = arr_s[:, :, 3] == 255
+        if edge_s.any() and edge_f.any():
+            self.assertLess(float(arr_s[edge_s, 0].mean()), float(arr_s[core_s, 0].mean()) * 0.92)
+            self.assertLess(float(arr_s[edge_s, 0].mean()), float(arr_f[edge_f, 0].mean()))
+
 
 if __name__ == "__main__":
     unittest.main()

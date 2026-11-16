@@ -191,11 +191,12 @@ def reconstruct(cache, job, payload=None):
     total_views = sum(r[1] for r in rings)
     view_specs = []
     done_views = 0
-    render_side = 256
     report("motion_views", 0, total_views)
 
     with torch.inference_mode():
         for el_deg, n_az, weight in rings:
+            # Render equatorial views at 384px for 2.25x sharper 45/90/180/270-deg side textures (Unique3D/GTR).
+            render_side = 384 if abs(el_deg) < 1e-3 else 256
             rays_o, rays_d = get_spherical_cameras(n_az, el_deg, 1.9, 40, render_side, render_side)
             for i in range(n_az):
                 rgb = model.renderer(model.decoder, scene[0], rays_o[i].cuda(), rays_d[i].cuda()).cpu().numpy()

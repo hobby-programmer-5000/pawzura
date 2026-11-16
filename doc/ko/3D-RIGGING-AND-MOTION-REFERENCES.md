@@ -163,13 +163,21 @@
 | **CharacterGen** & **Paint3D** (팽창 전 원근 정합 아틀라스 베이킹) | Peng et al., ACM TOG 2024 · [DOI:10.1145/3658217](https://dl.acm.org/doi/10.1145/3658217); Zeng et al., CVPR 2024 · [arXiv:2312.13913](https://arxiv.org/abs/2312.13913) | 2.5D 팽창 이후가 아니라 TripoSR 원형 페어링 메쉬 위에서 카메라 원근 투영과 일치시켜 아틀라스를 먼저 베이크해야 3D 표면과 UV가 어긋나지 않음 | `three_d.py`의 `reconstruct()`에서 2.5D 팽창 **이전**에 `project_multiview_colors()` 및 `bake_texture_atlas()`를 선행 실행하고, `lat_candidates` 수평 줄무늬 유발 후보를 제거한 뒤 TripoSR 원근 나눗셈 `(rel @ right) / depth` 및 `d_bg_map >= 2.4` 내부 EDT 외삽(`rgb_clean_view`) 적용 |
 | **Monster Mash** (실루엣 거리 돔 크라우닝) | Dvorožňák et al., ACM TOG 2020 · [DOI:10.1145/3414685.3417830](https://dl.acm.org/doi/10.1145/3414685.3417830) | 평면 스탠드형 입력(`top_curv_frac < 0.10`)에서도 경계가 0으로 수렴하는 매끄러운 실루엣 거리 기반 돔 융기를 더해 90° 측면 부피 복원 | `inflate_2_5d_mesh()`에 축 중심 `v_c0` 유지, 슬라이스 스케일 상한 `9.0`, 경계 0-수렴 `(Y, Z)` 실루엣 돔 크라우닝(`dome_norm_map`) 적용 |
 
+### 5.8 정면·측면 괴리 해소: 비례 몸통/팔다리 2.5D 팽창, 고해상도 적도 뷰, 양방향 측면 노이즈 억제 및 셀 윤곽선 조화
+
+| 논문 / 기법 | 저자 · 학회/연도 · 식별자 | 핵심 원리 및 수식 | Pawzura 코드 적용 (`art_runtime/three_d.py`, `art_runtime/motion_geometry.py`, `art_runtime/motion_bake.py`) |
+| --- | --- | --- | --- |
+| **PAniC-3D: Stylized Single-view 3D Reconstruction from Portraits of Anime Characters** | Chen et al., CVPR 2023 · [arXiv:2303.14587](https://arxiv.org/abs/2303.14587) | 2D 애니메이션 캐릭터 원화를 3D로 복원할 때 측면 실루엣이 과대 팽창되거나 선화·셀 음영 스타일이 무너지면 정면과의 심한 시각 괴리가 발생하므로 비례 체적 보존 및 스타일 일관된 윤곽/음영 조화가 필수적임 | `render_mesh()`에서 정면(`yaw ≈ 0°`)은 원본 2D 셀 화질을 100% 유지하되, 측면·사선 뷰(`\|sin(yaw)\| > 0.20`)에 대해 2× SSAA 고해상도 Z-버퍼 경계(`sil_edge`)와 팔·몸통 겹침 깊이 단차(`crease_edge > 0.055H`)를 검출해 따뜻한 먹선 윤곽을 은은하게 부여하고 Half-Lambert 측면 바닥 음영을 `0.87`로 상향해 2D 원화와의 질감 괴리를 해소 |
+| **Unique3D (ISOMER)** & **3DOT** (적도 고해상도 뷰 & 단일 참조 텍스처 일관성) | Wu et al., NeurIPS 2024 · [arXiv:2405.20343](https://arxiv.org/abs/2405.20343); 3DOT Authors, 2025 · [arXiv:2503.18853](https://arxiv.org/abs/2503.18853) | 측면(`el = 0°`) 렌더링 해상도를 높이고 정면 참조(`source.png`)의 스침각(`ndot` 극저) 역투영과 흐린 회백색 경계 할로 외삽을 차단해야 `+Y/-Y` 뺨·턱선의 소금-후추(salt-and-pepper) 줄무늬 오염을 막을 수 있음 | `three_d.py`에서 적도 시점(`el == 0°`) TripoSR 렌더링 해상도를 `256px` → **`384px`**(2.25배 픽셀)로 상향하고, `motion_geometry.py`에서 배경 게이트를 `(min > 0.80) & (sat < 0.08)` / `d_bg_map >= 2.8`로 엄격화하며 정면 참조 스침각 투영 하한을 `ndot > 0.28`로 제한 |
+| **Joint Bilateral Upsampling** & **Bilateral Guided Upsampling** & **GTR** | Kopf et al., ACM TOG (SIGGRAPH 2007); Chen et al., ACM TOG (SIGGRAPH Asia 2016); Zhang et al., 2024 · [arXiv:2406.05649](https://arxiv.org/abs/2406.05649) | 색상·공간 가우시안 결합 양방향 필터(Bilateral Filter)로 경계선(머리카락·옷깃·팔선)은 날카롭게 보존하면서 TripoSR 저주파/측면 신경망 노이즈만 선택적으로 평활화하고, 중심 몸통 폭 기반 비례 목표 깊이 및 외곽 사지(팔·손) 감쇠 적용 | `motion_geometry.py`에 `_bilateral_smooth_rgb()`(`sigma_s=1.5, sigma_r=0.075`)를 구현해 비정면 뷰(`15° < az < 345°`) 및 측면 UV 차트(`sigma_r=0.065`)에 적용. 또한 `inflate_2_5d_mesh()`가 고정 하한(`0.26H`) 대신 중앙 몸통 폭 실측 비례(`target_torso_d ∈ [0.165H, 0.225H]`, `target_leg_d ∈ [0.135H, 0.185H]`)를 계산하고 바깥 팔(`arm_out`, `limb_cap = max(0.045H, 0.45 * trunk_hw)`)을 감쇠시켜 4등신 슬림 캐릭터 측면이 비대해지는 현상 해결 |
+
 ---
 
 ## 6. 0.8.0 전수 15종 캐릭터 샌드박스 검증 결과
 
 수정 적용 후 격리 샌드박스(`update_all_15_2_5d.py`)에서 15개 프리셋 전체를 재추출·재베이킹·리깅하고 턴어라운드(0°/45°/90°/180°/270°) 및 동작 포즈 그리드를 육안 확인했습니다. 전체 기록은 [검증 기록](VALIDATION.md)에도 수록되어 있습니다.
 
-- **전수 리깅 통과:** 15종 모두 `rig_3d_ok=True`, 90° 측면-전면 깊이비(`depth_ratio`) `0.300~0.661` (`otter` `0.542`, `villainess` `0.539`, `cyberpunk` `0.560`, `mastermind` `0.661`, `gardener` `0.579`, `hunter` `0.619`, `courier` `0.495`, `mechanic` `0.453`, `conductor` `0.414`, `solarpunk` `0.401`, `cozy` `0.371`, `artisan` `0.366`, `supporter` `0.361`, `astronomer` `0.322`, `occult` `0.300`)
+- **전수 리깅 통과:** 15종 모두 `rig_3d_ok=True`, 비례 보정된 90° 측면-전면 깊이비(`depth_ratio`) `0.273~0.640` (`otter` `0.519`, `villainess` `0.518`, `cyberpunk` `0.554`, `mastermind` `0.640`, `gardener` `0.577`, `hunter` `0.604`, `courier` `0.483`, `mechanic` `0.427`, `conductor` `0.377`, `solarpunk` `0.369`, `cozy` `0.363`, `artisan` `0.327`, `supporter` `0.322`, `astronomer` `0.300`, `occult` `0.273`)
 - **검증 그리드:**
   - ![그룹 1 기본 5종 턴어라운드·모션 그리드](../../artifacts/sandbox-v0.8.0-group1-original5.png)
   - ![그룹 2 서브컬처·라이트노벨 5종 턴어라운드·모션 그리드](../../artifacts/sandbox-v0.8.0-group2-subculture5.png)

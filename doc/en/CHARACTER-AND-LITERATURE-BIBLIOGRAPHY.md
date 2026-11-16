@@ -121,7 +121,7 @@
 
 ---
 
-## 8. Academic References for 15-Preset 3D Sandbox Visual Audit & Failure-Mode Remediation (25 Papers)
+## 8. Academic References for 15-Preset 3D Sandbox Visual Audit & Front-to-Side Remediation (31 Papers)
 
 * **Zhang, Beichen, Zhang, Pan, Dong, Xiaoyi, Zang, Yuhang, & Wang, Jiaqi (2024)**. "Long-CLIP: Unlocking the Long-Text Capability of CLIP". *European Conference on Computer Vision (ECCV 2024)*, arXiv:2403.15378.  
   *(Analyzes CLIP-L/G's 77-token hard truncation and 20-token effective positional receptive field, motivating front-loaded `<= 58`-token preset prompts)*
@@ -158,3 +158,15 @@
   *(Silhouette risk dilation during multi-view 3D texture projection to exclude background rim halos)*
 * **Hasinoff, Samuel W., & Kutulakos, Kiriakos N. (2007/2008)**. "Photo-Consistent Reconstruction of Semitransparent Scenes by Density-Sheet Decomposition" & "Boundary Matting". *IEEE TPAMI / CiteSeerX:64.2335*.  
   *(Foreground/background unmixing, die-cut sticker border removal, and skin-hue rim protection — see [3D Rigging References](3D-RIGGING-AND-MOTION-REFERENCES.md) for the implementation table)*
+* **Chen, Shuhong, Zhang, Kevin, Shi, Yichun, Wang, Heng, & Zhu, Yiheng (2023)**. "PAniC-3D: Stylized Single-view 3D Reconstruction from Portraits of Anime Characters". *IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR 2023)*, arXiv:2303.14587.  
+  *(Proportional volume preservation and stylized cel linework coherence between 2D anime portraits and 90° profiles)*
+* **Wu, Kailu, Liu, Fangfu, Cai, Zhihan, Yan, Runjie, Wang, Hanyang, Hu, Yating, Duan, Yueqi, & Ma, Kaisheng (2024)**. "Unique3D: High-Quality and Efficient 3D Mesh Generation from a Single Image". *Advances in Neural Information Processing Systems (NeurIPS 2024)*, arXiv:2405.20343.  
+  *(Motivates higher-resolution `384 px` equatorial view synthesis and explicit normal-gated mesh texturing)*
+* **Zhang, Pei, et al. (2024)**. "GTR: Improving Large 3D Reconstruction Models through Geometry and Texture Refinement". *arXiv preprint*, arXiv:2406.05649.  
+  *(Decouples coarse reconstruction inflation/noise from fine geometry proportions and denoised side textures)*
+* **3DOT Authors (2025)**. "3DOT: Single-Reference 2D-to-3D Texture Transfer with Cross-View Consistency". *arXiv preprint*, arXiv:2503.18853.  
+  *(Guides strict incidence gating and halo rejection to prevent cross-view confetti streaks on oblique surfaces)*
+* **Kopf, Johannes, Cohen, Michael F., Lischinski, Dani, & Uyttendaele, Matt (2007)**. "Joint Bilateral Upsampling". *ACM Transactions on Graphics (SIGGRAPH 2007)*, 26(3), Article 96.  
+  *(Standard edge-preserving spatial-range bilateral filter preserving garment and hair silhouettes)*
+* **Chen, Jiawen, Adams, Andrew, Wadhwa, Neal, & Hasinoff, Samuel W. (2016)**. "Bilateral Guided Upsampling". *ACM Transactions on Graphics (SIGGRAPH Asia 2016)*, 35(6), Article 203.  
+  *(Applied to oblique multi-view denoising and non-front UV atlas tiles in `motion_geometry.py`)*
