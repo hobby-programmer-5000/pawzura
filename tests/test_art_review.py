@@ -118,6 +118,38 @@ class ArtReviewTests(unittest.TestCase):
         for bad in ("no hat", "no backpack", "no pedestal", "no text"):
             self.assertNotIn(bad, result.lower())
 
+    def test_multiline_translation_and_long_korean_slot_traits_normalize_cleanly(self):
+        description = (
+            "코지 판타지 세계관의 숲속 약초 찻집을 운영하는 젊은 남성 약초차 장인 한 명. "
+            "순백색 배경 정중앙에 똑바로 서서 정면을 바라본다. "
+            "이마 위로 맑은 세이지 그린 빛 큰 눈동자가 빛난다. "
+            "체스트넛 브라운(밤색)의 짧은 곱슬머리 옆에 흰 캐모마일 꽃송이가 달린 원목 머리핀이 머리카락 실루엣 안에 어우러진다. "
+            "오트밀 크림색 리넨 셔츠 위에 모스 그린(이끼빛 초록) 울 조끼를 입고, "
+            "슬레이트 인디고(남청색) 워크 팬츠에 새들 브라운(적갈색) 레이스업 부츠를 신었다."
+        )
+        multiline_response = (
+            "Solo, 1person,\n\nchibi young man with chestnut brown curly hair, "
+            "sage green eyes, oatmeal cream linen shirt—moss green cropped vest, "
+            "slate indigo work pants, saddle brown lace-up boots, plain white background."
+        )
+        with patch("pawzura.art_policy.build_opener") as opener:
+            opener.return_value.open.side_effect = [
+                response({"response": '{"verdict":"allow"}'}),
+                response({"response": json.dumps({"prompt": multiline_response})}),
+            ]
+            result = art_policy.review_art_prompt(description)
+            second = json.loads(opener.return_value.open.call_args_list[1].args[0].data)
+        key_traits = json.loads(second["prompt"])["key_traits"]
+        self.assertIn("chestnut brown curly hair", key_traits)
+        self.assertNotIn("white hair", key_traits)
+        self.assertIn("sage green eyes", key_traits)
+        self.assertIn("oatmeal cream linen shirt", key_traits)
+        self.assertIn("moss green cropped vest", key_traits)
+        self.assertIn("slate indigo work pants", key_traits)
+        self.assertIn("saddle brown lace-up boots", key_traits)
+        self.assertNotIn("\n", result)
+        self.assertIn("saddle brown lace-up boots", result)
+
 
 if __name__ == "__main__":
     unittest.main()

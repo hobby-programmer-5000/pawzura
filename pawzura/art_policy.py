@@ -108,6 +108,86 @@ def _strip_negated_clauses(text: str) -> str:
     return cleaned if len(cleaned) >= 20 else text
 
 
+_KOREAN_COLOR_HINTS = {
+    "에스프레소 브라운": "dark brown", "체스트넛 브라운": "chestnut brown", "새들 브라운": "saddle brown",
+    "오트밀 크림색": "oatmeal cream", "슬레이트 인디고": "slate indigo", "세이지 그린": "sage green",
+    "모스 그린": "moss green", "연한 갈색": "light brown", "청록색": "turquoise", "호박색": "amber",
+    "남청색": "slate indigo", "인디고": "indigo", "남색": "navy", "크림색": "cream", "오트밀": "oatmeal cream",
+    "밤색": "chestnut brown", "고동색": "dark brown", "황갈색": "warm tan", "갈색": "brown",
+    "이끼빛": "moss green", "이끼색": "moss green", "민트색": "mint green", "연두빛": "light green",
+    "복숭아빛": "peach", "연보라": "lavender", "보라색": "purple", "분홍색": "pink",
+    "진홍색": "crimson", "붉은": "crimson", "빨간색": "red", "구릿빛": "copper bronze", "황동": "antique brass",
+    "금빛": "golden", "금색": "gold", "은빛": "silver", "은색": "silver", "차콜색": "charcoal",
+    "상아색": "ivory", "슬레이트": "slate", "올리브": "olive", "테라코타": "terracotta",
+    "계피색": "cinnamon brown", "순백색": "pure white", "흰색": "white", "흰": "white",
+    "검정색": "black", "초록색": "green", "파란색": "blue", "노란색": "yellow",
+    "샛노란": "bright yellow", "주황색": "orange", "회색": "gray", "자주색": "plum",
+}
+
+_KOREAN_POSE_HINTS = {
+    "수달": "anthropomorphic furry brown otter mascot (non-human animal, bare otter head, round ears)",
+    "여우": "anthropomorphic fox mascot (non-human animal)",
+    "고양이": "anthropomorphic cat mascot (non-human animal)",
+    "강아지": "anthropomorphic puppy mascot (non-human animal)",
+    "곰": "anthropomorphic bear mascot (non-human animal)",
+    "토끼": "anthropomorphic rabbit mascot (non-human animal)",
+    "조끼": "cropped vest", "재킷": "cropped jacket", "튜닉": "fitted tunic", "앞치마": "cropped apron vest",
+    "드릴 롤머리": "twin drill curls", "곱슬머리": "short curly hair",
+    "오드아이": "heterochromia gold and violet eyes", "바이저 고글": "cyan visor goggles on forehead",
+    "소매": "sleeves", "부츠": "boots", "구두": "shoes", "꼬리": "short tail",
+    "벌려": "arms separated from torso showing empty hands",
+    "떨어져": "limbs clearly separated", "분리": "legs spaced apart with clear gap",
+}
+
+_GARMENT_SLOTS = (
+    ("hair", (("드릴 롤머리", "twin drill curls"), ("곱슬머리", "curly hair"), ("앞머리", "hair"), ("머리카락", "hair"))),
+    ("eyes", (("눈동자", "eyes"), ("눈", "eyes"))),
+    ("top", (("리넨 셔츠", "linen shirt"), ("셔츠", "shirt"), ("블라우스", "blouse"))),
+    ("outer", (("울 조끼", "cropped vest"), ("조끼", "cropped vest"), ("재킷", "cropped jacket"),
+               ("튜닉", "tunic"), ("앞치마", "apron vest"), ("망토", "cape"), ("등껍질", "shell"))),
+    ("bottom", (("워크 팬츠", "work pants"), ("바지", "pants"), ("치마", "skirt"), ("스타킹", "stockings"))),
+    ("shoes", (("레이스업 부츠", "lace-up boots"), ("부츠", "boots"), ("구두", "shoes"))),
+)
+_COLOR_PATTERN = re.compile("|".join(re.escape(k) for k in sorted(_KOREAN_COLOR_HINTS, key=len, reverse=True)))
+_UNICODE_PUNCT = str.maketrans({"‘": "'", "’": "'", "“": '"', "”": '"', "–": "-", "—": "-", "·": ","})
+
+
+def _extract_key_visual_traits(text: str) -> str:
+    """Distill one concise English color-to-part phrase per body zone for long Korean prompts."""
+    clean = re.sub(r"\([^)]*\)", " ", text)
+    clauses = [c.strip() for c in re.split(r"[.,\n]+", clean) if c.strip()]
+    slot_values = {}
+    for slot, nouns in _GARMENT_SLOTS:
+        for clause in clauses:
+            for ko_noun, en_noun in nouns:
+                for match in re.finditer(re.escape(ko_noun), clause):
+                    color_hits = list(_COLOR_PATTERN.finditer(clause[max(0, match.start() - 18):match.start()]))
+                    if color_hits:
+                        slot_values[slot] = f"{_KOREAN_COLOR_HINTS[color_hits[-1].group(0)]} {en_noun}"
+                        break
+                if slot in slot_values:
+                    break
+            if slot in slot_values:
+                break
+    subject = ""
+    if "수달" in text:
+        subject = "anthropomorphic furry brown otter mascot"
+    elif any(k in text for k in ("여우", "고양이", "강아지", "곰", "토끼", "거북")):
+        subject = ""
+    elif "남성" in text or "청년" in text:
+        subject = "young man"
+    elif "여성" in text or "소녀" in text or "영애" in text:
+        subject = "young woman"
+    traits = ([subject] if subject else []) + [slot_values[slot] for slot, _ in _GARMENT_SLOTS if slot in slot_values]
+    return ", ".join(traits)
+
+
+def _normalize_translated_prompt(raw_prompt: str) -> str:
+    """Collapse newlines/tabs and normalize typographic ASCII punctuation from quantized SLMs."""
+    normalized = raw_prompt.translate(_UNICODE_PUNCT)
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
 def review_art_prompt(description, progress=None):
     """Review all input first, then translate only an approved description."""
     description = validate_art_prompt(description)
@@ -133,64 +213,57 @@ def review_art_prompt(description, progress=None):
         return description
     if progress is not None:
         progress("art_summarizing")
-    colors = {"청록색": "turquoise", "호박색": "amber", "남색": "navy", "크림색": "cream",
-              "연한 갈색": "light brown", "갈색": "brown", "민트색": "mint green", "보라색": "purple",
-              "연보라": "lavender", "분홍색": "pink", "금색": "gold", "은색": "silver", "은빛": "silver",
-              "흰색": "white", "검정색": "black", "빨간색": "red", "초록색": "green", "파란색": "blue",
-              "노란색": "yellow", "샛노란": "bright yellow", "주황색": "orange", "회색": "gray",
-              "진홍색": "crimson", "차콜색": "charcoal", "자주색": "plum", "구릿빛": "copper bronze",
-              "상아색": "ivory", "이끼색": "moss green", "적갈색": "russet brown", "금빛": "golden",
-              "슬레이트": "slate", "올리브": "olive", "테라코타": "terracotta", "계피색": "cinnamon brown"}
-    species_pose = {
-        "수달": "anthropomorphic furry brown otter mascot (non-human animal, bare otter head, round ears)",
-        "여우": "anthropomorphic fox mascot (non-human animal)",
-        "고양이": "anthropomorphic cat mascot (non-human animal)",
-        "강아지": "anthropomorphic puppy mascot (non-human animal)",
-        "곰": "anthropomorphic bear mascot (non-human animal)",
-        "토끼": "anthropomorphic rabbit mascot (non-human animal)",
-        "조끼": "cropped vest",
-        "재킷": "cropped jacket",
-        "튜닉": "fitted tunic",
-        "앞치마": "cropped apron vest",
-        "드릴 롤머리": "twin drill curls",
-        "오드아이": "heterochromia gold and violet eyes",
-        "바이저 고글": "cyan visor goggles on forehead",
-        "소매": "sleeves",
-        "부츠": "boots",
-        "구두": "shoes",
-        "꼬리": "short tail",
-        "벌려": "arms separated from torso showing empty hands",
-        "떨어져": "limbs clearly separated",
-        "분리": "legs spaced apart with clear gap",
-    }
     # Translation hints are data, not a limit on the available appearance/colors.
-    hints = {word: english for word, english in colors.items() if word in description}
-    pose_hints = {word: english for word, english in species_pose.items() if word in description}
+    hints = {word: english for word, english in _KOREAN_COLOR_HINTS.items() if word in description}
+    pose_hints = {word: english for word, english in _KOREAN_POSE_HINTS.items() if word in description}
+    key_traits = _extract_key_visual_traits(description) if len(description) > 120 else ""
+    condensed_description = " ".join(
+        dict.fromkeys(s.strip() for s in re.split(r"(?<=[.!?])\s+|\n+", description) if s.strip())
+    )
+    prompt_payload = {
+        "description": condensed_description or description,
+        "color_translations": hints,
+        "subject_pose_hints": pose_hints,
+    }
+    if key_traits:
+        prompt_payload["key_traits"] = key_traits
     payload.update(
         format={"type": "object", "additionalProperties": False,
-                "properties": {"prompt": {"type": "string", "maxLength": 512, "pattern": "^[ -~]{20,512}$"}},
+                "properties": {"prompt": {"type": "string", "maxLength": 512, "pattern": "^[A-Za-z0-9 ,.'()-]{20,512}$"}},
                 "required": ["prompt"]},
-        options={"temperature": 0, "num_predict": 1024, "num_ctx": 8192},
-        system="Translate the supplied character description into concise English visual phrases for SDXL "
-               "(22 to 42 words so all tokens fit SDXL's 77-token limit). Always begin with 'Solo, 1person' to guarantee a single solitary individual. Put species/subject FIRST: when an "
-               "animal character is asked, explicitly describe an anthropomorphic animal creature (NOT a human "
-               "child wearing an animal hood). Preserve exact colors, clothing, pose (separated arms, gap between legs), "
-               "and plain white background. Describe ONLY visible positive traits: write 'bare head, empty hands' and "
-               "NEVER emit negated words like 'no hat', 'no hood', 'no backpack', 'no pedestal', 'no text', or 'without'. "
+        options={"temperature": 0, "repeat_penalty": 1.15, "num_predict": 1024, "num_ctx": 8192},
+        system="Translate the supplied character description into ONE single-line concise English visual prompt for SDXL "
+               "(24 to 38 words total, under 320 chars, NO filler like 'He is wearing' or 'His arms are'). Always begin with 'Solo, 1person'. "
+               "Put species/subject FIRST: when an animal character is requested, explicitly describe an anthropomorphic animal creature "
+               "(NOT a human child wearing an animal hood). List key_traits (hair, eyes, shirt, vest, pants, boots) concisely without room/shop scenery, "
+               "ending cleanly with 'facing viewer, arms apart with empty hands, separated legs, plain white background'. "
+               "Describe ONLY visible positive traits: NO newlines, NO labels, NO negated words like 'no hat', 'no hood', 'no text', or 'without'. "
                "Do not invent a different character or copy these instructions. Return one JSON object with 'prompt' only.",
-        prompt=json.dumps({"description": description, "color_translations": hints, "subject_pose_hints": pose_hints}, ensure_ascii=False))
+        prompt=json.dumps(prompt_payload, ensure_ascii=False))
     output = _review_call(payload, "prompt", "/api/generate", 120)
     translated = _decision(output.get("response"), "prompt", ("prompt",))
     prompt = translated["prompt"]
-    if not isinstance(prompt, str) or re.fullmatch(r"[ -~]{20,512}", prompt) is None:
+    if not isinstance(prompt, str):
+        raise ReviewError("prompt", "invalid")
+    prompt = _normalize_translated_prompt(prompt)
+    if re.fullmatch(r"[ -~]{20,512}", prompt) is None:
         raise ReviewError("prompt", "invalid")
     prompt = _strip_negated_clauses(prompt)
     validate_art_prompt(prompt)
     sentences = list(dict.fromkeys(re.split(r"(?<=[.!?]) +", prompt.strip())))
     if len(sentences) > 1 and not sentences[-1].endswith((".", "!", "?")):
         sentences.pop()
-    words = " ".join(sentences).split()[:45]
-    compact = " ".join(words).rstrip(" ,;:")
+    all_words = " ".join(sentences).split()
+    if len(all_words) > 52:
+        # Prefer dropping a truncated final clause at a sentence boundary rather than mid-preposition.
+        while len(sentences) > 1 and len(" ".join(sentences).split()) > 52:
+            sentences.pop()
+        all_words = " ".join(sentences).split()[:52]
+        while len(all_words) > 6 and all_words[-1].casefold().rstrip(",.;:") in (
+            "a", "an", "and", "from", "her", "his", "in", "of", "on", "or", "the", "to", "with"
+        ):
+            all_words.pop()
+    compact = " ".join(all_words).rstrip(" ,;:")
     if len(compact) < 20:
         raise ReviewError("prompt", "invalid")
     return compact

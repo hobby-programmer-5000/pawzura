@@ -37,7 +37,8 @@
 
 6. **Full 15-Preset Sandbox Audit & Literature-Backed Side-View / 2.5D Texture Fixes**
    - Added die-cut sticker border stripping (`strip_diecut_sticker_border`), pre-inflation perspective-consistent UV atlas baking with foreground-interior `EDT` extrapolation, pale frontal skin-hue protection (`~is_skin_hue`), silhouette-distance dome crowning (`dome_norm_map`), and Half-Lambert cel-relief shading—eliminating side-view slab flattening (`otter`) and frontal face/costume blotches (`villainess`).
-   - Verified with **235 Python unit tests**, **23 geometry/pose probe checks**, **123 Markdown doc/link checks**, and **15/15 `rig_3d_ok=True`** sandbox runs (`depth_ratio` `0.300–0.661`). See [3D Rigging References](3D-RIGGING-AND-MOTION-REFERENCES.md) and [Validation Records](VALIDATION.md) for the 25 cited papers and turnaround grids:
+   - Fixed `art_review_prompt_invalid` and trait loss on long multi-paragraph (~2,000-char) Korean descriptions via proximity color-to-garment slot extraction and single-line ASCII normalization ([art_policy.py](../../pawzura/art_policy.py)).
+   - Verified with **236 Python unit tests**, **23 geometry/pose probe checks**, **123 Markdown doc/link checks**, and **15/15 `rig_3d_ok=True`** sandbox runs (`depth_ratio` `0.300–0.661`). See [3D Rigging References](3D-RIGGING-AND-MOTION-REFERENCES.md) and [Validation Records](VALIDATION.md) for the 25 cited papers and turnaround grids:
      - [Group 1 Original 5 Verification Grid](../../artifacts/sandbox-v0.8.0-group1-original5.png)
      - [Group 2 Subculture & Light-Novel 5 Verification Grid](../../artifacts/sandbox-v0.8.0-group2-subculture5.png)
      - [Group 3 Speculative & Classic Literature 5 Verification Grid](../../artifacts/sandbox-v0.8.0-group3-literature5.png)
