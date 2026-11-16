@@ -35,4 +35,11 @@
    - AI 리깅 고도화 및 엔지니어링: `Antigravity (Google DeepMind)`
    - AI 초기 구현 지원: `ChatGPT (Codex, OpenAI)`
 
+6. **전수 15종 샌드박스 검증 및 학술 기반 측면·질감 복원 보완**
+   - 외곽 다이컷 스티커 테두리 제거(`strip_diecut_sticker_border`), 2.5D 팽창 전 다중 뷰 원근 아틀라스 베이킹 + 내부 `EDT` 외삽, 창백한 정면 피부 림 보호(`~is_skin_hue`), 실루엣 돔 크라우닝(`dome_norm_map`), Half-Lambert 셀 릴리프 셰이딩을 반영해 `otter`·`villainess` 등 측면 평면화 및 얼굴·의상 2.5D 질감 왜곡을 해결했습니다.
+   - Python 단위 테스트 **235개**, 지오메트리 프로브 **23개**, 한/영 문서 링크 점검 **123개**, 15종 전체 샌드박스 3D 리깅(`rig_3d_ok=True`, 측면 깊이비 `0.300~0.661`)을 모두 통과했습니다. 상세 논문 25편과 검증 그리드는 [3D 참고 문헌](3D-RIGGING-AND-MOTION-REFERENCES.md) 및 [검증 기록](VALIDATION.md)에서 확인할 수 있습니다:
+     - [그룹 1 기본 5종 검증 그리드](../../artifacts/sandbox-v0.8.0-group1-original5.png)
+     - [그룹 2 서브컬처·라노벨 5종 검증 그리드](../../artifacts/sandbox-v0.8.0-group2-subculture5.png)
+     - [그룹 3 사변·고전문학 5종 검증 그리드](../../artifacts/sandbox-v0.8.0-group3-literature5.png)
+
 Windows 단일 EXE를 내려받거나 Windows ZIP 전체를 압축 해제하세요. 업데이트 전에 기존 Pawzura를 종료하세요. [다운로드와 사용법](SINGLE-EXE.md).

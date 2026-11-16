@@ -154,3 +154,23 @@
 | **Wonder3D: Single Image to 3D using Cross-Domain Diffusion** | Long et al., CVPR 2024 · [arXiv:2310.15008](https://arxiv.org/abs/2310.15008) | 고해상도 2D 정면 원본 이미지를 불변 참조 앵커(front-reference locking)로 고정하고 시선 입사각 $\cos\theta=\mathbf{n}\cdot\mathbf{v}$ 가중치를 완만하게 유지하여 저해상도 다중 시점 신경망 아티팩트가 정면·반측면(45°) 얼굴을 오염시키는 현상 차단 | `project_multiview_colors()`에서 정면 참조 가중치 지수를 `ndot ** 2.6`에서 `2.8 * (clip(ndot, 0.20, 1.0) ** 1.35)`로 개선하여 `villainess` 등의 이마·볼에 저해상도 TripoSR 얼룩이 번지는 현상을 완전 제거 |
 | **Paint3D: Paint Anything 3D with Lighting-Less Texture Diffusion Models** | Zeng et al., CVPR 2024 · [arXiv:2312.13913](https://arxiv.org/abs/2312.13913) | 스침각($|\mathbf{n}\cdot\mathbf{v}| < \epsilon$) 측면 경계의 텍스처 늘어짐을 방지하기 위해 외곽 먹선(ink outline)을 제거한 순수 셀 알베도를 측면 경계로 외삽하고 동적 조명 셰이더와 결합 | `source.png` 외곽 `3.2px` 먹선을 내부 셀 색상 `EDT`로 치환한 `rgba_clean`을 생성하고, 중앙 안면(눈·입) 박스를 제외한 측면 벽(`|n_y| > 0.26`)에 2D 의상·머리카락 셀 색상을 자연스럽게 래핑하여 90° 측면 뷰에서도 선명한 셀 색감 유지 |
 | **Ink-and-Ray** & **Lumo** (2.5D NPR Cel-Relief Shading) | Sýkora et al., ACM TOG 2014 · [DOI:10.1145/2601097.2601134](https://dl.acm.org/doi/10.1145/2601097.2601134); Johnston, NPAR 2002 | 평면 2D 셀 질감이 2.5D 메쉬 위에서 납작한 스티커처럼 보이지 않도록 부조 법선장 $\mathbf{n}_{\text{rot}}$ 기반 Half-Lambert 툰 램프·윤곽 감쇠·림 하이라이트를 부여 | `render_mesh()`에 전상방 키라이트 Half-Lambert 2단 셀 툰 램프(`smooth(0.34, 0.58, hl)`), 카메라 곡률 윤곽 음영(`contour_relief`), 상단 림 라이트(`rim_lift`)를 결합하여 0°·45°·90°·보행 뷰 전반에서 2D 셀 질감을 입체적인 2.5D 릴리프 질감으로 전환 |
+
+### 5.7 외곽 다이컷 스티커 테두리 제거·피부색 림 보호·팽창 전 원근 아틀라스 정합 및 돔 크라우닝
+
+| 논문 / 기법 | 저자 · 학회/연도 · 식별자 | 핵심 원리 및 수식 | Pawzura 코드 적용 (`art_runtime/runner.py`, `art_runtime/three_d.py`, `art_runtime/motion_geometry.py`) |
+| --- | --- | --- | --- |
+| **Silhouette Risk Dilation & Boundary Matting** (외곽 다이컷 테두리 플러드필 제거) | Grammatikopoulos et al., 2007 · [CiteSeerX:221.8010](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.221.8010); Hasinoff et al., 2008 · [CiteSeerX:64.2335](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.64.2335) | SDXL 출력이 회색 외곽선 + 흰색 다이컷 스티커 여백을 포함하면 TripoSR이 이를 얇은 아크릴 스탠드판으로 오인하고, 무채색 림 제거 패스가 정면의 창백한 애니메이션 피부까지 어두운 이웃 픽셀로 덮어쓰는 문제 규명 | `runner.py` 및 `three_d.py`에 `strip_diecut_sticker_border()`를 추가해 외곽 스티커 테두리(`otter`, `villainess` 등)를 TripoSR 입력 전에 제거. `motion_geometry.py`의 `neutral_white` 림 정리는 `back_side \| (normals[:, 0] <= 0.18)`와 `~is_skin_hue` 가드로 제한하여 정면 피부·스타킹 보존 |
+| **CharacterGen** & **Paint3D** (팽창 전 원근 정합 아틀라스 베이킹) | Peng et al., ACM TOG 2024 · [DOI:10.1145/3658217](https://dl.acm.org/doi/10.1145/3658217); Zeng et al., CVPR 2024 · [arXiv:2312.13913](https://arxiv.org/abs/2312.13913) | 2.5D 팽창 이후가 아니라 TripoSR 원형 페어링 메쉬 위에서 카메라 원근 투영과 일치시켜 아틀라스를 먼저 베이크해야 3D 표면과 UV가 어긋나지 않음 | `three_d.py`의 `reconstruct()`에서 2.5D 팽창 **이전**에 `project_multiview_colors()` 및 `bake_texture_atlas()`를 선행 실행하고, `lat_candidates` 수평 줄무늬 유발 후보를 제거한 뒤 TripoSR 원근 나눗셈 `(rel @ right) / depth` 및 `d_bg_map >= 2.4` 내부 EDT 외삽(`rgb_clean_view`) 적용 |
+| **Monster Mash** (실루엣 거리 돔 크라우닝) | Dvorožňák et al., ACM TOG 2020 · [DOI:10.1145/3414685.3417830](https://dl.acm.org/doi/10.1145/3414685.3417830) | 평면 스탠드형 입력(`top_curv_frac < 0.10`)에서도 경계가 0으로 수렴하는 매끄러운 실루엣 거리 기반 돔 융기를 더해 90° 측면 부피 복원 | `inflate_2_5d_mesh()`에 축 중심 `v_c0` 유지, 슬라이스 스케일 상한 `9.0`, 경계 0-수렴 `(Y, Z)` 실루엣 돔 크라우닝(`dome_norm_map`) 적용 |
+
+---
+
+## 6. 0.8.0 전수 15종 캐릭터 샌드박스 검증 결과
+
+수정 적용 후 격리 샌드박스(`update_all_15_2_5d.py`)에서 15개 프리셋 전체를 재추출·재베이킹·리깅하고 턴어라운드(0°/45°/90°/180°/270°) 및 동작 포즈 그리드를 육안 확인했습니다. 전체 기록은 [검증 기록](VALIDATION.md)에도 수록되어 있습니다.
+
+- **전수 리깅 통과:** 15종 모두 `rig_3d_ok=True`, 90° 측면-전면 깊이비(`depth_ratio`) `0.300~0.661` (`otter` `0.542`, `villainess` `0.539`, `cyberpunk` `0.560`, `mastermind` `0.661`, `gardener` `0.579`, `hunter` `0.619`, `courier` `0.495`, `mechanic` `0.453`, `conductor` `0.414`, `solarpunk` `0.401`, `cozy` `0.371`, `artisan` `0.366`, `supporter` `0.361`, `astronomer` `0.322`, `occult` `0.300`)
+- **검증 그리드:**
+  - ![그룹 1 기본 5종 턴어라운드·모션 그리드](../../artifacts/sandbox-v0.8.0-group1-original5.png)
+  - ![그룹 2 서브컬처·라이트노벨 5종 턴어라운드·모션 그리드](../../artifacts/sandbox-v0.8.0-group2-subculture5.png)
+  - ![그룹 3 사변·고전문학 5종 턴어라운드·모션 그리드](../../artifacts/sandbox-v0.8.0-group3-literature5.png)

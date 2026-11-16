@@ -2,7 +2,25 @@
 
 # 검증 기록
 
-검증일: 2026-11-03 (Asia/Seoul). 지원 목표와 실제 확인한 환경을 구분합니다.
+검증일: 2026-11-16 (Asia/Seoul). 지원 목표와 실제 확인한 환경을 구분합니다.
+
+## 0.8.0 전수 15종 2.5D/3D 캐릭터 리깅 및 샌드박스 검증
+
+로컬 작업본(`feature/rigging-enhancement`)에서 **Python 단위 테스트 235개(`tests/test_*.py`)**, **지오메트리·포즈 프로브 23개(`tests/pose_geometry_probe.py`)**, **문서 정합성 점검 123개 Markdown 파일·55개 언어 쌍(`scripts/check_docs.py`)**을 모두 통과했습니다.
+
+격리된 `art-runtime` 샌드박스에서 15종의 내장 캐릭터 프리셋 전체를 대상으로 스티커 테두리 제거(`strip_diecut_sticker_border`), 팽창 전 다중 뷰 원근 아틀라스 베이킹, 2D 실루엣 EDT 2.5D 돔 팽창(`inflate_2_5d_mesh`), 피부색 림 보호, Half-Lambert 셀 릴리프 셰이딩, 22+ 본 지오데식/DQS 3D 리깅 및 모션 베이킹을 실행해 **15종 모두 `rig_3d_ok=True`**로 통과했습니다:
+
+| 그룹 | 프리셋 | 3D 리깅 | 측면 깊이비(`depth_ratio`) | 팔 분리(`detached`) | 검증 그리드 |
+| --- | --- | --- | --- | --- | --- |
+| 기본 5종 | `astronomer`, `courier`, `gardener`, `mechanic`, `otter` | 5/5 통과 | `0.322`, `0.495`, `0.579`, `0.453`, `0.542` | 4/5 (`gardener` 몸통 밀착) | [그룹 1 그리드](../../artifacts/sandbox-v0.8.0-group1-original5.png) |
+| 서브컬처·라노벨 5종 | `hunter`, `villainess`, `artisan`, `supporter`, `mastermind` | 5/5 통과 | `0.619`, `0.539`, `0.366`, `0.361`, `0.661` | 5/5 | [그룹 2 그리드](../../artifacts/sandbox-v0.8.0-group2-subculture5.png) |
+| 사변·고전문학 5종 | `cyberpunk`, `solarpunk`, `cozy`, `occult`, `conductor` | 5/5 통과 | `0.560`, `0.401`, `0.371`, `0.300`, `0.414` | 4/5 (`occult` 밀착형 소매) | [그룹 3 그리드](../../artifacts/sandbox-v0.8.0-group3-literature5.png) |
+
+![그룹 1 기본 5종 턴어라운드·모션 그리드](../../artifacts/sandbox-v0.8.0-group1-original5.png)
+![그룹 2 서브컬처·라이트노벨 5종 턴어라운드·모션 그리드](../../artifacts/sandbox-v0.8.0-group2-subculture5.png)
+![그룹 3 사변·고전문학 5종 턴어라운드·모션 그리드](../../artifacts/sandbox-v0.8.0-group3-literature5.png)
+
+상세 원인 분석과 참고한 학술 논문 25편은 [3D 복원·리깅·스타일화 동작 참고 문헌](3D-RIGGING-AND-MOTION-REFERENCES.md) 및 [참고문헌 통합 서지 목록](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md)에 정리되어 있습니다.
 
 ## 0.3.0 그림 손발 분리·상호작용
 

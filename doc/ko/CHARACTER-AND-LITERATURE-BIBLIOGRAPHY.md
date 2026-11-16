@@ -132,7 +132,7 @@
 
 ---
 
-## 8. 15종 캐릭터 프리셋 3D 샌드박스 시각 검수 및 5대 이상 현상 해결 학술 문헌 (17편)
+## 8. 15종 캐릭터 프리셋 3D 샌드박스 시각 검수 및 이상 현상 해결 학술 문헌 (25편)
 
 * **Zhang, Beichen, Zhang, Pan, Dong, Xiaoyi, Zang, Yuhang, & Wang, Jiaqi (2024)**. "Long-CLIP: Unlocking the Long-Text Capability of CLIP". *European Conference on Computer Vision (ECCV 2024)*, arXiv:2403.15378.  
   *(CLIP-L/G의 77토큰 절단 한계 및 앞쪽 20토큰 유효 수용 영역 편향을 규명하여 15종 캐릭터 프롬프트 58토큰 이내 압축·전진 배치의 근거가 된 핵심 연구)*
@@ -165,3 +165,7 @@
   *(고해상도 정면 참조 앵커 고정 및 시선 입사각 가중치를 통한 반측면·정면 얼룩 억제)*
 * **Zeng, Xianfang, Chen, Xin, Qi, Zhongqi, Liu, Wen, Zhao, Zibo, et al. (2024)**. "Paint3D: Paint Anything 3D with Lighting-Less Texture Diffusion Models". *CVPR 2024*, arXiv:2312.13913.  
   *(외곽 먹선 제거 순수 셀 알베도 분리, 스침각 측면 경계 색상 외삽 및 2.5D NPR 셀 릴리프 셰이딩 결합)*
+* **Grammatikopoulos, Lazaros, Kalisperakis, Ilias, Karras, George, & Petsa, Elli (2007)**. "Automatic Multi-View Texture Mapping of 3D Surface Projections". *2nd ISPRS International Workshop 3D-ARCH*, CiteSeerX:221.8010.  
+  *(다중 시점 3D 투영 시 실루엣 위험 버퍼 확장(silhouette risk dilation) 및 배경 림 잔여 픽셀 배제를 통한 역투영 halo 방지)*
+* **Hasinoff, Samuel W., & Kutulakos, Kiriakos N. (2007/2008)**. "Photo-Consistent Reconstruction of Semitransparent Scenes by Density-Sheet Decomposition" & "Boundary Matting". *IEEE TPAMI / CiteSeerX:64.2335*.  
+  *(전경/배경 언믹싱 및 다이컷 스티커 테두리 제거·창백한 피부색 림 보호 기준 — 상세 구현 대응표는 [3D 복원·리깅·스타일화 동작 참고 문헌](3D-RIGGING-AND-MOTION-REFERENCES.md) 참고)*

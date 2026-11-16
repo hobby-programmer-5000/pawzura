@@ -121,7 +121,7 @@
 
 ---
 
-## 8. Academic References for 15-Preset 3D Sandbox Visual Audit & Failure-Mode Remediation (17 Papers)
+## 8. Academic References for 15-Preset 3D Sandbox Visual Audit & Failure-Mode Remediation (25 Papers)
 
 * **Zhang, Beichen, Zhang, Pan, Dong, Xiaoyi, Zang, Yuhang, & Wang, Jiaqi (2024)**. "Long-CLIP: Unlocking the Long-Text Capability of CLIP". *European Conference on Computer Vision (ECCV 2024)*, arXiv:2403.15378.  
   *(Analyzes CLIP-L/G's 77-token hard truncation and 20-token effective positional receptive field, motivating front-loaded `<= 58`-token preset prompts)*
@@ -154,3 +154,7 @@
   *(High-resolution front-reference locking and cosine view-incidence weighting to suppress oblique neural blotches)*
 * **Zeng, Xianfang, Chen, Xin, Qi, Zhongqi, Liu, Wen, Zhao, Zibo, et al. (2024)**. "Paint3D: Paint Anything 3D with Lighting-Less Texture Diffusion Models". *CVPR 2024*, arXiv:2312.13913.  
   *(Outline-stripped intrinsic cel albedo extraction, lateral grazing-angle color wrapping, and 2.5D NPR cel-relief shading)*
+* **Grammatikopoulos, Lazaros, Kalisperakis, Ilias, Karras, George, & Petsa, Elli (2007)**. "Automatic Multi-View Texture Mapping of 3D Surface Projections". *2nd ISPRS International Workshop 3D-ARCH*, CiteSeerX:221.8010.  
+  *(Silhouette risk dilation during multi-view 3D texture projection to exclude background rim halos)*
+* **Hasinoff, Samuel W., & Kutulakos, Kiriakos N. (2007/2008)**. "Photo-Consistent Reconstruction of Semitransparent Scenes by Density-Sheet Decomposition" & "Boundary Matting". *IEEE TPAMI / CiteSeerX:64.2335*.  
+  *(Foreground/background unmixing, die-cut sticker border removal, and skin-hue rim protection — see [3D Rigging References](3D-RIGGING-AND-MOTION-REFERENCES.md) for the implementation table)*

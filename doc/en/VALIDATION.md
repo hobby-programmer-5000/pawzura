@@ -2,7 +2,25 @@
 
 # Validation and known limits
 
-Date: 2026-11-03, Asia/Seoul. Intended support and actual checks are separate.
+Date: 2026-11-16, Asia/Seoul. Intended support and actual checks are separate.
+
+## 0.8.0 15-preset 2.5D/3D rigging and sandbox verification
+
+On the working tree (`feature/rigging-enhancement`), checks passed **235 Python unit tests (`tests/test_*.py`)**, **23 geometry/pose probe tests (`tests/pose_geometry_probe.py`)**, and **documentation parity across 123 Markdown files and 55 topic language pairs (`scripts/check_docs.py`)**.
+
+In the isolated `art-runtime` sandbox, all 15 built-in character presets ran end-to-end with die-cut sticker border stripping (`strip_diecut_sticker_border`), pre-inflation perspective-consistent multi-view UV atlas baking, 2D silhouette EDT 2.5D dome inflation (`inflate_2_5d_mesh`), skin-hue rim cleanup protection, Half-Lambert cel-relief shading, and 22+ bone geodesic/DQS rigging, achieving **`rig_3d_ok=True` on all 15 presets**:
+
+| Group | Presets | 3D Rig | Side `depth_ratio` | Detached Limbs | Grid Image |
+| --- | --- | --- | --- | --- | --- |
+| Original 5 | `astronomer`, `courier`, `gardener`, `mechanic`, `otter` | 5/5 ok | `0.322`, `0.495`, `0.579`, `0.453`, `0.542` | 4/5 (`gardener` akimbo) | [Group 1 Grid](../../artifacts/sandbox-v0.8.0-group1-original5.png) |
+| Subculture / LN 5 | `hunter`, `villainess`, `artisan`, `supporter`, `mastermind` | 5/5 ok | `0.619`, `0.539`, `0.366`, `0.361`, `0.661` | 5/5 | [Group 2 Grid](../../artifacts/sandbox-v0.8.0-group2-subculture5.png) |
+| Speculative / Classic 5 | `cyberpunk`, `solarpunk`, `cozy`, `occult`, `conductor` | 5/5 ok | `0.560`, `0.401`, `0.371`, `0.300`, `0.414` | 4/5 (`occult` close sleeve) | [Group 3 Grid](../../artifacts/sandbox-v0.8.0-group3-literature5.png) |
+
+![Group 1 original 5 turnaround and motion grid](../../artifacts/sandbox-v0.8.0-group1-original5.png)
+![Group 2 subculture and light-novel 5 turnaround and motion grid](../../artifacts/sandbox-v0.8.0-group2-subculture5.png)
+![Group 3 speculative and classic literature 5 turnaround and motion grid](../../artifacts/sandbox-v0.8.0-group3-literature5.png)
+
+For full root-cause breakdowns and the 25 supporting peer-reviewed papers, see [3D Rigging References](3D-RIGGING-AND-MOTION-REFERENCES.md) and [Academic Bibliography](CHARACTER-AND-LITERATURE-BIBLIOGRAPHY.md).
 
 
 
