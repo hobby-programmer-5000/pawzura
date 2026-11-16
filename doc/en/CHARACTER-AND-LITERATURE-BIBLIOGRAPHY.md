@@ -145,3 +145,12 @@
 * **Peng, Hao-Yang, Zhang, Jia-PG, et al. (2024)**. "CharacterGen: Efficient 3D Character Generation from Single Images with Multi-View Pose Calibration". *ACM Transactions on Graphics (SIGGRAPH 2024)*, arXiv:2401.16053.
 * **Zhang, Jia-Peng, Pu, Meng-Hao, et al. (2025)**. "UniRig: One Model to Rig Them All". *ACM Transactions on Graphics (SIGGRAPH 2025)*, arXiv:2504.12451.
 * **Kuhara, Takuya, et al. (2021)**. "AnimePose: Multi-person 3D Pose Estimation and Animation for Anime Characters". *Pattern Recognition Letters*, 147, 120–127.
+* **Xiu, Yuliang, Yang, Jinlong, Cao, Xu, Tzionas, Dimitrios, & Black, Michael J. (2023)**. "ECON: Explicit Clothed humans Optimized via Normal integration". *IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR 2023)*, arXiv:2212.07422.  
+  *(Front/back bilateral normal integration and skeleton-proxy medial spine straightening to eliminate hollow C-shell collapse)*
+* **Cao, Xu, Santo, Hiroaki, Shi, Boxin, & Okura, Fumio (2022)**. "Bilateral Normal Integration". *European Conference on Computer Vision (ECCV 2022)*, arXiv:2207.10939.
+* **Sýkora, Daniel, Kavan, Ladislav, Jacobson, Alec, Whited, Brian, Mary, Nathan, et al. (2014)**. "Ink-and-Ray: Bas-Relief Meshes for Adding Global Illumination Effects to Hand-Drawn Characters". *ACM Transactions on Graphics*, 33(2), Article 16.
+* **Weber, Ethan, Peterlinz, Riley, Mathur, Rohan, Warburg, Frederik, Efros, Alexei A., & Kanazawa, Angjoo (2024)**. "Toon3D: Seeing Cartoons from New Perspectives". *CVPR 2024*, arXiv:2405.10320.
+* **Long, Xiaoxiao, Guo, Yuan-Chen, Lin, Cheng, Liu, Yuan, Dou, Zhiyang, et al. (2024)**. "Wonder3D: Single Image to 3D using Cross-Domain Diffusion". *CVPR 2024*, arXiv:2310.15008.  
+  *(High-resolution front-reference locking and cosine view-incidence weighting to suppress oblique neural blotches)*
+* **Zeng, Xianfang, Chen, Xin, Qi, Zhongqi, Liu, Wen, Zhao, Zibo, et al. (2024)**. "Paint3D: Paint Anything 3D with Lighting-Less Texture Diffusion Models". *CVPR 2024*, arXiv:2312.13913.  
+  *(Outline-stripped intrinsic cel albedo extraction, lateral grazing-angle color wrapping, and 2.5D NPR cel-relief shading)*

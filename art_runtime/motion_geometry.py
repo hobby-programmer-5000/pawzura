@@ -136,111 +136,176 @@ def classify_art_texture(rgb_arr, alpha_arr):
 
 
 def inflate_2_5d_mesh(vertices, faces, points=None, min_depth_ratio=0.52):
-    """Inflate collapsed paper-thin 2D/chibi meshes into a natural 2.5D rounded cylinder volume.
+    """Inflate collapsed paper-thin 2D/chibi meshes and C-shell curves into a smooth, upright 2.5D volume.
 
-    Preserves exact front-view projection (Y and Z coordinates are invariant), while expanding
-    depth (X) bilaterally along the local medial axis into an anatomical cylinder/ellipsoid.
+    Fits a smooth per-slice quadratic medial sheet x_medial(y, z) = c0(z) + c1(z)*y + c2(z)*y^2
+    (ECON / Bilateral Normal Integration, Xiu et al. CVPR 2023; Cao et al. ECCV 2022) to un-bend
+    hollow C-shells (capes/hair curtains behind legs) and straighten banana spine tilt, then smoothly
+    scales the true sheet thickness residual dx = x - x_medial(y, z) across the full character height
+    (head, torso, and limbs) while preserving exact silhouette boundary continuity (Monster Mash,
+    Dvorožňák et al. SIGGRAPH Asia 2020). Front-view (Y, Z) coordinates remain 100% invariant.
     """
     import numpy as np
     from scipy.ndimage import gaussian_filter1d
 
     v_out = vertices.astype(np.float32, copy=True)
     height = float(np.ptp(v_out[:, 2]))
-    if height < 0.1 or len(v_out) < 32:
+    width_total = float(np.ptp(v_out[:, 1]))
+    if height < 0.1 or width_total < 0.04 or len(v_out) < 32:
         return (v_out, points.astype(np.float32, copy=True)) if points is not None else v_out
 
-    zmin = float(v_out[:, 2].min())
-    zmax = float(v_out[:, 2].max())
+    zmin, zmax = float(v_out[:, 2].min()), float(v_out[:, 2].max())
+    ymed = float(np.median(v_out[:, 1]))
 
     pinch = _find_neck_pinch(v_out)
-    z_neck = pinch[0] if pinch is not None else (zmin + height * 0.55)
+    z_neck = pinch[0] if pinch is not None else (zmin + height * 0.54)
+    z_hip = zmin + height * 0.28
 
     head_mask = v_out[:, 2] >= z_neck
     if head_mask.any():
-        head_depth = float(np.ptp(v_out[head_mask, 0]))
+        head_w = float(np.percentile(v_out[head_mask, 1], 98) - np.percentile(v_out[head_mask, 1], 2))
+        raw_head_d = float(np.percentile(v_out[head_mask, 0], 98) - np.percentile(v_out[head_mask, 0], 2))
     else:
-        head_depth = height * 0.38
-    head_depth = max(height * 0.22, head_depth)
+        head_w = width_total * 0.65
+        raw_head_d = height * 0.34
 
-    body_mask = v_out[:, 2] < z_neck
-    if not body_mask.any():
-        return (v_out, points.astype(np.float32, copy=True)) if points is not None else v_out
+    # Anatomical target full-depth across head, torso, and legs so flat heads/limbs become plump cylinders.
+    target_head_d = float(np.clip(max(head_w * 0.72, raw_head_d, height * 0.32), height * 0.30, height * 0.40))
+    target_torso_d = max(height * 0.26, target_head_d * max(0.76, float(min_depth_ratio) * 1.38))
+    target_leg_d = max(height * 0.22, target_head_d * max(0.64, float(min_depth_ratio) * 1.18))
 
-    num_slices = 36
+    torso_band = (v_out[:, 2] >= z_hip) & (v_out[:, 2] <= z_neck + height * 0.12)
+    x_canon = float(np.median(v_out[torso_band, 0])) if torso_band.any() else float(np.median(v_out[:, 0]))
+
+    num_slices = 40
     z_bins = np.linspace(zmin, zmax, num_slices + 1)
     dz = (zmax - zmin) / num_slices
-    half_band = dz * 1.25
-
-    slice_centers_x = np.zeros(num_slices, dtype=np.float32)
-    slice_scales = np.ones(num_slices, dtype=np.float32)
-    slice_mid_y = np.zeros(num_slices, dtype=np.float32)
-    slice_half_w = np.full(num_slices, max(0.04, height * 0.15), dtype=np.float32)
+    half_band = dz * 1.35
     slice_z = 0.5 * (z_bins[:-1] + z_bins[1:])
 
+    c0 = np.full(num_slices, x_canon, dtype=np.float32)
+    c1 = np.zeros(num_slices, dtype=np.float32)
+    c2 = np.zeros(num_slices, dtype=np.float32)
+    slice_scales = np.ones(num_slices, dtype=np.float32)
+    slice_thicks = np.full(num_slices, height * 0.25, dtype=np.float32)
+    slice_dome_amp = np.zeros(num_slices, dtype=np.float32)
+
     for i in range(num_slices):
-        zc = slice_z[i]
+        zc = float(slice_z[i])
         in_band = np.abs(v_out[:, 2] - zc) <= half_band
-        if not in_band.any():
-            slice_centers_x[i] = float(np.median(v_out[:, 0]))
-            slice_mid_y[i] = float(np.median(v_out[:, 1]))
+        if int(in_band.sum()) < 12:
             continue
         sub = v_out[in_band]
-        x_lo, x_hi = float(np.percentile(sub[:, 0], 2)), float(np.percentile(sub[:, 0], 98))
-        curr_thick = max(1e-3, x_hi - x_lo)
-        slice_centers_x[i] = 0.5 * (x_lo + x_hi)
-        y_lo, y_hi = float(np.percentile(sub[:, 1], 2)), float(np.percentile(sub[:, 1], 98))
-        slice_mid_y[i] = 0.5 * (y_lo + y_hi)
-        slice_half_w[i] = max(0.03, 0.5 * (y_hi - y_lo))
+        dy_s = (sub[:, 1] - ymed) / max(1e-4, height)
+        xs_s = sub[:, 0]
+
+        # Fit robust quadratic medial curve x_medial(y) = c0 + c1*dy + c2*dy^2 to capture C-shell cape/hair bend.
+        dy_span = float(np.percentile(dy_s, 95) - np.percentile(dy_s, 5))
+        if len(sub) >= 24 and dy_span > 0.08:
+            # Use mid-surface quantiles across 5 Y-bins so front/back thickness doesn't bias the medial curve.
+            qs = np.linspace(float(np.percentile(dy_s, 4)), float(np.percentile(dy_s, 96)), 6)
+            by_list, bx_list = [], []
+            for b_k in range(5):
+                bm = (dy_s >= qs[b_k]) & (dy_s <= qs[b_k + 1] + 1e-5)
+                if int(bm.sum()) >= 3:
+                    by_list.append(0.5 * (qs[b_k] + qs[b_k + 1]))
+                    bx_list.append(0.5 * float(np.percentile(xs_s[bm], 10) + np.percentile(xs_s[bm], 90)))
+            if len(by_list) >= 4:
+                poly = np.polyfit(np.asarray(by_list, dtype=np.float64), np.asarray(bx_list, dtype=np.float64), deg=2)
+                c2[i] = float(np.clip(poly[0], -height * 3.2, height * 3.2))
+                c1[i] = float(np.clip(poly[1], -height * 0.8, height * 0.8))
+                c0[i] = float(poly[2])
+            else:
+                c0[i] = 0.5 * float(np.percentile(xs_s, 5) + np.percentile(xs_s, 95))
+        else:
+            c0[i] = 0.5 * float(np.percentile(xs_s, 5) + np.percentile(xs_s, 95))
+
+        x_med_s = c0[i] + c1[i] * dy_s + c2[i] * (dy_s ** 2)
+        res_x = xs_s - x_med_s
+        p98, p80, p20, p2 = np.percentile(res_x, [98, 80, 20, 2])
+        curr_thick = max(1e-3, float(p98 - p2))
+        slice_thicks[i] = curr_thick
+        # Detect flat standee/sticker walls where >15% of vertices pile up in the outer <5% depth band.
+        top_curv_frac = min(float(p98 - p80), float(p20 - p2)) / curr_thick
+        slab_score = float(np.clip((0.10 - top_curv_frac) / 0.065, 0.0, 1.0))
+        width_sub = max(0.04, float(np.percentile(sub[:, 1], 98) - np.percentile(sub[:, 1], 2)))
 
         if zc >= z_neck:
-            slice_scales[i] = 1.0
+            crown_t = float(np.clip((zmax - zc) / max(1e-4, height * 0.08), 0.25, 1.0))
+            t_depth = min(target_head_d * math.sqrt(crown_t), width_sub * 0.82)
+            slice_scales[i] = float(np.clip(t_depth / curr_thick, 1.0, 2.6))
+            slice_dome_amp[i] = slab_score * min(height * 0.11, width_sub * 0.20)
+        elif zc >= z_hip:
+            t_tr = float(np.clip((zc - z_hip) / max(1e-4, z_neck - z_hip), 0.0, 1.0))
+            want_d = target_leg_d + t_tr * (target_torso_d - target_leg_d)
+            t_depth = max(curr_thick, min(want_d, max(height * 0.22, width_sub * 0.78)))
+            slice_scales[i] = float(np.clip(t_depth / curr_thick, 1.0, 9.0))
+            slice_dome_amp[i] = slab_score * min(height * 0.085, width_sub * 0.18)
         else:
-            t_frac = (zc - zmin) / max(1e-4, z_neck - zmin)
-            d_profile = 0.62 if t_frac > 0.65 else (0.56 if t_frac > 0.40 else (0.44 if t_frac > 0.15 else 0.50))
-            width_sub = max(0.04, y_hi - y_lo)
-            target_depth = max(curr_thick, min(head_depth * d_profile, width_sub * 0.72))
-            target_depth = max(target_depth, head_depth * min_depth_ratio * (0.82 + 0.18 * t_frac))
-            slice_scales[i] = float(np.clip(target_depth / curr_thick, 1.0, 8.5))
+            sole_t = float(np.clip((zc - zmin) / max(1e-4, height * 0.04), 0.45, 1.0))
+            t_depth = max(curr_thick, min(target_leg_d * sole_t, max(height * 0.20, width_sub * 0.76)))
+            slice_scales[i] = float(np.clip(t_depth / curr_thick, 1.0, 9.0))
+            slice_dome_amp[i] = slab_score * min(height * 0.065, width_sub * 0.16) * sole_t
 
-    smooth_scales = gaussian_filter1d(slice_scales, sigma=2.2, mode="nearest")
-    smooth_centers = gaussian_filter1d(slice_centers_x, sigma=2.2, mode="nearest")
-    smooth_mid_y = gaussian_filter1d(slice_mid_y, sigma=2.2, mode="nearest")
-    smooth_half_w = np.maximum(0.025, gaussian_filter1d(slice_half_w, sigma=2.2, mode="nearest"))
+    smooth_c0 = gaussian_filter1d(c0, sigma=2.4, mode="nearest")
+    smooth_c1 = gaussian_filter1d(c1, sigma=2.4, mode="nearest")
+    smooth_c2 = gaussian_filter1d(c2, sigma=2.4, mode="nearest")
+    smooth_scales = gaussian_filter1d(slice_scales, sigma=2.4, mode="nearest")
+    smooth_thicks = gaussian_filter1d(slice_thicks, sigma=2.4, mode="nearest")
+    smooth_dome_amp = gaussian_filter1d(slice_dome_amp, sigma=2.4, mode="nearest")
 
-    vz = np.clip((v_out[:, 2] - zmin) / (zmax - zmin) * (num_slices - 1), 0.0, num_slices - 1.001)
-    iz = vz.astype(np.int32)
-    fz = vz - iz
-    v_scale = (1.0 - fz) * smooth_scales[iz] + fz * smooth_scales[iz + 1]
-    v_center = (1.0 - fz) * smooth_centers[iz] + fz * smooth_centers[iz + 1]
-    v_mid_y = (1.0 - fz) * smooth_mid_y[iz] + fz * smooth_mid_y[iz + 1]
-    v_half_w = (1.0 - fz) * smooth_half_w[iz] + fz * smooth_half_w[iz + 1]
-    neck_transition = np.clip((z_neck + dz * 2.0 - v_out[:, 2]) / (dz * 4.0), 0.0, 1.0)
+    # Smooth zero-at-boundary Monster-Mash (Y, Z) silhouette distance map for rounding any flat standee slabs.
+    dome_norm_map = None
+    ymin, ymax = float(v_out[:, 1].min()), float(v_out[:, 1].max())
+    if float(smooth_dome_amp.max()) > 1e-4:
+        from scipy.ndimage import binary_dilation, binary_fill_holes, distance_transform_edt, gaussian_filter, map_coordinates
 
-    # Single-pass continuous Lumo/Monster-Mash elliptical cross-section inflation (zero slice-overlap compounding).
-    rel_y = np.clip(np.abs(v_out[:, 1] - v_mid_y) / v_half_w, 0.0, 1.0)
-    lateral_weight = np.sqrt(np.maximum(0.08, 1.0 - rel_y * rel_y * 0.88))
-    dx = v_out[:, 0] - v_center
-    eff_scale = 1.0 + (v_scale - 1.0) * lateral_weight * neck_transition
-    max_half_depth = head_depth * 0.36
-    v_out[:, 0] = v_center + np.clip(dx * eff_scale, -max_half_depth, max_half_depth)
+        gn = 96
+        occ = np.zeros((gn, gn), dtype=bool)
+        gy_idx = np.clip(np.rint((v_out[:, 1] - ymin) / max(1e-5, ymax - ymin) * (gn - 5) + 2).astype(np.int32), 0, gn - 1)
+        gz_idx = np.clip(np.rint((v_out[:, 2] - zmin) / max(1e-5, zmax - zmin) * (gn - 5) + 2).astype(np.int32), 0, gn - 1)
+        occ[gz_idx, gy_idx] = True
+        occ = binary_fill_holes(binary_dilation(occ, iterations=1))
+        d_sil = gaussian_filter(distance_transform_edt(occ).astype(np.float32), sigma=1.1)
+        row_max = np.maximum(2.0, d_sil.max(axis=1))
+        row_max = gaussian_filter1d(row_max, sigma=2.5, mode="nearest")
+        dome_norm_map = np.sqrt(np.clip(d_sil / row_max[:, None], 0.0, 1.0)).astype(np.float32)
 
+    def _apply_smooth_inflation(arr):
+        out = arr.astype(np.float32, copy=True)
+        vz = np.clip((out[:, 2] - zmin) / max(1e-5, zmax - zmin) * (num_slices - 1), 0.0, num_slices - 1.001)
+        iz = vz.astype(np.int32)
+        fz = vz - iz
+
+        v_c0 = (1.0 - fz) * smooth_c0[iz] + fz * smooth_c0[iz + 1]
+        v_c1 = (1.0 - fz) * smooth_c1[iz] + fz * smooth_c1[iz + 1]
+        v_c2 = (1.0 - fz) * smooth_c2[iz] + fz * smooth_c2[iz + 1]
+        v_sc = (1.0 - fz) * smooth_scales[iz] + fz * smooth_scales[iz + 1]
+        v_th = (1.0 - fz) * smooth_thicks[iz] + fz * smooth_thicks[iz + 1]
+        v_da = (1.0 - fz) * smooth_dome_amp[iz] + fz * smooth_dome_amp[iz + 1]
+
+        dy_norm = (out[:, 1] - ymed) / max(1e-4, height)
+        x_med = v_c0 + v_c1 * dy_norm + v_c2 * (dy_norm ** 2)
+        dx = out[:, 0] - x_med
+
+        # Gently relax excessive lateral C-shell curvature (c2) while keeping each slice's axial center v_c0
+        # intact so boots below a cape/hair hem never shift backward relative to the knees.
+        x_med_relaxed = v_c0 + 0.50 * (v_c1 * dy_norm + v_c2 * (dy_norm ** 2))
+        dome = 0.0
+        if dome_norm_map is not None:
+            gn = dome_norm_map.shape[0]
+            fy = np.clip((out[:, 1] - ymin) / max(1e-5, ymax - ymin) * (gn - 5) + 2, 0.0, gn - 1.001)
+            fz_m = np.clip((out[:, 2] - zmin) / max(1e-5, zmax - zmin) * (gn - 5) + 2, 0.0, gn - 1.001)
+            u_dome = map_coordinates(dome_norm_map, [fz_m, fy], order=1, mode="nearest")
+            dome = v_da * u_dome * np.tanh(dx / np.maximum(1e-3, 0.22 * v_th))
+        max_half_d = height * 0.32
+        out[:, 0] = x_med_relaxed + np.clip(dx * v_sc + dome, -max_half_d, max_half_d)
+        return out
+
+    v_inflated = _apply_smooth_inflation(v_out)
     if points is not None:
-        p_out = points.astype(np.float32, copy=True)
-        pz = np.clip((p_out[:, 2] - zmin) / (zmax - zmin) * (num_slices - 1), 0.0, num_slices - 1.001)
-        ipz = pz.astype(np.int32)
-        fpz = pz - ipz
-        p_scale = (1.0 - fpz) * smooth_scales[ipz] + fpz * smooth_scales[ipz + 1]
-        p_center = (1.0 - fpz) * smooth_centers[ipz] + fpz * smooth_centers[ipz + 1]
-        p_mid_y = (1.0 - fpz) * smooth_mid_y[ipz] + fpz * smooth_mid_y[ipz + 1]
-        p_half_w = (1.0 - fpz) * smooth_half_w[ipz] + fpz * smooth_half_w[ipz + 1]
-        p_rel_y = np.clip(np.abs(p_out[:, 1] - p_mid_y) / p_half_w, 0.0, 1.0)
-        p_lat_w = np.sqrt(np.maximum(0.08, 1.0 - p_rel_y * p_rel_y * 0.88))
-        p_neck_tr = np.clip((z_neck + dz * 2.0 - p_out[:, 2]) / (dz * 4.0), 0.0, 1.0)
-        p_dx = p_out[:, 0] - p_center
-        p_out[:, 0] = p_center + p_dx * (1.0 + (p_scale - 1.0) * p_lat_w * p_neck_tr)
-        return v_out, p_out
-
-    return v_out
+        return v_inflated, _apply_smooth_inflation(points)
+    return v_inflated
 
 
 def extract(density, radius=1.0, threshold=25.0):
@@ -377,8 +442,10 @@ def _visibility_mask(points, u, v, depth, side):
     np.minimum.at(zbuf, flat, depth[hit_idx])
     z2d = minimum_filter(zbuf.reshape(zbuf_side, zbuf_side), size=3)
     visible = np.zeros(len(points), dtype=bool)
-    tol = 0.035
-    visible[hit_idx] = depth[hit_idx] <= (z2d.ravel()[flat] + tol)
+    tol = 0.038
+    visible[hit_idx] = (depth[hit_idx] <= (z2d.ravel()[flat] + tol)) | (
+        (depth[hit_idx] <= (zbuf[flat] + 0.020)) & (depth[hit_idx] <= (z2d.ravel()[flat] + 0.080))
+    )
     return visible
 
 
@@ -416,8 +483,18 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
     for spec in view_specs:
         rgb_img = spec["rgb"]
         side = rgb_img.shape[0]
-        is_bg = (rgb_img.min(axis=2) > 0.93) & ((rgb_img.max(axis=2) - rgb_img.min(axis=2)) < 0.06)
-        d_bg_map = distance_transform_edt(~is_bg).astype(np.float32) if is_bg.any() else np.full((side, side), 8.0, dtype=np.float32)
+        is_bg = (rgb_img.min(axis=2) > 0.90) & ((rgb_img.max(axis=2) - rgb_img.min(axis=2)) < 0.06)
+        if is_bg.any():
+            d_bg_map = distance_transform_edt(~is_bg).astype(np.float32)
+            fg_core = d_bg_map >= 2.4
+            if int(fg_core.sum()) >= 32:
+                _, near_fg = distance_transform_edt(~fg_core, return_indices=True)
+                rgb_clean_view = rgb_img[near_fg[0], near_fg[1]]
+            else:
+                rgb_clean_view = rgb_img
+        else:
+            d_bg_map = np.full((side, side), 8.0, dtype=np.float32)
+            rgb_clean_view = rgb_img
         focal = side * 0.5 / math.tan(math.radians(spec.get("fovy", 40.0) * 0.5))
         cam_pos, cam_dir, right, up = _spherical_camera_basis(spec["az"], spec.get("el", 0.0), spec.get("dist", 1.9))
         rel = points - cam_pos[None, :]
@@ -432,8 +509,11 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
         if not vis.any():
             continue
         uv_idx = np.flatnonzero(vis)
-        sampled = np.stack([map_coordinates(rgb_img[:, :, c], [v[uv_idx], u[uv_idx]], order=1, mode="nearest") for c in range(3)], 1)
+        raw_s = np.stack([map_coordinates(rgb_img[:, :, c], [v[uv_idx], u[uv_idx]], order=1, mode="nearest") for c in range(3)], 1)
+        cln_s = np.stack([map_coordinates(rgb_clean_view[:, :, c], [v[uv_idx], u[uv_idx]], order=1, mode="nearest") for c in range(3)], 1)
         d_bg_s = map_coordinates(d_bg_map, [v[uv_idx], u[uv_idx]], order=1, mode="nearest")
+        interior_t = np.clip((d_bg_s - 2.0) / 1.8, 0.0, 1.0)
+        sampled = cln_s * (1.0 - interior_t[:, None]) + raw_s * interior_t[:, None]
         # Suppress paper-white background halo pixels near silhouette rims without starving cream/ivory clothes.
         sat = sampled.max(1) - sampled.min(1)
         bg_neutral = 1.0 - np.clip(sat / 0.09, 0.0, 1.0)
@@ -449,7 +529,13 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
         accum[uv_idx] += sampled * w[:, None]
         weight_sum[uv_idx] += w
 
-    # High-resolution silhouette-aligned reference image projection (e.g., original 1024px front drawing + side/back snapshots).
+    # High-resolution silhouette-aligned reference image projection (Wonder3D Front-Reference Locking + Paint3D Lateral Cel Wrap).
+    height_pt = max(1e-4, float(np.ptp(points[:, 2])))
+    zmin_pt = float(points[:, 2].min())
+    mid_y_pt = float(np.median(points[:, 1]))
+    pinch_pt = _find_neck_pinch(points)
+    z_neck_pt = pinch_pt[0] if pinch_pt is not None else (zmin_pt + height_pt * 0.54)
+
     for ref in (ref_views or ()):
         rgba = np.asarray(ref["rgba"], dtype=np.float32)
         if rgba.max() > 1.5:
@@ -457,6 +543,15 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
         h_img, w_img = rgba.shape[:2]
         alpha = rgba[:, :, 3] if rgba.shape[2] == 4 else (rgba.min(2) < 0.96).astype(np.float32)
         d_alpha = distance_transform_edt(alpha > 0.85).astype(np.float32)
+        # Strip outer 3-px dark 2D ink outline via interior EDT extrapolation so silhouette rims carry pure cel albedo.
+        lum_img = 0.299 * rgba[:, :, 0] + 0.587 * rgba[:, :, 1] + 0.114 * rgba[:, :, 2]
+        core_fg = (d_alpha > 3.2) | ((alpha > 0.88) & (lum_img > 0.26))
+        if int(core_fg.sum()) >= 32:
+            _, near_c = distance_transform_edt(~core_fg, return_indices=True)
+            rgba_clean = rgba[:, :, :3][near_c[0], near_c[1]]
+        else:
+            rgba_clean = rgba[:, :, :3]
+
         # Use solid opaque silhouette (ignoring faint ground shadows) to align bounding boxes accurately.
         fg_y, fg_x = np.where(alpha > 0.72)
         if len(fg_x) < 16:
@@ -466,15 +561,16 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
         x0, x1 = float(fg_x.min()), float(fg_x.max())
         y0, y1 = float(fg_y.min()), float(fg_y.max())
 
-        _, cam_dir, right, up = _spherical_camera_basis(ref["az"], ref.get("el", 0.0), 1.9)
+        az_ref = float(ref.get("az", 0.0))
+        _, cam_dir, right, up = _spherical_camera_basis(az_ref, ref.get("el", 0.0), 1.9)
         cam_pos = cam_dir * 1.9
         rel = points - cam_pos[None, :]
         depth = rel @ (-cam_dir)
-        # Use orthographic-like mesh bounds in (right, up) plane aligned cleanly to reference foreground bbox.
-        px_r = points @ right
-        px_u = points @ up
+        # Match TripoSR's perspective projection (rel / depth) so deep hair/capes never shift facial bounds vs view-0.
+        px_r = (rel @ right) / np.maximum(depth, 0.1)
+        px_u = (rel @ up) / np.maximum(depth, 0.1)
         ndot = np.clip(normals @ cam_dir, 0.0, 1.0)
-        front_pts = ndot > 0.28
+        front_pts = ndot > 0.12
         if not front_pts.any():
             continue
         r_min, r_max = float(px_r.min()), float(px_r.max())
@@ -484,25 +580,26 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
         u_img = x0 + u_norm * (x1 - x0)
         v_img = y0 + v_norm * (y1 - y0)
 
-        vis = _visibility_mask(points, u_norm * 256.0, v_norm * 256.0, depth, 256)
-        vis &= front_pts & (u_img >= 0) & (u_img < w_img - 1) & (v_img >= 0) & (v_img < h_img - 1)
-        if not vis.any():
-            continue
-        idx = np.flatnonzero(vis)
-        a_sample = map_coordinates(alpha, [v_img[idx], u_img[idx]], order=1, mode="nearest")
-        keep = a_sample > 0.94
-        if not keep.any():
-            continue
-        idx = idx[keep]
-        a_sample = a_sample[keep]
-        d_edge = map_coordinates(d_alpha, [v_img[idx], u_img[idx]], order=1, mode="nearest")
-        # Prevent outer 2-px dark ink border on front 2D artwork from smearing across grazing temple/jaw/arm sides.
-        ink_taper = np.where(ndot[idx] < 0.55, np.clip((d_edge - 1.8) / 2.2, 0.0, 1.0), 1.0)
-        rgb_sample = np.stack([map_coordinates(rgba[:, :, c], [v_img[idx], u_img[idx]], order=1, mode="nearest") for c in range(3)], 1)
+        in_img = (u_img >= 0) & (u_img < w_img - 1) & (v_img >= 0) & (v_img < h_img - 1)
+        vis = _visibility_mask(points, 4.0 + u_norm * 247.0, 4.0 + v_norm * 247.0, depth, 256)
+        vis &= front_pts & in_img
         boost = float(ref.get("weight", 4.5))
-        w = boost * (ndot[idx] ** 2.6) * a_sample * ink_taper
-        accum[idx] += rgb_sample * w[:, None]
-        weight_sum[idx] += w
+        if vis.any():
+            idx = np.flatnonzero(vis)
+            a_sample = map_coordinates(alpha, [v_img[idx], u_img[idx]], order=1, mode="nearest")
+            keep = a_sample > 0.65
+            if keep.any():
+                idx = idx[keep]
+                a_sample = a_sample[keep]
+                d_edge = map_coordinates(d_alpha, [v_img[idx], u_img[idx]], order=1, mode="nearest")
+                rgb_raw = np.stack([map_coordinates(rgba[:, :, c], [v_img[idx], u_img[idx]], order=1, mode="nearest") for c in range(3)], 1)
+                rgb_cln = np.stack([map_coordinates(rgba_clean[:, :, c], [v_img[idx], u_img[idx]], order=1, mode="nearest") for c in range(3)], 1)
+                # Blend smoothly to outline-free interior cel color near outer 3-px contour or oblique normal angles.
+                rim_t = np.clip((d_edge - 1.6) / 2.2, 0.0, 1.0) * np.clip((ndot[idx] - 0.20) / 0.35, 0.0, 1.0)
+                rgb_sample = rgb_cln * (1.0 - rim_t[:, None]) + rgb_raw * rim_t[:, None]
+                w = boost * 2.8 * (np.clip(ndot[idx], 0.20, 1.0) ** 1.35) * np.clip(a_sample, 0.45, 1.0)
+                accum[idx] += rgb_sample * w[:, None]
+                weight_sum[idx] += w
 
     # Fill any tiny unhit crevices via nearest colored neighbor.
     unhit = weight_sum < 1e-5
@@ -544,22 +641,24 @@ def project_multiview_colors(points, views, normals=None, ref_views=None):
                 coat_color = np.median(colors[side_torso], axis=0)
                 colors[back_torso] = colors[back_torso] * 0.30 + coat_color * 0.70
 
-    # Localized cleanup for isolated neutral/tinted white halo specks on head rim, rear seam, and boot soles (never front torso/sleeves).
+    # Localized cleanup for isolated neutral/tinted white halo specks on back/grazing rim and boot soles (never front face/skin/white clothes).
     sat_col = colors.max(1) - colors.min(1)
+    is_skin_hue = (colors[:, 0] > colors[:, 1]) & (colors[:, 1] >= colors[:, 2]) & ((colors[:, 0] - colors[:, 2]) > 0.035)
     back_side = points[:, 0] < x_med - height * 0.02
-    region = (points[:, 2] > zmin + height * 0.64) | (points[:, 2] < zmin + height * 0.25) | back_side
-    neutral_white = (
-        ((colors.min(1) > 0.86) & (sat_col < 0.08))
-        | ((colors.min(1) > 0.78) & (sat_col < 0.065) & ((points[:, 0] < x_med + height * 0.03) | (points[:, 2] < zmin + height * 0.25)))
-        | (back_side & (colors.min(1) > 0.66) & (sat_col < 0.14))
+    grazing_rim = normals[:, 0] <= 0.18
+    region = back_side | (grazing_rim & ((points[:, 2] > zmin + height * 0.64) | (points[:, 2] < zmin + height * 0.25)))
+    neutral_white = (~is_skin_hue) & (
+        ((colors.min(1) > 0.88) & (sat_col < 0.048))
+        | ((colors.min(1) > 0.78) & (sat_col < 0.055) & ((points[:, 0] < x_med + height * 0.02) | (points[:, 2] < zmin + height * 0.22)))
+        | (back_side & (colors.min(1) > 0.66) & (sat_col < 0.12))
     )
     bad = region & neutral_white
-    good = region & (colors.min(1) < 0.70)
+    good = (region | (points[:, 2] > zmin + height * 0.60)) & (colors.min(1) < 0.70)
     if good.any() and bad.any():
         distances, near = cKDTree(points[good]).query(points[bad])
         use = distances < height * 0.032
         colors[np.flatnonzero(bad)[use]] = colors[good][near[use]]
-    sole_bad = (points[:, 2] < zmin + height * 0.045) & (colors.min(1) > 0.72) & (sat_col < 0.095)
+    sole_bad = (points[:, 2] < zmin + height * 0.040) & (colors.min(1) > 0.76) & (sat_col < 0.065) & (~is_skin_hue)
     sole_good = (points[:, 2] < zmin + height * 0.15) & (colors.min(1) < 0.65)
     if sole_good.any() and sole_bad.any():
         distances, near = cKDTree(points[sole_good]).query(points[sole_bad])

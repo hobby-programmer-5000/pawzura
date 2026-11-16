@@ -156,3 +156,12 @@
 * **Peng, Hao-Yang, Zhang, Jia-PG, et al. (2024)**. "CharacterGen: Efficient 3D Character Generation from Single Images with Multi-View Pose Calibration". *ACM Transactions on Graphics (SIGGRAPH 2024)*, arXiv:2401.16053.
 * **Zhang, Jia-Peng, Pu, Meng-Hao, et al. (2025)**. "UniRig: One Model to Rig Them All". *ACM Transactions on Graphics (SIGGRAPH 2025)*, arXiv:2504.12451.
 * **Kuhara, Takuya, et al. (2021)**. "AnimePose: Multi-person 3D Pose Estimation and Animation for Anime Characters". *Pattern Recognition Letters*, 147, 120–127.
+* **Xiu, Yuliang, Yang, Jinlong, Cao, Xu, Tzionas, Dimitrios, & Black, Michael J. (2023)**. "ECON: Explicit Clothed humans Optimized via Normal integration". *IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR 2023)*, arXiv:2212.07422.  
+  *(전·후면 양방향 법선 적분 및 골격 프록시 중심축 직선화를 통해 망토·머리카락에 의한 C자형 빈 껍질 붕괴를 해결)*
+* **Cao, Xu, Santo, Hiroaki, Shi, Boxin, & Okura, Fumio (2022)**. "Bilateral Normal Integration". *European Conference on Computer Vision (ECCV 2022)*, arXiv:2207.10939.
+* **Sýkora, Daniel, Kavan, Ladislav, Jacobson, Alec, Whited, Brian, Mary, Nathan, et al. (2014)**. "Ink-and-Ray: Bas-Relief Meshes for Adding Global Illumination Effects to Hand-Drawn Characters". *ACM Transactions on Graphics*, 33(2), Article 16.
+* **Weber, Ethan, Peterlinz, Riley, Mathur, Rohan, Warburg, Frederik, Efros, Alexei A., & Kanazawa, Angjoo (2024)**. "Toon3D: Seeing Cartoons from New Perspectives". *CVPR 2024*, arXiv:2405.10320.
+* **Long, Xiaoxiao, Guo, Yuan-Chen, Lin, Cheng, Liu, Yuan, Dou, Zhiyang, et al. (2024)**. "Wonder3D: Single Image to 3D using Cross-Domain Diffusion". *CVPR 2024*, arXiv:2310.15008.  
+  *(고해상도 정면 참조 앵커 고정 및 시선 입사각 가중치를 통한 반측면·정면 얼룩 억제)*
+* **Zeng, Xianfang, Chen, Xin, Qi, Zhongqi, Liu, Wen, Zhao, Zibo, et al. (2024)**. "Paint3D: Paint Anything 3D with Lighting-Less Texture Diffusion Models". *CVPR 2024*, arXiv:2312.13913.  
+  *(외곽 먹선 제거 순수 셀 알베도 분리, 스침각 측면 경계 색상 외삽 및 2.5D NPR 셀 릴리프 셰이딩 결합)*

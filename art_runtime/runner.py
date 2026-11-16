@@ -147,6 +147,50 @@ def strip_exterior_floor_shadow(rgb_arr, alpha, bg_rgb=None, extra_neutral_luma=
     return out
 
 
+def strip_diecut_sticker_border(rgb_arr, alpha):
+    """Strip exterior die-cut white sticker margin and outer gray stroke when present around >75% of perimeter."""
+    import numpy as np
+    from scipy.ndimage import binary_closing, binary_dilation, distance_transform_edt, label
+
+    out = np.clip(alpha.astype(np.float32, copy=True), 0.0, 1.0)
+    rgb = np.clip(rgb_arr.astype(np.float32), 0.0, 1.0)
+    fg = out > 0.25
+    if int(fg.sum()) < 256:
+        return out
+
+    d_in = distance_transform_edt(fg)
+    lum = 0.299 * rgb[:, :, 0] + 0.587 * rgb[:, :, 1] + 0.114 * rgb[:, :, 2]
+    sat = rgb.max(axis=2) - rgb.min(axis=2)
+
+    outer1 = fg & (d_in <= 3.5)
+    ring_mid = fg & (d_in > 3.5) & (d_in <= 10.0)
+    if int(outer1.sum()) < 32 or int(ring_mid.sum()) < 32:
+        return out
+
+    gray_outer_frac = float((outer1 & (lum > 0.25) & (sat < 0.08)).sum()) / float(outer1.sum())
+    white_ring_frac = float((ring_mid & (lum > 0.90) & (sat < 0.06)).sum()) / float(ring_mid.sum())
+    if gray_outer_frac < 0.78 or white_ring_frac < 0.20:
+        return out
+
+    # Only traverse neutral gray rim (<=6px) and pure sticker white moat (<=22px) blocked by colored/dark ink outlines.
+    passable = (
+        (~fg)
+        | ((d_in <= 6.0) & (lum > 0.22) & (sat < 0.10))
+        | ((d_in <= 22.0) & (lum > 0.87) & (sat < 0.065))
+    )
+    barrier = binary_closing(~passable, structure=np.ones((3, 3), dtype=bool), iterations=1)
+    comp, n_comp = label(~barrier)
+    if n_comp > 0:
+        border_ids = np.unique(np.concatenate([comp[0, :], comp[-1, :], comp[:, 0], comp[:, -1]]))
+        border_ids = border_ids[border_ids > 0]
+        if len(border_ids):
+            stripped = np.isin(comp, border_ids)
+            # Clean 1-px anti-aliased bright rim touching the stripped sticker moat without touching dark ink.
+            adj_bright = binary_dilation(stripped, iterations=1) & (lum > 0.76) & (sat < 0.08)
+            out[stripped | adj_bright] = 0.0
+    return out
+
+
 def clean_cutout_rgba(rgb_arr, alpha_raw):
     """Strip exterior paper mist, bottom ground-shadow slabs, detached shadow crumbs, and halo color bleed."""
     import numpy as np
@@ -162,6 +206,7 @@ def clean_cutout_rgba(rgb_arr, alpha_raw):
     # Strip exterior paper mist & neutral floor cast shadows against raw u2netp confidence BEFORE ramping.
     cleaned_raw = strip_exterior_floor_shadow(rgb, raw, bg_rgb=bg_rgb, extra_neutral_luma=0.82, extra_max_alpha=0.35)
     alpha = np.clip((cleaned_raw - 0.18) / (0.72 - 0.18), 0.0, 1.0)
+    alpha = strip_diecut_sticker_border(rgb, alpha)
 
     # Seal any interior alpha dropout pocket enclosed inside ink outlines (e.g., white sleeve highlights).
     filled = binary_fill_holes(alpha > 0.25)

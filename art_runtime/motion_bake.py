@@ -121,8 +121,15 @@ def render_mesh(vertices, faces, colors, normals, yaw, floor, top, mouth, out_si
     sy = (ssaa - 1.0 - (p[:, 2] - floor) * scale).astype(np.float32)
     sz = p[:, 0].astype(np.float32)
 
-    # Gentle wrap directional shading along camera +X so 3D form reads cleanly without dulling artwork palette.
-    shade = np.clip(0.91 + 0.11 * np.abs(n_rot[:, 0]) - 0.03 * (1.0 - np.abs(n_rot[:, 0])), 0.85, 1.04).astype(np.float32)
+    # 2.5D NPR Cel-Relief & Rim Shading (Ink-and-Ray / Lumo / Paint3D): Half-Lambert toon ramp + grazing contour relief + rim lift.
+    hl = 0.5 * (0.80 * n_rot[:, 0] - 0.26 * n_rot[:, 1] + 0.54 * n_rot[:, 2]) + 0.5
+    toon_ramp = smooth(0.34, 0.58, hl)
+    cam_nx = np.abs(n_rot[:, 0])
+    contour_relief = smooth(0.08, 0.45, cam_nx)
+    rim_lift = 0.04 * np.clip(n_rot[:, 2], 0.0, 1.0) * (1.0 - cam_nx)
+    shade_relief = 0.81 + 0.13 * toon_ramp + 0.09 * contour_relief + rim_lift
+    front_lock = float(max(0.0, 1.0 - abs(math.sin(yaw)) / 0.35)) * smooth(0.45, 0.78, n_rot[:, 0])
+    shade = np.clip(shade_relief * (1.0 - 0.65 * front_lock) + (0.98 + 0.04 * cam_nx) * (0.65 * front_lock), 0.78, 1.05).astype(np.float32)
     lit_rgb = np.clip(colors * shade[:, None], 0.0, 1.0).astype(np.float32)
 
     atlas_f = None

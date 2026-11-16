@@ -111,11 +111,12 @@ def _view_schedule(quality_mode):
 
 
 def _clean_bottom_cast_shadow(rgba):
-    """Strip exterior-connected floor shadows using the shared runner boundary helper."""
-    from runner import strip_exterior_floor_shadow
+    """Strip exterior-connected floor shadows and die-cut sticker borders using shared runner helpers."""
+    from runner import strip_diecut_sticker_border, strip_exterior_floor_shadow
 
     out = rgba.astype("float32", copy=True)
-    out[:, :, 3] = strip_exterior_floor_shadow(out[:, :, :3], out[:, :, 3])
+    alpha = strip_exterior_floor_shadow(out[:, :, :3], out[:, :, 3])
+    out[:, :, 3] = strip_diecut_sticker_border(out[:, :, :3], alpha)
     return out
 
 
@@ -237,18 +238,20 @@ def reconstruct(cache, job, payload=None):
                 if "Surface too large" not in str(err) or n == 96:
                     raise
 
-    # 2.5D Volumetric Inflation: If character has flat 2D anime/cel-shaded texture, or requested,
-    # expand collapsed body depth into an anatomical cylinder so it doesn't collapse like a wafer.
-    if shading_style == "flat_2d" or payload.get("force_2_5d", False):
-        vertices, points = inflate_2_5d_mesh(vertices, faces, points=points)
-
     vertices = fair_mesh_taubin(vertices, faces, iterations=4, lam=0.45, mu=-0.47, front_weight=0.35)
     normals = compute_vertex_normals(vertices, faces)
     ref_views = _load_extra_ref_views(job, payload)
+    # Project multi-view colors and bake UV atlas BEFORE 2.5D inflation so 3D surface positions match view_specs 1:1.
     vertex_colors = project_multiview_colors(vertices, view_specs, normals=normals, ref_views=ref_views)
-    # Also project onto points when surface points differ from vertices (e.g., if legacy tools read points).
     point_colors = project_multiview_colors(points, view_specs, ref_views=ref_views)
     atlas, face_uvs = bake_texture_atlas(vertices, faces, normals, view_specs, ref_views=ref_views)
+
+    # 2.5D Volumetric Inflation: If character has flat 2D anime/cel-shaded texture, or requested,
+    # expand thin slice depths into a smooth anatomical volume while preserving baked UVs and front silhouette.
+    if shading_style == "flat_2d" or payload.get("force_2_5d", False):
+        vertices, points = inflate_2_5d_mesh(vertices, faces, points=points)
+        vertices = fair_mesh_taubin(vertices, faces, iterations=2, lam=0.42, mu=-0.44, front_weight=0.35)
+        normals = compute_vertex_normals(vertices, faces)
 
     np.savez_compressed(
         job / "surface.npz",

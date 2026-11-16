@@ -797,6 +797,45 @@ Frame Time: 0.0333333
         l_fore = w[:, b_idx["left_forearm"]] > 0.5
         self.assertGreater(float(morphed[l_fore, 1].mean()), float(v[l_fore, 1].mean()))
 
+    def test_strip_diecut_sticker_border_removes_moat_without_touching_interior_white(self):
+        import runner
+        side = 128
+        rgb = np.ones((side, side, 3), dtype=np.float32)
+        alpha = np.zeros((side, side), dtype=np.float32)
+        yy, xx = np.ogrid[:side, :side]
+        r2 = (yy - 64) ** 2 + (xx - 64) ** 2
+        # Outer gray die-cut stroke + white sticker moat (r = 30..44)
+        alpha[r2 <= 44 ** 2] = 1.0
+        rgb[(r2 <= 44 ** 2) & (r2 >= 41 ** 2)] = [0.65, 0.65, 0.67]
+        rgb[(r2 < 41 ** 2) & (r2 > 31 ** 2)] = [0.98, 0.98, 0.98]
+        # Dark character outline + interior white tummy + brown fur (r <= 31)
+        rgb[(r2 <= 31 ** 2) & (r2 >= 28 ** 2)] = [0.18, 0.12, 0.10]
+        rgb[r2 < 28 ** 2] = [0.55, 0.38, 0.24]
+        rgb[(yy >= 68) & (yy <= 82) & (np.abs(xx - 64) <= 10)] = [0.98, 0.97, 0.96]
+
+        cleaned = runner.strip_diecut_sticker_border(rgb, alpha)
+        self.assertLess(float(cleaned[22, 64]), 0.1)   # Sticker moat at y=22 (r=42) removed
+        self.assertGreater(float(cleaned[74, 64]), 0.9) # Interior white tummy preserved
+
+    def test_front_pale_skin_near_dark_eyes_is_not_overwritten_by_halo_cleanup(self):
+        u = np.linspace(-0.5, 0.5, 32)
+        cx, cy, cz = np.meshgrid(u, u, u, indexing="ij")
+        f = (cx / 0.30) ** 2 + (cy / 0.30) ** 2 + (cz / 0.45) ** 2
+        verts, faces, _ = g.extract(np.clip(50.0 * (1.2 - f), 0.0, 60.0).astype(np.float32), radius=0.5, threshold=25.0)
+        normals = g.compute_vertex_normals(verts, faces)
+
+        rgba_front = np.zeros((128, 128, 4), dtype=np.float32)
+        rgba_front[16:112, 24:104] = [0.98, 0.94, 0.90, 1.0]  # Pale anime skin
+        rgba_front[42:58, 36:50] = [0.16, 0.05, 0.08, 1.0]     # Dark eye left
+        rgba_front[42:58, 78:92] = [0.16, 0.05, 0.08, 1.0]     # Dark eye right
+        ref_views = [{"rgba": rgba_front, "az": 0.0, "el": 0.0, "weight": 8.0}]
+        views = [{"rgb": rgba_front[:, :, :3], "az": 0.0, "el": 0.0, "dist": 1.9, "fovy": 40.0, "weight": 1.0}]
+
+        colors = g.project_multiview_colors(verts, views, normals=normals, ref_views=ref_views)
+        mid_bridge = (normals[:, 0] > 0.7) & (np.abs(verts[:, 1]) < 0.03) & (verts[:, 2] > 0.05) & (verts[:, 2] < 0.16)
+        self.assertTrue(mid_bridge.any())
+        self.assertGreater(float(colors[mid_bridge, 0].min()), 0.88)
+
 
 if __name__ == "__main__":
     unittest.main()
